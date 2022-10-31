@@ -1,0 +1,33 @@
+# Xmake cache
+.xmake/
+build/
+
+# MacOS Cache
+.DS_Store
+
+# VS
+vsxmake*/
+
+# VSCODE
+.vscode/
+
+# IDEA
+.idea/
+
+# Cache
+.cache/
+.ccls-cache/
+
+*.plist
+
+compile_commands.json
+.vimspector.json
+
+imgui.ini
+
+/resource/
+!/resource/.gitkeep
+
+# draw.io
+*.bkp
+*.dtmp
