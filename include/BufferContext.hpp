@@ -18,36 +18,19 @@
 
 #include <span>
 
-#include "IndexBuffer.hpp"
-#include "UniformBuffer.hpp"
-#include "VertexBuffer.hpp"
+#include "Buffer.hpp"
 
 namespace Marbas {
 
 class BufferContext {
   virtual void
-  CreateVertexBuffer(VertexBuffer* vertexBuffer, void* data, uint32_t size, bool isStatic) = 0;
-
-  // TODO: update date
+  CreateBuffer(Buffer* buffer, void* data, uint32_t size, bool isStatic) = 0;
 
   virtual void
-  DestroyVertexBuffer(VertexBuffer* vertexBuffer) = 0;
+  UpdateBuffer(Buffer* buffer, void* data, uint32_t size, uintptr_t offset) = 0;
 
   virtual void
-  CreateIndexBuffer(IndexBuffer* indexBuffer, std::span<uint32_t> data, bool isStatic) = 0;
-
-  // TODO: update date
-
-  virtual void
-  DestroyIndexBuffer(VertexBuffer* vertexBuffer) = 0;
-
-  virtual void
-  CreateUniformBuffer(UniformBuffer* uniformBuffer, void* data, uint32_t size, bool isStatic) = 0;
-
-  // TODO: update date
-
-  virtual void
-  DestroyUniformBuffer(UniformBuffer* uniformBuffer) = 0;
+  DestroyBuffer(Buffer* buffer) = 0;
 };
 
 }  // namespace Marbas

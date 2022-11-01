@@ -16,23 +16,19 @@
 
 #pragma once
 
+#include <optional>
 #include <vulkan/vulkan.hpp>
 
-#include "IndexBuffer.hpp"
-#include "VertexBuffer.hpp"
+#include "Buffer.hpp"
 
 namespace Marbas {
 
-struct VulkanVertexBuffer final : public VertexBuffer {
- private:
+struct VulkanBufferData {
   vk::Buffer buffer;
-  vk::DeviceMemory memory;
-};
+  vk::DeviceMemory bufferMemory;
 
-struct VulkanIndexBuffer final : public IndexBuffer {
- private:
-  vk::Buffer buffer;
-  vk::DeviceMemory memory;
+  std::optional<vk::Buffer> stageBuffer = std::nullopt;
+  std::optional<vk::DeviceMemory> stageBufferMemory = std::nullopt;
 };
 
 }  // namespace Marbas

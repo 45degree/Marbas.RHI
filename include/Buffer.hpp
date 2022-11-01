@@ -20,6 +20,10 @@
 #include <cstdint>
 #include <vector>
 
+#ifdef USE_VULKAN
+#include <vulkan/vulkan.hpp>
+#endif
+
 namespace Marbas {
 
 enum class ElementType {
@@ -48,8 +52,23 @@ struct InputElementDesc {
 
 using InputLayoutDesc = std::vector<InputElementDesc>;
 
-struct VertexBuffer {
+enum class BufferType {
+  VERTEX_BUFFER,
+  INDEX_BUFFER,
+  UNIFORM_BUFFER,
+  STORAGE_BUFFER,
+};
+
+#ifdef USE_VULKAN
+struct VulkanBufferData;
+#endif
+
+struct Buffer {
+  BufferType bufferType = BufferType::VERTEX_BUFFER;
   uint32_t size = 0;
+#ifdef USE_VULKAN
+  VulkanBufferData* vulkanData = nullptr;
+#endif
 };
 
 }  // namespace Marbas

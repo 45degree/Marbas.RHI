@@ -1,5 +1,5 @@
 /**
- * Copyright 2022.10.31 45degree
+ * Copyright 2022.11.1 45degree
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@
 
 namespace Marbas {
 
-class IndexBuffer {};
+class Image {};
+
+class ImageView {};
 
 }  // namespace Marbas

@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <vulkan/vulkan.hpp>
+
 #include "BufferContext.hpp"
 
 namespace Marbas {
@@ -23,16 +25,16 @@ namespace Marbas {
 class VulkanBufferContext final : public BufferContext {
  public:
   void
-  CreateVertexBuffer(VertexBuffer* vertexBuffer, void* data, uint32_t size, bool isStatic) override;
+  CreateBuffer(Buffer* buffer, void* data, uint32_t size, bool isStatic) override;
 
   void
-  DestroyVertexBuffer(VertexBuffer* vertexBuffer) override;
+  UpdateBuffer(Buffer* buffer, void* data, uint32_t size, uintptr_t offset) override;
 
   void
-  CreateIndexBuffer(IndexBuffer* indexBuffer, std::span<uint32_t> data, bool isStatic) override;
+  DestroyBuffer(Buffer* buffer) override;
 
-  void
-  DestroyIndexBuffer(VertexBuffer* vertexBuffer) override;
+ private:
+  vk::Device m_device;
 };
 
 }  // namespace Marbas
