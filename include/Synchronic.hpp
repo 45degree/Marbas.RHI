@@ -18,6 +18,9 @@
 
 #include <vector>
 
+#include "Buffer.hpp"
+#include "Image.hpp"
+
 namespace Marbas {
 
 class Semahore {};
@@ -28,33 +31,27 @@ class Fence {};
  * barrier
  */
 
-enum class PipelineState {
-  TOP_OF_PIPE = 0x00000001,
-  DRAW_INDIRECT = 0x00000002,
-  VERTEX_INPUT = 0x00000004,
-  VERTEX_SHADER = 0x00000008,
-  TESSELLATION_CONTROL_SHADER = 0x00000010,
-  TESSELLATION_EVALUATION_SHADER = 0x00000020,
-  GEOMETRY_SHADER = 0x00000040,
-  FRAGMENT_SHADER = 0x00000080,
-  EARLY_FRAGMENT_TESTS = 0x00000100,
-  LATE_FRAGMENT_TESTS = 0x00000200,
-  COLOR_ATTACHMENT_OUTPUT = 0x00000400,
-  COMPUTE_SHADER = 0x00000800,
-  TRANSFER = 0x00001000,
-  BOTTOM_OF_PIPE = 0x00002000,
-  HOST = 0x00004000,
-  ALL_GRAPHICS = 0x00008000,
-  ALL_COMMANDS = 0x00010000,
+enum class ResourceUsage {
+  READ,
+  WRITE,
+  TRANSFER_SRC,
+  TRANSFER_DST,
+  PRESENT,
 };
 
-class BufferBarrier {};
+struct BufferBarrier {
+  ResourceUsage srcUsage = ResourceUsage::READ;
+  ResourceUsage dstUsage = ResourceUsage::WRITE;
+  Buffer& buffer;
+};
 
-class ImageBarrier {};
+struct ImageBarrier {
+  ResourceUsage srcUsage = ResourceUsage::TRANSFER_SRC;
+  ResourceUsage dstUsage = ResourceUsage::TRANSFER_DST;
+  Image& image;
+};
 
-class PipelineBarrier {
-  PipelineState srcState;
-  PipelineState dstState;
+struct ResourceBarrier {
   std::vector<BufferBarrier> bufferBarrier;
   std::vector<ImageBarrier> imageBarrier;
 };

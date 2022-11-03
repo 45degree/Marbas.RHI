@@ -1,5 +1,5 @@
 /**
- * Copyright 2022.10.31 45degree
+ * Copyright 2022.11.3 45degree
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,38 +16,27 @@
 
 #pragma once
 
-#include <span>
+#include <vulkan/vulkan.hpp>
 
-#include "DescriptorSet.hpp"
-#include "Pipeline.hpp"
+#include "CommandBuffer.hpp"
 #include "Synchronic.hpp"
 
 namespace Marbas {
 
-enum class CommandBufferUsage {
-  GRAPHICS,
-  COMPUTE,
-  PRESENT,
-  TRANSFER,
-};
-
-struct CommandPool {
-  CommandBufferUsage usage = CommandBufferUsage::GRAPHICS;
-};
-
-class CommandBuffer {
+class VulkanCommandBuffer final : public CommandBuffer {
  public:
-  virtual void
-  BindDescriptorSet(const Pipeline& pipeline, int first, std::span<DescriptorSet> descriptors) = 0;
+  void
+  BindDescriptorSet(const Pipeline& pipeline, int first,
+                    std::span<DescriptorSet> descriptors) override;
 
-  virtual void
-  BindPipeline(const Pipeline& pipeline) = 0;
+  void
+  BindPipeline(const Pipeline& pipeline) override;
 
-  virtual void
-  BindVertexBuffer(Buffer& buffer) = 0;
+  void
+  BindVertexBuffer(Buffer& buffer) override;
 
-  virtual void
-  BindIndexBuffer(Buffer& buffer) = 0;
+  void
+  BindIndexBuffer(Buffer& buffer) override;
 
   /**
    * @brief Draw primitives
@@ -57,9 +46,9 @@ class CommandBuffer {
    * @param firstVertex the index of the first vertex to draw.
    * @param firstInstance the instance ID of the first instance to draw.
    */
-  virtual void
+  void
   Draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex,
-       uint32_t firstInstance) = 0;
+       uint32_t firstInstance) override;
 
   /**
    * @brief Draw primitives with indexed vertices
@@ -70,22 +59,22 @@ class CommandBuffer {
    * @param vertexOffset A value added to each index before reading a vertex from the vertex buffer.
    * @param firstInstance the instance ID of the first instance to draw.
    */
-  virtual void
+  void
   DrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex,
-              int32_t vertexOffset, uint32_t firstInstance) = 0;
+              int32_t vertexOffset, uint32_t firstInstance) override;
 
-  virtual void
-  InsertResourceBarrier(ResourceBarrier& barrier) = 0;
+  void
+  InsertResourceBarrier(ResourceBarrier& barrier) override;
 
-  virtual void
-  Begin() = 0;
+  void
+  Begin() override;
 
-  virtual void
-  End() = 0;
+  void
+  End() override;
 
- protected:
-  CommandBufferUsage m_usage;
-  uint32_t m_queueFamily;
+ private:
+  vk::CommandBuffer m_commandBuffer;
+  vk::Device m_device;
 };
 
 }  // namespace Marbas

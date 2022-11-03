@@ -9,9 +9,12 @@ add_requires("gtest 1.11.0")
 add_requires("shaderc")
 add_requires("stb 2021.09.10")
 
+
 target("Marbas.RHI")
   set_kind("static")
   set_languages("c11", "cxx20")
+
+  add_defines("USE_VULKAN");
 
   add_includedirs("include", { public = true })
   add_includedirs("src", { public = false })
