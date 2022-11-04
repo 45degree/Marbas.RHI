@@ -32,11 +32,11 @@ class Fence {};
  */
 
 enum class ResourceUsage {
-  READ,
-  WRITE,
-  TRANSFER_SRC,
-  TRANSFER_DST,
-  PRESENT,
+  READ = 1,
+  WRITE = 1 << 1,
+  TRANSFER_SRC = 1 << 2,
+  TRANSFER_DST = 1 << 3,
+  PRESENT = 1 << 4,
 };
 
 struct BufferBarrier {

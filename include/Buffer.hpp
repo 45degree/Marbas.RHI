@@ -20,10 +20,6 @@
 #include <cstdint>
 #include <vector>
 
-#ifdef USE_VULKAN
-#include <vulkan/vulkan.hpp>
-#endif
-
 namespace Marbas {
 
 enum class ElementType {
