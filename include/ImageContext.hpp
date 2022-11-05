@@ -23,7 +23,7 @@ namespace Marbas {
 class ImageContext {
  public:
   virtual void
-  CreateImaeg(Image& image) = 0;
+  CreateImage(Image& image) = 0;
 };
 
 }  // namespace Marbas

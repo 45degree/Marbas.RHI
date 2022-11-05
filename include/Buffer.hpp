@@ -55,15 +55,20 @@ enum class BufferType {
   STORAGE_BUFFER,
 };
 
-#ifdef USE_VULKAN
-struct VulkanBufferData;
-#endif
+struct BufferUsageFlags {
+  enum value : uint32_t {
+    TRANSFER_SRC = 1,
+    TRANSFER_DST = 1 << 2,
+    READ = 1 << 3,
+    WRITE = 1 << 4,
+  };
+};
 
 struct Buffer {
   BufferType bufferType = BufferType::VERTEX_BUFFER;
   uint32_t size = 0;
 #ifdef USE_VULKAN
-  VulkanBufferData* vulkanData = nullptr;
+  class VulkanBufferData* vulkanData = nullptr;
 #endif
 };
 

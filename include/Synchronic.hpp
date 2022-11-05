@@ -32,20 +32,15 @@ class Fence {};
  */
 
 struct BufferBarrier {
-  ResourceUsage srcUsage = ResourceUsage::READ;
-  ResourceUsage dstUsage = ResourceUsage::WRITE;
+  uint32_t waitUsage = BufferUsageFlags::READ;
+  uint32_t dstUsage = BufferUsageFlags::WRITE;
   Buffer& buffer;
 };
 
 struct ImageBarrier {
-  ResourceUsage srcUsage = ResourceUsage::TRANSFER_SRC;
-  ResourceUsage dstUsage = ResourceUsage::TRANSFER_DST;
+  uint32_t waitUsage = ImageUsageFlags::TRANSFER_SRC;
+  uint32_t dstUsage = ImageUsageFlags::TRANSFER_DST;
   Image& image;
-};
-
-struct ResourceBarrier {
-  std::vector<BufferBarrier> bufferBarrier;
-  std::vector<ImageBarrier> imageBarrier;
 };
 
 }  // namespace Marbas

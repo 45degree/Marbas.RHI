@@ -17,28 +17,71 @@
 #pragma once
 
 #include <cstdint>
+#include <variant>
+#include <vulkan/vulkan.hpp>
 
 namespace Marbas {
 
-#ifdef USE_VULKAN
-struct VulkanImageData;
-#endif
+struct ImageUsageFlags {
+  enum value : uint32_t {
+    SHADER_READ = 1,
+    RENDER_TARGET = 1 << 1,
+    TRANSFER_SRC = 1 << 2,
+    TRANSFER_DST = 1 << 3,
+    PRESENT = 1 << 4,
+    DEPTH = 1 << 5,
+  };
+};
 
-enum class ResourceUsage {
-  READ = 1,
-  WRITE = 1 << 1,
-  TRANSFER_SRC = 1 << 2,
-  TRANSFER_DST = 1 << 3,
-  PRESENT = 1 << 4,
-  DEPTH = 1 << 5,
+enum class ImageState {
+  SHADER_READ,
+  RENDER_TARGET,
+  PRESENT,
+  DEPTH,
+};
+
+enum class ImageViewType {
+  TEXTURE2D,
+  CUBEMAP,
+  TEXTURE2D_ARRAY,
+  CUBEMAP_ARRAY,
+};
+
+enum class ImageFormat {
+  RED,
+  RG,
+  RGB,
+  BGR,
+  RGBA,
+  BGRA,
+  R32,
+  RG16F,
+  RG32F,
+  RGB16F,
+  RGB32F,
+  DEPTH,
+};
+
+struct CubeMapImageDesc {};
+struct CubeMapArrayImageDesc {
+  uint32_t arraySize = 1;
+};
+struct Image2DDesc {};
+struct Image2DArrayDesc {
+  uint32_t arraySize = 1;
 };
 
 struct Image {
-  uint32_t width;
-  uint32_t height;
-  ResourceUsage usage = ResourceUsage::READ;
+  uint32_t width = 0;
+  uint32_t height = 0;
+  uint32_t depth = 1;
+  ImageFormat format = ImageFormat::RGBA;
+  uint32_t mipMapLevel = 1;
+  uint32_t usage = ImageUsageFlags::SHADER_READ | ImageUsageFlags::RENDER_TARGET;
+  std::variant<CubeMapImageDesc, CubeMapArrayImageDesc, Image2DDesc, Image2DArrayDesc> imageDesc;
+
 #ifdef USE_VULKAN
-  VulkanImageData* vulkanData;
+  class VulkanImageData* vulkanData = nullptr;
 #endif
 };
 

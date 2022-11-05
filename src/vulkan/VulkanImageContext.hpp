@@ -25,7 +25,7 @@ namespace Marbas {
 class VulkanImageContext final : public ImageContext {
  public:
   void
-  CreateImaeg(Image& image) override;
+  CreateImage(Image& image) override;
 
  private:
   vk::Device m_device;

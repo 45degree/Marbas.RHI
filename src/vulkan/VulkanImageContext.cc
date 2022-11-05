@@ -16,11 +16,47 @@
 
 #include "VulkanImageContext.hpp"
 
+#include "VulkanImage.hpp"
+#include "vulkanUtil.hpp"
+
 namespace Marbas {
 
 void
-VulkanImageContext::CreateImaeg(Image &image) {
+VulkanImageContext::CreateImage(Image& image) {
   vk::ImageCreateInfo createInfo;
+  createInfo.setFormat(ConvertToVulkanFormat(image.format));
+  createInfo.setExtent(vk::Extent3D(image.width, image.height, image.depth));
+  createInfo.setInitialLayout(vk::ImageLayout::eUndefined);
+
+  // TODO:
+  createInfo.setTiling(vk::ImageTiling::eLinear);
+  createInfo.setSamples(vk::SampleCountFlagBits::e1);
+
+  // clang-format off
+  std::visit([&](auto&& imageDesc) {
+    using T = std::decay_t<decltype(imageDesc)>;
+    if constexpr (std::is_same_v<T, Image2DDesc>) {
+      createInfo.setImageType(vk::ImageType::e2D);
+      createInfo.setArrayLayers(1);
+    } else if constexpr (std::is_same_v<T, Image2DArrayDesc>) {
+      createInfo.setImageType(vk::ImageType::e2D);
+      createInfo.setArrayLayers(imageDesc.arraySize);
+    } else if constexpr (std::is_same_v<T, CubeMapImageDesc>) {
+      createInfo.setImageType(vk::ImageType::e2D);
+      createInfo.setArrayLayers(6);
+      createInfo.setFlags(vk::ImageCreateFlagBits::eCubeCompatible);
+    } else if constexpr (std::is_same_v<T, CubeMapArrayImageDesc>) {
+      createInfo.setImageType(vk::ImageType::e2D);
+      createInfo.setArrayLayers(6 * imageDesc.arraySize);
+      createInfo.setFlags(vk::ImageCreateFlagBits::eCubeCompatible);
+    }
+  },image.imageDesc);
+  // clang-format on
+  createInfo.setUsage();
+  createInfo.setSharingMode();
+
+  image.vulkanData->currentLayout = vk::ImageLayout::eUndefined;
+  image.vulkanData->image = m_device.createImage(createInfo);
 }
 
 }  // namespace Marbas

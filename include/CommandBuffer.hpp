@@ -75,7 +75,13 @@ class CommandBuffer {
               int32_t vertexOffset, uint32_t firstInstance) = 0;
 
   virtual void
-  InsertResourceBarrier(ResourceBarrier& barrier) = 0;
+  InsertBufferBarrier(const std::vector<BufferBarrier>& barrier) = 0;
+
+  virtual void
+  InsertImageBarrier(const std::vector<ImageBarrier>& barriers) = 0;
+
+  virtual void
+  TransformImageState(Image& image, ImageState srcState, ImageState dstState) = 0;
 
   virtual void
   Begin() = 0;
