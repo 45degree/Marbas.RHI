@@ -1,5 +1,5 @@
 /**
- * Copyright 2022.11.2 45degree
+ * Copyright 2022.11.5 45degree
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,19 +16,18 @@
 
 #pragma once
 
-#include <vector>
-
-#include "Image.hpp"
+#include <vulkan/vulkan.hpp>
 
 namespace Marbas {
 
-struct Swapchain {
-  std::vector<Image> images;
-  std::vector<ImageView> imageViews;
+struct SwapchainVulkanData {
+  vk::SwapchainKHR m_swapChain;
+  vk::PresentModeKHR m_presentMode;
+  uint32_t m_imageCount;
 
-#ifdef USE_VULKAN
-  struct SwapchainVulkanData* vulkanData = nullptr;
-#endif
+  // swapChain image
+  std::vector<vk::Image> m_images;
+  std::vector<vk::ImageView> m_imageViews;
 };
 
 }  // namespace Marbas

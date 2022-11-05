@@ -8,6 +8,7 @@ add_requires("glm 0.9.9+8")
 add_requires("gtest 1.11.0")
 add_requires("shaderc")
 add_requires("stb 2021.09.10")
+add_requires("fmt 9.1.0")
 
 if is_plat("linux") then
   add_requires("pkgconfig::vulkan")
@@ -73,5 +74,5 @@ target("Marbas.RHI")
 
   add_rules("LoadVulkan")
 
-  add_packages("glfw", "glog", "shaderc", "gtest", "stb")
+  add_packages("glfw", "glog", "shaderc", "gtest", "stb", "fmt")
 target_end()

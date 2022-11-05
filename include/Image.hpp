@@ -18,7 +18,6 @@
 
 #include <cstdint>
 #include <variant>
-#include <vulkan/vulkan.hpp>
 
 namespace Marbas {
 

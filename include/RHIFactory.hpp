@@ -11,7 +11,11 @@ class RHIFactory {
   GetSwapchain(Swapchain& swapchain) = 0;
 
   virtual void
-  Init(GLFWwindow* window, bool isOffscreen) = 0;
+  Init(GLFWwindow* window, uint32_t width, uint32_t height) = 0;
+
+  // TODO: add supoort for offscreen
+  // virtual void
+  // OffscreenInit();
 };
 
 }  // namespace Marbas

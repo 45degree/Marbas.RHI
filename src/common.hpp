@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <fmt/format.h>
+
 namespace Marbas {
 
 #ifdef _MSC_VER_  // for MSVC
@@ -25,5 +27,7 @@ namespace Marbas {
 #else
 #define FORCE_INLINE
 #endif
+
+#define FORMAT(Str, ...) fmt::format(Str, __VA_ARGS__)
 
 }  // namespace Marbas
