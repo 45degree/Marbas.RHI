@@ -1,5 +1,5 @@
 /**
- * Copyright 2022.11.2 45degree
+ * Copyright 2022.11.5 45degree
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,36 +16,14 @@
 
 #pragma once
 
-#include <vector>
-
-#include "Buffer.hpp"
 #include "Image.hpp"
 
 namespace Marbas {
 
-class Semahore {};
-
-class Fence {};
-
-/**
- * barrier
- */
-
-struct BufferBarrier {
-  ResourceUsage srcUsage = ResourceUsage::READ;
-  ResourceUsage dstUsage = ResourceUsage::WRITE;
-  Buffer& buffer;
-};
-
-struct ImageBarrier {
-  ResourceUsage srcUsage = ResourceUsage::TRANSFER_SRC;
-  ResourceUsage dstUsage = ResourceUsage::TRANSFER_DST;
-  Image& image;
-};
-
-struct ResourceBarrier {
-  std::vector<BufferBarrier> bufferBarrier;
-  std::vector<ImageBarrier> imageBarrier;
+class ImageContext {
+ public:
+  virtual void
+  CreateImaeg(Image& image) = 0;
 };
 
 }  // namespace Marbas

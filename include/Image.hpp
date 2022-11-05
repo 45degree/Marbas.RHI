@@ -16,9 +16,31 @@
 
 #pragma once
 
+#include <cstdint>
+
 namespace Marbas {
 
-class Image {};
+#ifdef USE_VULKAN
+struct VulkanImageData;
+#endif
+
+enum class ResourceUsage {
+  READ = 1,
+  WRITE = 1 << 1,
+  TRANSFER_SRC = 1 << 2,
+  TRANSFER_DST = 1 << 3,
+  PRESENT = 1 << 4,
+  DEPTH = 1 << 5,
+};
+
+struct Image {
+  uint32_t width;
+  uint32_t height;
+  ResourceUsage usage = ResourceUsage::READ;
+#ifdef USE_VULKAN
+  VulkanImageData* vulkanData;
+#endif
+};
 
 class ImageView {};
 

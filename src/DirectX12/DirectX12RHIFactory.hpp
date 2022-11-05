@@ -1,5 +1,5 @@
 /**
- * Copyright 2022.11.2 45degree
+ * Copyright 2022.11.3 45degree
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,39 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #pragma once
 
-#include <vector>
-
-#include "Buffer.hpp"
-#include "Image.hpp"
+#include "RHIFactory.hpp"
 
 namespace Marbas {
 
-class Semahore {};
+class DirectX12RHIFactory final : public RHIFactory {
+ public:
+  void
+  GetSwapchain(Swapchain& swapchain) override;
 
-class Fence {};
-
-/**
- * barrier
- */
-
-struct BufferBarrier {
-  ResourceUsage srcUsage = ResourceUsage::READ;
-  ResourceUsage dstUsage = ResourceUsage::WRITE;
-  Buffer& buffer;
-};
-
-struct ImageBarrier {
-  ResourceUsage srcUsage = ResourceUsage::TRANSFER_SRC;
-  ResourceUsage dstUsage = ResourceUsage::TRANSFER_DST;
-  Image& image;
-};
-
-struct ResourceBarrier {
-  std::vector<BufferBarrier> bufferBarrier;
-  std::vector<ImageBarrier> imageBarrier;
+  void
+  Init(GLFWwindow* window, bool isOffscreen) override;
 };
 
 }  // namespace Marbas

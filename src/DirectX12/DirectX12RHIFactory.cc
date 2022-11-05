@@ -1,5 +1,5 @@
 /**
- * Copyright 2022.11.2 45degree
+ * Copyright 2022.11.3 45degree
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,38 +14,18 @@
  * limitations under the License.
  */
 
-#pragma once
+#include "DirectX12RHIFactory.hpp"
 
-#include <vector>
-
-#include "Buffer.hpp"
-#include "Image.hpp"
+#define GLFW_EXPOSE_NATIVE_WIN32
+#define GLFW_NATIVE_INCLUDE_NONE
+#include <GLFW/glfw3native.h>
 
 namespace Marbas {
 
-class Semahore {};
-
-class Fence {};
-
-/**
- * barrier
- */
-
-struct BufferBarrier {
-  ResourceUsage srcUsage = ResourceUsage::READ;
-  ResourceUsage dstUsage = ResourceUsage::WRITE;
-  Buffer& buffer;
-};
-
-struct ImageBarrier {
-  ResourceUsage srcUsage = ResourceUsage::TRANSFER_SRC;
-  ResourceUsage dstUsage = ResourceUsage::TRANSFER_DST;
-  Image& image;
-};
-
-struct ResourceBarrier {
-  std::vector<BufferBarrier> bufferBarrier;
-  std::vector<ImageBarrier> imageBarrier;
-};
+void
+DirectX12RHIFactory::Init(GLFWwindow* window, bool isOffscreen) {
+  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+  auto a = glfwGetWin32Window(window);
+}
 
 }  // namespace Marbas
