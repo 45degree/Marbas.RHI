@@ -22,8 +22,11 @@ namespace Marbas {
 
 class ImageContext {
  public:
+  virtual Image*
+  CreateImage(const ImageCreateInfo& createInfo) = 0;
+
   virtual void
-  CreateImage(Image& image) = 0;
+  DestroyImage(Image* image) = 0;
 };
 
 }  // namespace Marbas

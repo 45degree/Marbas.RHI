@@ -18,16 +18,17 @@
 
 #include <vulkan/vulkan.hpp>
 
+#include "Swapchain.hpp"
+
 namespace Marbas {
 
-struct SwapchainVulkanData {
-  vk::SwapchainKHR m_swapChain;
-  vk::PresentModeKHR m_presentMode;
-  uint32_t m_imageCount;
+struct VulkanSwapchain final : public Swapchain {
+  vk::SwapchainKHR swapChain;
+  vk::PresentModeKHR presentMode;
+  uint32_t imageCount;
 
-  // swapChain image
-  std::vector<vk::Image> m_images;
-  std::vector<vk::ImageView> m_imageViews;
+  uint32_t width;
+  uint32_t height;
 };
 
 }  // namespace Marbas

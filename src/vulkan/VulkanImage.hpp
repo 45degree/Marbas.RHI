@@ -6,11 +6,14 @@
 
 namespace Marbas {
 
-struct VulkanImageData {
-  uint32_t arrayLayer = 1;
+struct VulkanImage final : public Image {
   vk::Image image;
   vk::ImageLayout currentLayout;  // WARNING: render pass or command will change it
   vk::ImageAspectFlags aspect;
+};
+
+struct VulkanImageView final : public ImageView {
+  vk::ImageView imageView;
 };
 
 }  // namespace Marbas

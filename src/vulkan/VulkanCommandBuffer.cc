@@ -15,17 +15,17 @@ VulkanCommandBuffer::InsertBufferBarrier(const std::vector<BufferBarrier>& barri
   std::vector<vk::BufferMemoryBarrier> bufferMemoryBarrier;
   for (const auto& bufferBarrier : barriers) {
     vk::BufferMemoryBarrier vulkanBufferBarrier;
-    const auto& buffer = bufferBarrier.buffer;
+    const auto* buffer = bufferBarrier.buffer;
     const auto& srcUsage = bufferBarrier.waitUsage;
     const auto& dstUsage = bufferBarrier.dstUsage;
-    const auto& size = buffer.size;
-    vulkanBufferBarrier.setBuffer(buffer.vulkanData->buffer);
+    const auto& size = buffer->size;
+    vulkanBufferBarrier.setBuffer(buffer->vulkanData->buffer);
     vulkanBufferBarrier.setOffset(0);
     vulkanBufferBarrier.setSize(size);
     vulkanBufferBarrier.setSrcQueueFamilyIndex(m_queueFamily);
     vulkanBufferBarrier.setDstQueueFamilyIndex(m_queueFamily);
-    vulkanBufferBarrier.setSrcAccessMask(ConvertToVulkanBufferAccess(srcUsage, buffer));
-    vulkanBufferBarrier.setDstAccessMask(ConvertToVulkanBufferAccess(dstUsage, buffer));
+    vulkanBufferBarrier.setSrcAccessMask(ConvertToVulkanBufferAccess(srcUsage, *buffer));
+    vulkanBufferBarrier.setDstAccessMask(ConvertToVulkanBufferAccess(dstUsage, *buffer));
 
     bufferMemoryBarrier.push_back(vulkanBufferBarrier);
   }
@@ -41,10 +41,10 @@ VulkanCommandBuffer::InsertImageBarrier(const std::vector<ImageBarrier>& barrier
 
   for (const auto& imageBarrier : barriers) {
     vk::ImageMemoryBarrier vulkanImageBarrier;
-    const auto& image = imageBarrier.image;
+    const auto* vulkanImage = static_cast<const VulkanImage*>(imageBarrier.image);
     const auto& srcUsage = imageBarrier.waitUsage;
     const auto& dstUsage = imageBarrier.dstUsage;
-    vulkanImageBarrier.setImage(image.vulkanData->image);
+    vulkanImageBarrier.setImage(vulkanImage->image);
     vulkanImageBarrier.setDstQueueFamilyIndex(m_queueFamily);
     vulkanImageBarrier.setSrcQueueFamilyIndex(m_queueFamily);
     vulkanImageBarrier.setSrcAccessMask(ConvertToVulkanImageAccess(srcUsage));
@@ -53,11 +53,11 @@ VulkanCommandBuffer::InsertImageBarrier(const std::vector<ImageBarrier>& barrier
     vulkanImageBarrier.setNewLayout(vk::ImageLayout::eGeneral);
 
     vk::ImageSubresourceRange range;
-    range.setAspectMask(image.vulkanData->aspect);
+    range.setAspectMask(vulkanImage->aspect);
     range.setBaseArrayLayer(0);
     range.setBaseMipLevel(0);
-    range.setLayerCount(image.vulkanData->arrayLayer);
-    range.setLevelCount(image.mipMapLevel);
+    range.setLayerCount(vulkanImage->arrayLayer);
+    range.setLevelCount(vulkanImage->mipMapLevel);
     vulkanImageBarrier.setSubresourceRange(range);
 
     imageMemoryBarrier.push_back(vulkanImageBarrier);
@@ -68,23 +68,24 @@ VulkanCommandBuffer::InsertImageBarrier(const std::vector<ImageBarrier>& barrier
 }
 
 void
-VulkanCommandBuffer::TransformImageState(Image& image, ImageState srcState, ImageState dstState) {
+VulkanCommandBuffer::TransformImageState(Image* image, ImageState srcState, ImageState dstState) {
   vk::ImageMemoryBarrier imageMemoryBarrier;
+  const auto* vulkanImage = static_cast<VulkanImage*>(image);
 
-  imageMemoryBarrier.setImage(image.vulkanData->image);
+  imageMemoryBarrier.setImage(vulkanImage->image);
   imageMemoryBarrier.setDstQueueFamilyIndex(m_queueFamily);
   imageMemoryBarrier.setSrcQueueFamilyIndex(m_queueFamily);
   imageMemoryBarrier.setSrcAccessMask(vk::AccessFlagBits::eMemoryWrite);
   imageMemoryBarrier.setDstAccessMask(vk::AccessFlagBits::eMemoryWrite);
-  imageMemoryBarrier.setOldLayout(image.vulkanData->currentLayout);
+  imageMemoryBarrier.setOldLayout(vulkanImage->currentLayout);
   imageMemoryBarrier.setNewLayout(ConvertToVulkanImageLayout(dstState));
 
   vk::ImageSubresourceRange range;
-  range.setAspectMask(image.vulkanData->aspect);
+  range.setAspectMask(vulkanImage->aspect);
   range.setBaseArrayLayer(0);
   range.setBaseMipLevel(0);
-  range.setLayerCount(image.vulkanData->arrayLayer);
-  range.setLevelCount(image.mipMapLevel);
+  range.setLayerCount(vulkanImage->arrayLayer);
+  range.setLevelCount(vulkanImage->mipMapLevel);
   imageMemoryBarrier.setSubresourceRange(range);
 
   m_commandBuffer.pipelineBarrier(

@@ -70,9 +70,12 @@ target("Marbas.RHI")
 
   add_includedirs("include", { public = true })
   add_includedirs("src", { public = false })
-  add_files("src/**.cc")
+  add_files("src/vulkan/**.cc")
+  add_files("include/**.cc")
 
   add_rules("LoadVulkan")
 
   add_packages("glfw", "glog", "shaderc", "gtest", "stb", "fmt")
 target_end()
+
+includes("sample")

@@ -21,11 +21,31 @@
 
 namespace Marbas {
 
-void
-VulkanImageContext::CreateImage(Image& image) {
+Image*
+VulkanImageContext::CreateImage(const ImageCreateInfo& imageCreateInfo) {
   vk::ImageCreateInfo createInfo;
-  createInfo.setFormat(ConvertToVulkanFormat(image.format));
-  createInfo.setExtent(vk::Extent3D(image.width, image.height, image.depth));
+  uint32_t width, height, depth;
+
+  auto* vulkanImage = new VulkanImage();
+  vulkanImage->depth = depth;
+  vulkanImage->width = width;
+  vulkanImage->height = height;
+  vulkanImage->usage = imageCreateInfo.usage;
+  vulkanImage->currentLayout = vk::ImageLayout::eUndefined;
+  vulkanImage->mipMapLevel = createInfo.mipLevels;
+  vulkanImage->format = imageCreateInfo.format;
+
+  if (imageCreateInfo.usage & ImageUsageFlags::DEPTH) {
+    vulkanImage->aspect = vk::ImageAspectFlagBits::eDepth;
+  }
+  if (imageCreateInfo.usage & ImageUsageFlags::SHADER_READ ||
+      imageCreateInfo.usage & ImageUsageFlags::RENDER_TARGET ||
+      imageCreateInfo.usage & ImageUsageFlags::PRESENT) {
+    vulkanImage->aspect = vk::ImageAspectFlagBits::eDepth;
+  }
+
+  createInfo.setFormat(ConvertToVulkanFormat(imageCreateInfo.format));
+  createInfo.setExtent(vk::Extent3D(width, height, depth));
   createInfo.setInitialLayout(vk::ImageLayout::eUndefined);
 
   // TODO:
@@ -38,25 +58,39 @@ VulkanImageContext::CreateImage(Image& image) {
     if constexpr (std::is_same_v<T, Image2DDesc>) {
       createInfo.setImageType(vk::ImageType::e2D);
       createInfo.setArrayLayers(1);
+      vulkanImage->arrayLayer = 1;
     } else if constexpr (std::is_same_v<T, Image2DArrayDesc>) {
       createInfo.setImageType(vk::ImageType::e2D);
       createInfo.setArrayLayers(imageDesc.arraySize);
+      vulkanImage->arrayLayer = imageDesc.arraySize;
     } else if constexpr (std::is_same_v<T, CubeMapImageDesc>) {
       createInfo.setImageType(vk::ImageType::e2D);
       createInfo.setArrayLayers(6);
       createInfo.setFlags(vk::ImageCreateFlagBits::eCubeCompatible);
+      vulkanImage->arrayLayer = 6;
     } else if constexpr (std::is_same_v<T, CubeMapArrayImageDesc>) {
       createInfo.setImageType(vk::ImageType::e2D);
       createInfo.setArrayLayers(6 * imageDesc.arraySize);
       createInfo.setFlags(vk::ImageCreateFlagBits::eCubeCompatible);
+      vulkanImage->arrayLayer = 6 * imageDesc.arraySize;
     }
-  },image.imageDesc);
+  },imageCreateInfo.imageDesc);
   // clang-format on
-  createInfo.setUsage();
-  createInfo.setSharingMode();
 
-  image.vulkanData->currentLayout = vk::ImageLayout::eUndefined;
-  image.vulkanData->image = m_device.createImage(createInfo);
+  createInfo.setUsage(ConvertToVulkanImageUsage(imageCreateInfo.usage));
+  createInfo.setSharingMode(vk::SharingMode::eExclusive);
+
+  vulkanImage->image = m_device.createImage(createInfo);
+
+  return vulkanImage;
+}
+
+void
+VulkanImageContext::DestroyImage(Image* image) {
+  auto* vulkanImage = static_cast<VulkanImage*>(image);
+  m_device.destroyImage(vulkanImage->image);
+
+  delete image;
 }
 
 }  // namespace Marbas

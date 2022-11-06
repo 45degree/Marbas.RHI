@@ -19,6 +19,10 @@
 #include <glog/logging.h>
 
 #include "common.hpp"
+#include "vulkan/VulkanImage.hpp"
+#include "vulkan/VulkanImageView.hpp"
+#include "vulkan/VulkanRHIFactory.hpp"
+#include "vulkan/VulkanSynchronic.hpp"
 
 namespace Marbas {
 
@@ -160,6 +164,8 @@ VulkanRHIFactory::Init(GLFWwindow* window, uint32_t width, uint32_t height) {
 void
 VulkanRHIFactory::CreateSwapchain(uint32_t width, uint32_t height) {
   int imageCount = 2;
+  m_swapChain.width = width;
+  m_swapChain.height = height;
 
   vk::SwapchainCreateInfoKHR swapChainCreateInfo;
   swapChainCreateInfo.setImageColorSpace(m_surfaceFormat.colorSpace);
@@ -183,13 +189,28 @@ VulkanRHIFactory::CreateSwapchain(uint32_t width, uint32_t height) {
     swapChainCreateInfo.setQueueFamilyIndices(queueFamilIndices);
     swapChainCreateInfo.setImageSharingMode(vk::SharingMode::eConcurrent);
   }
-  m_swapChainData.m_swapChain = m_device.createSwapchainKHR(swapChainCreateInfo);
+  m_swapChain.swapChain = m_device.createSwapchainKHR(swapChainCreateInfo);
 
   // create image and image view
-  auto images = m_device.getSwapchainImagesKHR(m_swapChainData.m_swapChain);
-  m_swapChainData.m_images = images;
-  m_swapChainData.m_imageViews.clear();
+  auto images = m_device.getSwapchainImagesKHR(m_swapChain.swapChain);
+  m_swapChain.images.clear();
+  m_swapChain.imageViews.clear();
   for (auto& image : images) {
+    auto* vulkanImage = new VulkanImage();
+    auto* vulkanImageView = new VulkanImageView();
+
+    vulkanImage->image = image;
+    vulkanImage->usage = ImageUsageFlags::PRESENT | ImageUsageFlags::RENDER_TARGET;
+    vulkanImage->aspect = vk::ImageAspectFlagBits::eColor;
+    vulkanImage->mipMapLevel = 1;
+    vulkanImage->arrayLayer = 1;
+    vulkanImage->height = height;
+    vulkanImage->width = width;
+    // TODO
+    vulkanImage->format = ImageFormat::RGBA;
+
+    m_swapChain.images.push_back(vulkanImage);
+
     vk::ImageViewCreateInfo imageViewCreateInfo;
     imageViewCreateInfo.setImage(image);
     imageViewCreateInfo.setFormat(m_surfaceFormat.format);
@@ -210,11 +231,108 @@ VulkanRHIFactory::CreateSwapchain(uint32_t width, uint32_t height) {
     range.setLevelCount(1);
     imageViewCreateInfo.setSubresourceRange(range);
 
-    m_swapChainData.m_imageViews.push_back(m_device.createImageView(imageViewCreateInfo));
+    vulkanImageView->imageView = m_device.createImageView(imageViewCreateInfo);
+
+    m_swapChain.imageViews.push_back(vulkanImageView);
   }
 }
 
+VulkanRHIFactory::~VulkanRHIFactory() {
+  m_device.waitIdle();
+  for (auto* imageView : m_swapChain.imageViews) {
+    auto* vulkanImageView = static_cast<VulkanImageView*>(imageView);
+    m_device.destroyImageView(vulkanImageView->imageView);
+
+    delete vulkanImageView;
+  }
+  m_device.destroySwapchainKHR(m_swapChain.swapChain);
+
+  m_device.destroy();
+  m_instance.destroySurfaceKHR(m_surface);
+  m_instance.destroy();
+}
+
+Swapchain*
+VulkanRHIFactory::GetSwapchain() {
+  return &m_swapChain;
+}
+
+uint32_t
+VulkanRHIFactory::AcquireNextImage(Swapchain* swapchain, const Semaphore* semaphore) {
+  auto* vulkanSwapchain = static_cast<VulkanSwapchain*>(swapchain);
+  auto currentSemaphore = static_cast<const VulkanSemaphore*>(semaphore)->semaphore;
+  auto vkSwapchain = vulkanSwapchain->swapChain;
+
+  auto nextImageResult = m_device.acquireNextImageKHR(vkSwapchain, UINT64_MAX, currentSemaphore);
+  if (nextImageResult.result == vk::Result::eErrorOutOfDateKHR ||
+      nextImageResult.result == vk::Result::eSuboptimalKHR) {
+    return -1;
+  }
+  DLOG_ASSERT(nextImageResult.result == vk::Result::eSuccess);
+  return nextImageResult.value;
+}
+
+int
+VulkanRHIFactory::Present(Swapchain* swapchain, std::span<Semaphore*> waitSemaphores,
+                          uint32_t imageIndex) {
+  auto* vulkanSwapchain = static_cast<VulkanSwapchain*>(swapchain);
+  std::vector<vk::Semaphore> semaphores;
+  for (const auto& waitSemaphore : waitSemaphores) {
+    semaphores.push_back(static_cast<const VulkanSemaphore*>(waitSemaphore)->semaphore);
+  }
+
+  vk::PresentInfoKHR presentInfo;
+  presentInfo.setWaitSemaphores(semaphores);
+  presentInfo.setSwapchains(vulkanSwapchain->swapChain);
+  presentInfo.setImageIndices(imageIndex);
+  auto err2 = m_presentQueue.presentKHR(&presentInfo);
+
+  if (err2 == vk::Result::eErrorOutOfDateKHR || err2 == vk::Result::eSuboptimalKHR) {
+    return -1;
+  }
+
+  DLOG_ASSERT(err2 == vk::Result::eSuccess);
+  return 1;
+}
+
+/**
+ * synchronic
+ */
+
+Fence*
+VulkanRHIFactory::CreateFence() {
+  auto* fence = new VulkanFence();
+
+  vk::FenceCreateInfo createInfo;
+  fence->m_fence = m_device.createFence(createInfo);
+
+  return fence;
+}
+
 void
-VulkanRHIFactory::GetSwapchain(Swapchain& swapchain) {}
+VulkanRHIFactory::DestroyFence(Fence* fence) {
+  auto* vulkanFence = static_cast<VulkanFence*>(fence);
+  m_device.destroyFence(vulkanFence->m_fence);
+
+  delete vulkanFence;
+}
+
+Semaphore*
+VulkanRHIFactory::CreateSemaphore() {
+  auto* semaphore = new VulkanSemaphore();
+
+  vk::SemaphoreCreateInfo createInfo;
+  semaphore->semaphore = m_device.createSemaphore(createInfo);
+
+  return semaphore;
+}
+
+void
+VulkanRHIFactory::DestroySemaphore(Semaphore* semaphore) {
+  auto* vulkanSemaphore = static_cast<VulkanSemaphore*>(semaphore);
+  m_device.destroySemaphore(vulkanSemaphore->semaphore);
+
+  delete vulkanSemaphore;
+}
 
 }  // namespace Marbas

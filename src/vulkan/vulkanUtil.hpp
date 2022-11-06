@@ -47,19 +47,19 @@ ConvertToVulkanImageLayout(const ImageState& state) {
 FORCE_INLINE vk::AccessFlags
 ConvertToVulkanImageAccess(uint32_t usage) {
   vk::AccessFlags flags;
-  if (usage | ImageUsageFlags::TRANSFER_SRC) {
+  if (usage & ImageUsageFlags::TRANSFER_SRC) {
     flags |= vk::AccessFlagBits::eTransferRead;
   }
-  if (usage | ImageUsageFlags::TRANSFER_DST) {
+  if (usage & ImageUsageFlags::TRANSFER_DST) {
     flags |= vk::AccessFlagBits::eTransferWrite;
   }
-  if (usage | ImageUsageFlags::SHADER_READ) {
+  if (usage & ImageUsageFlags::SHADER_READ) {
     flags |= vk::AccessFlagBits::eShaderRead;
   }
-  if (usage | ImageUsageFlags::DEPTH) {
+  if (usage & ImageUsageFlags::DEPTH) {
     flags |= vk::AccessFlagBits::eDepthStencilAttachmentWrite;
   }
-  if (usage | ImageUsageFlags::RENDER_TARGET) {
+  if (usage & ImageUsageFlags::RENDER_TARGET) {
     flags |= vk::AccessFlagBits::eColorAttachmentWrite;
   }
 
@@ -69,14 +69,14 @@ ConvertToVulkanImageAccess(uint32_t usage) {
 FORCE_INLINE vk::AccessFlags
 ConvertToVulkanBufferAccess(uint32_t usage, const Buffer& buffer) {
   vk::AccessFlags flags;
-  if (usage | BufferUsageFlags::TRANSFER_SRC) {
+  if (usage & BufferUsageFlags::TRANSFER_SRC) {
     flags |= vk::AccessFlagBits::eTransferRead;
   }
-  if (usage | BufferUsageFlags::TRANSFER_DST) {
+  if (usage & BufferUsageFlags::TRANSFER_DST) {
     flags |= vk::AccessFlagBits::eTransferWrite;
   }
 
-  if (usage | BufferUsageFlags::READ) {
+  if (usage & BufferUsageFlags::READ) {
     switch (buffer.bufferType) {
       case BufferType::VERTEX_BUFFER:
         flags |= vk::AccessFlagBits::eVertexAttributeRead;
@@ -93,7 +93,7 @@ ConvertToVulkanBufferAccess(uint32_t usage, const Buffer& buffer) {
     }
   }
 
-  if (usage | BufferUsageFlags::WRITE) {
+  if (usage & BufferUsageFlags::WRITE) {
     switch (buffer.bufferType) {
       case BufferType::VERTEX_BUFFER:
       case BufferType::INDEX_BUFFER:
@@ -106,6 +106,21 @@ ConvertToVulkanBufferAccess(uint32_t usage, const Buffer& buffer) {
     }
   }
 
+  return flags;
+}
+
+FORCE_INLINE vk::ImageUsageFlags
+ConvertToVulkanImageUsage(uint32_t usage) {
+  vk::ImageUsageFlags flags;
+  if (usage & ImageUsageFlags::RENDER_TARGET) {
+    flags |= vk::ImageUsageFlagBits::eColorAttachment;
+  }
+  if (usage & ImageUsageFlags::DEPTH) {
+    flags |= vk::ImageUsageFlagBits::eDepthStencilAttachment;
+  }
+  if (usage & ImageUsageFlags::TRANSFER_SRC) {
+    flags |= vk::ImageUsageFlagBits::eTransferSrc;
+  }
   return flags;
 }
 

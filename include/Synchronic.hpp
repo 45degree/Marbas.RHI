@@ -23,9 +23,9 @@
 
 namespace Marbas {
 
-class Semahore {};
+struct Semaphore {};
 
-class Fence {};
+struct Fence {};
 
 /**
  * barrier
@@ -34,13 +34,13 @@ class Fence {};
 struct BufferBarrier {
   uint32_t waitUsage = BufferUsageFlags::READ;
   uint32_t dstUsage = BufferUsageFlags::WRITE;
-  Buffer& buffer;
+  Buffer* buffer;
 };
 
 struct ImageBarrier {
   uint32_t waitUsage = ImageUsageFlags::TRANSFER_SRC;
   uint32_t dstUsage = ImageUsageFlags::TRANSFER_DST;
-  Image& image;
+  Image* image;
 };
 
 }  // namespace Marbas

@@ -1,5 +1,5 @@
 /**
- * Copyright 2022.11.5 45degree
+ * Copyright 2022.11.6 45degree
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,26 +18,16 @@
 
 #include <vulkan/vulkan.hpp>
 
-#include "ImageContext.hpp"
+#include "Synchronic.hpp"
 
 namespace Marbas {
 
-class VulkanImageContext final : public ImageContext {
- public:
-  Image*
-  CreateImage(const ImageCreateInfo& createInfo) override;
+struct VulkanFence final : public Fence {
+  vk::Fence m_fence;
+};
 
-  void
-  DestroyImage(Image* image) override;
-
-  // TODO
-  ImageView*
-  CreateImageView() {
-    return nullptr;
-  }
-
- private:
-  vk::Device m_device;
+struct VulkanSemaphore final : public Semaphore {
+  vk::Semaphore semaphore;
 };
 
 }  // namespace Marbas

@@ -29,8 +29,27 @@ class VulkanRHIFactory final : public RHIFactory {
   virtual ~VulkanRHIFactory();
 
  public:
+  Swapchain*
+  GetSwapchain() override;
+
+  uint32_t
+  AcquireNextImage(Swapchain* swapchain, const Semaphore* semaphore) override;
+
+  int
+  Present(Swapchain* swapchain, std::span<Semaphore*> waitSemaphores, uint32_t imageIndex) override;
+
+ public:
+  Fence*
+  CreateFence() override;
+
   void
-  GetSwapchain(Swapchain& swapchain) override;
+  DestroyFence(Fence* fence) override;
+
+  Semaphore*
+  CreateSemaphore() override;
+
+  void
+  DestroySemaphore(Semaphore* semaphore) override;
 
   void
   Init(GLFWwindow* window, uint32_t width, uint32_t height) override;
@@ -58,7 +77,7 @@ class VulkanRHIFactory final : public RHIFactory {
   vk::SurfaceCapabilitiesKHR m_capabilities;
   vk::PresentModeKHR m_presentMode;
 
-  SwapchainVulkanData m_swapChainData;
+  VulkanSwapchain m_swapChain;
 };
 
 }  // namespace Marbas

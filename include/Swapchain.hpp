@@ -23,12 +23,8 @@
 namespace Marbas {
 
 struct Swapchain {
-  std::vector<Image> images;
-  std::vector<ImageView> imageViews;
-
-#ifdef USE_VULKAN
-  struct SwapchainVulkanData* vulkanData = nullptr;
-#endif
+  std::vector<Image*> images;
+  std::vector<ImageView*> imageViews;
 };
 
 }  // namespace Marbas

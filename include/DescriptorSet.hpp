@@ -43,36 +43,18 @@ struct DescriptorSetLayoutBinding {
   uint32_t count = 1;
   DescriptorVisible visible = DescriptorVisible::ALL;
 };
+using DescriptorSetLayout = std::vector<DescriptorSetLayoutBinding>;
+
+/**
+ * Descritor Pool
+ */
+
+struct DescriptorPoolSize {
+  DescriptorType type;
+  uint32_t size;
+};
 
 class DescriptorPool {};
-class DescriptorSet {
- public:
-  /**
-   * @brief bind a image and sampler to the descriptor set
-   *
-   * @param bindingPoint binding point
-   * @param imageView imageView
-   * @param sampler sampler
-   */
-  virtual void
-  BindImage(uint16_t bindingPoint, ImageView& imageView, Sampler& sampler) = 0;
-
-  /**
-   * @brief bind a unform buffer to the descriptor set
-   *
-   * @param bindingPoint binding point
-   * @param buffer uniform buffer
-   * @param offset the offset to the begin of the uniform buffer, this parameter is only worked when
-   *        the binding point is bound by a dynamic uniform buffer.
-   */
-  virtual void
-  BindUniformBuffer(uint16_t bindingPoint, Buffer* buffer, uint32_t offset) = 0;
-
-  virtual void
-  BindStorageBuffer(uint16_t bindingPoint, Buffer* buffer, uint32_t offset) = 0;
-
- private:
-  std::vector<DescriptorSetLayoutBinding> m_descriptorLayout;
-};
+class DescriptorSet {};
 
 }  // namespace Marbas

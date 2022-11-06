@@ -81,7 +81,7 @@ class CommandBuffer {
   InsertImageBarrier(const std::vector<ImageBarrier>& barriers) = 0;
 
   virtual void
-  TransformImageState(Image& image, ImageState srcState, ImageState dstState) = 0;
+  TransformImageState(Image* image, ImageState srcState, ImageState dstState) = 0;
 
   virtual void
   Begin() = 0;

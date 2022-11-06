@@ -70,7 +70,7 @@ struct Image2DArrayDesc {
   uint32_t arraySize = 1;
 };
 
-struct Image {
+struct ImageCreateInfo {
   uint32_t width = 0;
   uint32_t height = 0;
   uint32_t depth = 1;
@@ -78,12 +78,18 @@ struct Image {
   uint32_t mipMapLevel = 1;
   uint32_t usage = ImageUsageFlags::SHADER_READ | ImageUsageFlags::RENDER_TARGET;
   std::variant<CubeMapImageDesc, CubeMapArrayImageDesc, Image2DDesc, Image2DArrayDesc> imageDesc;
-
-#ifdef USE_VULKAN
-  class VulkanImageData* vulkanData = nullptr;
-#endif
 };
 
-class ImageView {};
+struct Image {
+  uint32_t width = 0;
+  uint32_t height = 0;
+  uint32_t depth = 1;
+  ImageFormat format = ImageFormat::RGBA;
+  uint32_t mipMapLevel = 1;
+  uint32_t usage = ImageUsageFlags::SHADER_READ | ImageUsageFlags::RENDER_TARGET;
+  uint32_t arrayLayer = 1;
+};
+
+struct ImageView {};
 
 }  // namespace Marbas
