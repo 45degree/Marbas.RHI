@@ -18,11 +18,11 @@
 
 #include <glog/logging.h>
 
+#include "VulkanImage.hpp"
+#include "VulkanImageView.hpp"
+#include "VulkanRHIFactory.hpp"
+#include "VulkanSynchronic.hpp"
 #include "common.hpp"
-#include "vulkan/VulkanImage.hpp"
-#include "vulkan/VulkanImageView.hpp"
-#include "vulkan/VulkanRHIFactory.hpp"
-#include "vulkan/VulkanSynchronic.hpp"
 
 namespace Marbas {
 
@@ -70,8 +70,8 @@ VulkanRHIFactory::Init(GLFWwindow* window, uint32_t width, uint32_t height) {
     }
   }
   auto properties = m_physicalDevice.getProperties();
-  LOG(INFO) << FORMAT("find the physical device: {}, version: {}, api version: {}",
-                      properties.deviceName, properties.driverVersion, properties.apiVersion);
+  LOG(INFO) << FORMAT("find the physical device: {}, version: {}, api version: {}", properties.deviceName,
+                      properties.driverVersion, properties.apiVersion);
 
   // fina queue family
   auto families = m_physicalDevice.getQueueFamilyProperties();
@@ -131,21 +131,17 @@ VulkanRHIFactory::Init(GLFWwindow* window, uint32_t width, uint32_t height) {
   m_capabilities = m_physicalDevice.getSurfaceCapabilitiesKHR(m_surface);
   auto surfaceFormats = m_physicalDevice.getSurfaceFormatsKHR(m_surface);
   m_surfaceFormat = surfaceFormats[0];
-  auto formatResultIter =
-      std::find_if(surfaceFormats.cbegin(), surfaceFormats.cend(), [](const auto& surfaceFormat) {
-        return surfaceFormat.format == vk::Format::eR8G8B8A8Unorm ||
-               surfaceFormat.format == vk::Format::eB8G8R8A8Unorm ||
-               surfaceFormat.format == vk::Format::eR8G8B8Unorm ||
-               surfaceFormat.format == vk::Format::eB8G8R8Unorm;
-      });
+  auto formatResultIter = std::find_if(surfaceFormats.cbegin(), surfaceFormats.cend(), [](const auto& surfaceFormat) {
+    return surfaceFormat.format == vk::Format::eR8G8B8A8Unorm || surfaceFormat.format == vk::Format::eB8G8R8A8Unorm ||
+           surfaceFormat.format == vk::Format::eR8G8B8Unorm || surfaceFormat.format == vk::Format::eB8G8R8Unorm;
+  });
   if (formatResultIter != surfaceFormats.cend()) {
     m_surfaceFormat = *formatResultIter;
   }
 
   auto presentModes = m_physicalDevice.getSurfacePresentModesKHR(m_surface);
   m_presentMode = vk::PresentModeKHR::eFifo;
-  if (std::find(presentModes.cbegin(), presentModes.cend(), vk::PresentModeKHR::eMailbox) !=
-      presentModes.cend()) {
+  if (std::find(presentModes.cbegin(), presentModes.cend(), vk::PresentModeKHR::eMailbox) != presentModes.cend()) {
     m_presentMode = vk::PresentModeKHR::eMailbox;
   }
 
@@ -184,8 +180,7 @@ VulkanRHIFactory::CreateSwapchain(uint32_t width, uint32_t height) {
     swapChainCreateInfo.setQueueFamilyIndices(m_graphicsQueueFamilyIndex);
     swapChainCreateInfo.setImageSharingMode(vk::SharingMode::eExclusive);
   } else {
-    std::array<uint32_t, 2> queueFamilIndices = {m_graphicsQueueFamilyIndex,
-                                                 m_presentQueueFamilyIndex};
+    std::array<uint32_t, 2> queueFamilIndices = {m_graphicsQueueFamilyIndex, m_presentQueueFamilyIndex};
     swapChainCreateInfo.setQueueFamilyIndices(queueFamilIndices);
     swapChainCreateInfo.setImageSharingMode(vk::SharingMode::eConcurrent);
   }
@@ -273,8 +268,7 @@ VulkanRHIFactory::AcquireNextImage(Swapchain* swapchain, const Semaphore* semaph
 }
 
 int
-VulkanRHIFactory::Present(Swapchain* swapchain, std::span<Semaphore*> waitSemaphores,
-                          uint32_t imageIndex) {
+VulkanRHIFactory::Present(Swapchain* swapchain, std::span<Semaphore*> waitSemaphores, uint32_t imageIndex) {
   auto* vulkanSwapchain = static_cast<VulkanSwapchain*>(swapchain);
   std::vector<vk::Semaphore> semaphores;
   for (const auto& waitSemaphore : waitSemaphores) {

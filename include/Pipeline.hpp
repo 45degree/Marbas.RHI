@@ -253,7 +253,7 @@ struct GraphicsPipeLineCreateInfo {
   std::vector<RenderTargetDesc> outputRenderTarget = {};
 };
 
-class PipelineSignature {};
+class PipelineSignature {};  // PSO
 class Pipeline {};
 
 }  // namespace Marbas

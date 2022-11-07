@@ -1,8 +1,11 @@
 #pragma once
 
+#include <glog/logging.h>
+
 #include <vulkan/vulkan.hpp>
 
 #include "Buffer.hpp"
+#include "DescriptorSet.hpp"
 #include "Image.hpp"
 #include "common.hpp"
 
@@ -122,6 +125,31 @@ ConvertToVulkanImageUsage(uint32_t usage) {
     flags |= vk::ImageUsageFlagBits::eTransferSrc;
   }
   return flags;
+}
+
+FORCE_INLINE vk::DescriptorType
+ConvertToVulkanDescriptorType(DescriptorType type) {
+  switch (type) {
+    case DescriptorType::UNIFORM_BUFFER:
+      return vk::DescriptorType::eUniformBuffer;
+    case DescriptorType::DYNAMIC_UNIFORM_BUFFER:
+      return vk::DescriptorType::eUniformBufferDynamic;
+    case DescriptorType::IMAGE:
+      return vk::DescriptorType::eCombinedImageSampler;
+  }
+  DLOG_ASSERT(false);
+}
+
+FORCE_INLINE vk::DescriptorSetLayoutBinding
+ConvertToVulkanDescriptorLayoutBinding(const DescriptorSetLayoutBinding& binding) {
+  vk::DescriptorSetLayoutBinding vkBinding;
+  vkBinding.setDescriptorType(ConvertToVulkanDescriptorType(binding.descriptorType));
+  vkBinding.setDescriptorCount(binding.count);
+  vkBinding.setBinding(binding.count);
+
+  // TODO:
+  vkBinding.setStageFlags(vk::ShaderStageFlagBits::eAll);
+  return vkBinding;
 }
 
 FORCE_INLINE void

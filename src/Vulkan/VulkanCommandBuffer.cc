@@ -3,9 +3,9 @@
 #include <vulkan/vulkan_enums.hpp>
 
 #include "Buffer.hpp"
+#include "VulkanBuffer.hpp"
 #include "VulkanImage.hpp"
 #include "common.hpp"
-#include "vulkanBuffer.hpp"
 #include "vulkanUtil.hpp"
 
 namespace Marbas {
@@ -16,10 +16,11 @@ VulkanCommandBuffer::InsertBufferBarrier(const std::vector<BufferBarrier>& barri
   for (const auto& bufferBarrier : barriers) {
     vk::BufferMemoryBarrier vulkanBufferBarrier;
     const auto* buffer = bufferBarrier.buffer;
+    auto vkBuffer = static_cast<const VulkanBuffer*>(buffer)->vkBuffer;
     const auto& srcUsage = bufferBarrier.waitUsage;
     const auto& dstUsage = bufferBarrier.dstUsage;
     const auto& size = buffer->size;
-    vulkanBufferBarrier.setBuffer(buffer->vulkanData->buffer);
+    vulkanBufferBarrier.setBuffer(vkBuffer);
     vulkanBufferBarrier.setOffset(0);
     vulkanBufferBarrier.setSize(size);
     vulkanBufferBarrier.setSrcQueueFamilyIndex(m_queueFamily);
@@ -30,9 +31,8 @@ VulkanCommandBuffer::InsertBufferBarrier(const std::vector<BufferBarrier>& barri
     bufferMemoryBarrier.push_back(vulkanBufferBarrier);
   }
 
-  m_commandBuffer.pipelineBarrier(
-      vk::PipelineStageFlagBits::eNone, vk::PipelineStageFlagBits::eNone,
-      vk::DependencyFlagBits::eByRegion, nullptr, bufferMemoryBarrier, nullptr);
+  m_commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eNone, vk::PipelineStageFlagBits::eNone,
+                                  vk::DependencyFlagBits::eByRegion, nullptr, bufferMemoryBarrier, nullptr);
 }
 
 void
@@ -62,9 +62,8 @@ VulkanCommandBuffer::InsertImageBarrier(const std::vector<ImageBarrier>& barrier
 
     imageMemoryBarrier.push_back(vulkanImageBarrier);
   }
-  m_commandBuffer.pipelineBarrier(
-      vk::PipelineStageFlagBits::eNone, vk::PipelineStageFlagBits::eNone,
-      vk::DependencyFlagBits::eByRegion, nullptr, nullptr, imageMemoryBarrier);
+  m_commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eNone, vk::PipelineStageFlagBits::eNone,
+                                  vk::DependencyFlagBits::eByRegion, nullptr, nullptr, imageMemoryBarrier);
 }
 
 void
@@ -88,9 +87,8 @@ VulkanCommandBuffer::TransformImageState(Image* image, ImageState srcState, Imag
   range.setLevelCount(vulkanImage->mipMapLevel);
   imageMemoryBarrier.setSubresourceRange(range);
 
-  m_commandBuffer.pipelineBarrier(
-      vk::PipelineStageFlagBits::eAllCommands, vk::PipelineStageFlagBits::eAllCommands,
-      vk::DependencyFlagBits::eByRegion, nullptr, nullptr, imageMemoryBarrier);
+  m_commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands, vk::PipelineStageFlagBits::eAllCommands,
+                                  vk::DependencyFlagBits::eByRegion, nullptr, nullptr, imageMemoryBarrier);
 }
 
 }  // namespace Marbas

@@ -1,5 +1,5 @@
 /**
- * Copyright 2022.10.31 45degree
+ * Copyright 2022.11.7 45degree
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,21 +16,19 @@
 
 #pragma once
 
-#include <span>
+#include <optional>
+#include <vulkan/vulkan.hpp>
 
 #include "Buffer.hpp"
 
 namespace Marbas {
 
-class BufferContext {
-  virtual Buffer*
-  CreateBuffer(BufferType bufferType, void* data, uint32_t size, bool isStatic) = 0;
+struct VulkanBuffer final : public Buffer {
+  vk::Buffer vkBuffer;
+  vk::DeviceMemory vkMemory;
 
-  virtual void
-  UpdateBuffer(Buffer* buffer, void* data, uint32_t size, uintptr_t offset) = 0;
-
-  virtual void
-  DestroyBuffer(Buffer* buffer) = 0;
+  std::optional<vk::Buffer> stageBuffer = std::nullopt;
+  std::optional<vk::DeviceMemory> stageBufferMemory = std::nullopt;
 };
 
 }  // namespace Marbas

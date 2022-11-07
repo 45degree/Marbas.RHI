@@ -39,10 +39,10 @@ class VulkanPipelineContext final : public PipelineContext {
 
  public:
   DescriptorSet*
-  CreateDescriptorSet() override;
+  CreateDescriptorSet(const DescriptorPool* pool, const DescriptorSetLayout& layout) override;
 
   void
-  DestroyDescriptorSet(DescriptorSet* descriptorSet) override;
+  DestroyDescriptorSet(const DescriptorPool* pool, DescriptorSet* descriptorSet) override;
 
   void
   BindImage(DescriptorSet* descriptorSet, uint16_t bindingPoint, ImageView* imageView, Sampler* sampler) override;
@@ -51,7 +51,7 @@ class VulkanPipelineContext final : public PipelineContext {
   BindBuffer(DescriptorSet* descriptorSet, uint16_t bindingPoint, Buffer* buffer, uint32_t offset) override;
 
   DescriptorPool*
-  CreateDescriptorPool() override;
+  CreateDescriptorPool(std::span<DescriptorPoolSize> descritorPoolSize, uint32_t maxSet) override;
 
   void
   DestroyDescriptorPool(DescriptorPool* descriptorPool) override;

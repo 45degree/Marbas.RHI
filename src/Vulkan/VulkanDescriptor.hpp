@@ -1,5 +1,5 @@
 /**
- * Copyright 2022.10.31 45degree
+ * Copyright 2022.11.7 45degree
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,23 +18,17 @@
 
 #include <vulkan/vulkan.hpp>
 
-#include "BufferContext.hpp"
+#include "DescriptorSet.hpp"
 
 namespace Marbas {
 
-class VulkanBufferContext final : public BufferContext {
- public:
-  void
-  CreateBuffer(Buffer* buffer, void* data, uint32_t size, bool isStatic) override;
+struct VulkanDescriptorPool final : public DescriptorPool {
+  vk::DescriptorPool vkDescriptorPool;
+};
 
-  void
-  UpdateBuffer(Buffer* buffer, void* data, uint32_t size, uintptr_t offset) override;
-
-  void
-  DestroyBuffer(Buffer* buffer) override;
-
- private:
-  vk::Device m_device;
+struct VulkanDescriptorSet final : public DescriptorSet {
+  vk::DescriptorSet vkDescriptorSet;
+  vk::DescriptorSetLayout vkLayout;
 };
 
 }  // namespace Marbas

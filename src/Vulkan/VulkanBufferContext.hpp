@@ -16,19 +16,25 @@
 
 #pragma once
 
-#include <optional>
 #include <vulkan/vulkan.hpp>
 
-#include "Buffer.hpp"
+#include "BufferContext.hpp"
 
 namespace Marbas {
 
-struct VulkanBufferData {
-  vk::Buffer buffer;
-  vk::DeviceMemory bufferMemory;
+class VulkanBufferContext final : public BufferContext {
+ public:
+  Buffer*
+  CreateBuffer(BufferType bufferType, void* data, uint32_t size, bool isStatic) override;
 
-  std::optional<vk::Buffer> stageBuffer = std::nullopt;
-  std::optional<vk::DeviceMemory> stageBufferMemory = std::nullopt;
+  void
+  UpdateBuffer(Buffer* buffer, void* data, uint32_t size, uintptr_t offset) override;
+
+  void
+  DestroyBuffer(Buffer* buffer) override;
+
+ private:
+  vk::Device m_device;
 };
 
 }  // namespace Marbas

@@ -40,10 +40,10 @@ class PipelineContext {
 
  public:
   virtual DescriptorSet*
-  CreateDescriptorSet() = 0;
+  CreateDescriptorSet(const DescriptorPool* pool, const DescriptorSetLayout& layout) = 0;
 
   virtual void
-  DestroyDescriptorSet(DescriptorSet* descriptorSet) = 0;
+  DestroyDescriptorSet(const DescriptorPool* pool, DescriptorSet* descriptorSet) = 0;
 
   virtual void
   BindImage(DescriptorSet* descriptorSet, uint16_t bindingPoint, ImageView* imageView, Sampler* sampler) = 0;

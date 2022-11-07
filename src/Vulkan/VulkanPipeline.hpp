@@ -1,5 +1,5 @@
 /**
- * Copyright 2022.10.31 45degree
+ * Copyright 2022.11.7 45degree
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,17 @@
  * limitations under the License.
  */
 
-#include "vulkan/VulkanBufferContext.hpp"
+#pragma once
 
-#include "vulkan/vulkanBuffer.hpp"
+#include <vulkan/vulkan.hpp>
+
+#include "Pipeline.hpp"
 
 namespace Marbas {
 
-void
-VulkanBufferContext::CreateBuffer(Buffer* buffer, void* data, uint32_t size, bool isStatic) {}
-
-void
-VulkanBufferContext::UpdateBuffer(Buffer* buffer, void* data, uint32_t size, uintptr_t offset) {}
-
-void
-VulkanBufferContext::DestroyBuffer(Buffer* buffer) {}
+class VulkanPipeine final : public Pipeline {
+  vk::Pipeline vkPipeline;
+  vk::RenderPass vkRenderPass;
+};
 
 }  // namespace Marbas

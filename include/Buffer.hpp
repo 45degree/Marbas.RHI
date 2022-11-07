@@ -67,9 +67,6 @@ struct BufferUsageFlags {
 struct Buffer {
   BufferType bufferType = BufferType::VERTEX_BUFFER;
   uint32_t size = 0;
-#ifdef USE_VULKAN
-  class VulkanBufferData* vulkanData = nullptr;
-#endif
 };
 
 }  // namespace Marbas
