@@ -13,6 +13,9 @@ enum class RendererType {
 #ifdef USE_VULKAN
   VULKAN,
 #endif
+#ifdef USE_D3D12
+  DirectX12,
+#endif
 };
 
 class RHIFactory {
@@ -38,10 +41,10 @@ class RHIFactory {
   DestroyFence(Fence* fence) = 0;
 
   virtual Semaphore*
-  CreateSemaphore() = 0;
+  CreateGPUSemaphore() = 0;
 
   virtual void
-  DestroySemaphore(Semaphore* semaphore) = 0;
+  DestroyGPUSemaphore(Semaphore* semaphore) = 0;
 
   // TODO: add supoort for offscreen
   // virtual void

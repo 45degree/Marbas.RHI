@@ -1,5 +1,5 @@
 /**
- * Copyright 2022.11.4 45degree
+ * Copyright 2022.11.8 45degree
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,19 +16,20 @@
 
 #pragma once
 
-#include <fmt/format.h>
-#include <fmt/xchar.h>
+#include <dxgi1_6.h>
+
+#include <cstdint>
+
+#include "Swapchain.hpp"
 
 namespace Marbas {
 
-#ifdef _MSC_VER_  // for MSVC
-#define FORCE_INLINE __forceinline
-#elif defined __GNUC__  // for gcc on Linux/Apple OS X
-#define FORCE_INLINE __inline__ __attribute__((always_inline))
-#else
-#define FORCE_INLINE
-#endif
+struct DirectX12Swapchain final : public Swapchain {
+  IDXGISwapChain* swapchain = nullptr;
+  uint32_t imageCount;
 
-#define FORMAT(Str, ...) fmt::format(Str, __VA_ARGS__)
+  uint32_t width;
+  uint32_t height;
+};
 
 }  // namespace Marbas

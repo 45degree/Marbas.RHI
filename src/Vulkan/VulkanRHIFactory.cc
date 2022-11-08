@@ -312,7 +312,7 @@ VulkanRHIFactory::DestroyFence(Fence* fence) {
 }
 
 Semaphore*
-VulkanRHIFactory::CreateSemaphore() {
+VulkanRHIFactory::CreateGPUSemaphore() {
   auto* semaphore = new VulkanSemaphore();
 
   vk::SemaphoreCreateInfo createInfo;
@@ -322,7 +322,7 @@ VulkanRHIFactory::CreateSemaphore() {
 }
 
 void
-VulkanRHIFactory::DestroySemaphore(Semaphore* semaphore) {
+VulkanRHIFactory::DestroyGPUSemaphore(Semaphore* semaphore) {
   auto* vulkanSemaphore = static_cast<VulkanSemaphore*>(semaphore);
   m_device.destroySemaphore(vulkanSemaphore->semaphore);
 

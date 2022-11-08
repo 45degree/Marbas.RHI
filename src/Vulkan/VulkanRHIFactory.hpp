@@ -46,10 +46,10 @@ class VulkanRHIFactory final : public RHIFactory {
   DestroyFence(Fence* fence) override;
 
   Semaphore*
-  CreateSemaphore() override;
+  CreateGPUSemaphore() override;
 
   void
-  DestroySemaphore(Semaphore* semaphore) override;
+  DestroyGPUSemaphore(Semaphore* semaphore) override;
 
   void
   Init(GLFWwindow* window, uint32_t width, uint32_t height) override;

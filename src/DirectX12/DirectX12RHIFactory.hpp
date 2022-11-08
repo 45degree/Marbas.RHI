@@ -15,13 +15,19 @@
  */
 #pragma once
 
+#include <d3d12.h>
 #include <dxgi1_6.h>
 
+#include "DirectX12Swapchain.hpp"
 #include "RHIFactory.hpp"
 
 namespace Marbas {
 
 class DirectX12RHIFactory final : public RHIFactory {
+ public:
+  DirectX12RHIFactory();
+  ~DirectX12RHIFactory();
+
  public:
   void
   Init(GLFWwindow* window, uint32_t width, uint32_t height) override;
@@ -44,10 +50,10 @@ class DirectX12RHIFactory final : public RHIFactory {
   DestroyFence(Fence* fence) override;
 
   Semaphore*
-  CreateSemaphore() override;
+  CreateGPUSemaphore() override;
 
   void
-  DestroySemaphore(Semaphore* semaphore) override;
+  DestroyGPUSemaphore(Semaphore* semaphore) override;
 
   // TODO: add supoort for offscreen
   // virtual void
@@ -55,7 +61,19 @@ class DirectX12RHIFactory final : public RHIFactory {
 
  private:
   uint32_t m_dxgiFactoryFlags = 0;
-  IDXGIFactory2* m_dxgiFactory = nullptr;
+  IDXGIFactory6* m_dxgiFactory = nullptr;
+  ID3D12Device* m_device = nullptr;
+  IDXGIAdapter1* m_adapter = nullptr;
+
+  // TODO: use command queue , graphics quque instead?
+  ID3D12CommandQueue* m_commandQueue = nullptr;
+
+#ifndef NDEBUG
+  ID3D12Debug3* m_debugController = nullptr;
+  ID3D12DebugDevice* m_debugDevice = nullptr;
+#endif
+
+  DirectX12Swapchain m_swapchain;
 };
 
 }  // namespace Marbas

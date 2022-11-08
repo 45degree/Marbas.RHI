@@ -21,7 +21,7 @@ else
   option_end()
 end
 
-rule("LoadVulkan")
+rule("UseVulkan")
   on_load(function (target)
     if is_plat("linux") then
       target:add("packages", "pkgconfig::vulkan")
@@ -56,9 +56,23 @@ rule("LoadVulkan")
       end
 
       target:add("links", path.join(vulkanLibPath, "vulkan-1"))
-
       target:add('rpathdirs', vulkanBinPath)
     end
+    target:add('files', 'src/Vulkan/**.cc')
+    target:add('defines', "USE_VULKAN")
+  end)
+rule_end()
+
+rule("UseDirectX12")
+  on_load(function(target)
+    if not is_plat("windows") then
+      return
+    end
+
+    target:add("defines", "USE_D3D12", 'NOMINMAX')
+    target:add('files', 'src/DirectX12/**.cc')
+    target:add('links', 'd3d12')
+    target:add('links', 'dxgi')
   end)
 rule_end()
 
@@ -66,14 +80,16 @@ target("Marbas.RHI")
   set_kind("static")
   set_languages("c11", "cxx20")
 
-  add_defines("USE_VULKAN");
-
   add_includedirs("include", { public = true })
   add_includedirs("src", { public = false })
-  add_files("src/vulkan/**.cc")
   add_files("include/**.cc")
 
-  add_rules("LoadVulkan")
+  if is_plat("windows") then
+    add_undefines("CreateSemaphore");
+  end
+
+  -- add_rules("UseVulkan")
+  add_rules("UseDirectX12")
 
   add_packages("glfw", "glog", "shaderc", "gtest", "stb", "fmt")
 target_end()
