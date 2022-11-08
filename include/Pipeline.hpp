@@ -241,7 +241,7 @@ class RenderTargetDesc {
 
 class PipelineSignature;
 struct GraphicsPipeLineCreateInfo {
-  PipelineSignature& pipelineSignatrue;
+  PipelineSignature* pipelineSignatrue;
   InputLayoutDesc vertexInputLayout = {};
   std::vector<ShaderStageCreateInfo> shaderStageCreateInfo = {};
   ViewportStateCreateInfo viewportStateCreateInfo = {};

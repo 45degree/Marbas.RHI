@@ -15,6 +15,8 @@
  */
 #pragma once
 
+#include <dxgi1_6.h>
+
 #include "RHIFactory.hpp"
 
 namespace Marbas {
@@ -22,10 +24,38 @@ namespace Marbas {
 class DirectX12RHIFactory final : public RHIFactory {
  public:
   void
-  GetSwapchain(Swapchain& swapchain) override;
+  Init(GLFWwindow* window, uint32_t width, uint32_t height) override;
+
+ public:
+  Swapchain*
+  GetSwapchain() override;
+
+  uint32_t
+  AcquireNextImage(Swapchain* swapchain, const Semaphore* semaphore) override;
+
+  int
+  Present(Swapchain* swapchain, std::span<Semaphore*> waitSemaphores, uint32_t imageIndex) override;
+
+ public:
+  Fence*
+  CreateFence() override;
 
   void
-  Init(GLFWwindow* window, bool isOffscreen) override;
+  DestroyFence(Fence* fence) override;
+
+  Semaphore*
+  CreateSemaphore() override;
+
+  void
+  DestroySemaphore(Semaphore* semaphore) override;
+
+  // TODO: add supoort for offscreen
+  // virtual void
+  // OffscreenInit();
+
+ private:
+  uint32_t m_dxgiFactoryFlags = 0;
+  IDXGIFactory2* m_dxgiFactory = nullptr;
 };
 
 }  // namespace Marbas

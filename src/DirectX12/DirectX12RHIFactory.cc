@@ -16,6 +16,14 @@
 
 #include "DirectX12RHIFactory.hpp"
 
+#include <d3d12.h>
+#include <d3d12shader.h>
+#include <d3dcompiler.h>
+
+#ifndef NDEBUG
+#include <dxgidebug.h>
+#endif
+
 #define GLFW_EXPOSE_NATIVE_WIN32
 #define GLFW_NATIVE_INCLUDE_NONE
 #include <GLFW/glfw3native.h>
@@ -23,9 +31,11 @@
 namespace Marbas {
 
 void
-DirectX12RHIFactory::Init(GLFWwindow* window, bool isOffscreen) {
+DirectX12RHIFactory::Init(GLFWwindow* window, uint32_t width, uint32_t height) {
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   auto a = glfwGetWin32Window(window);
+
+  CreateDXGIFactory2(m_dxgiFactoryFlags, IID_PPV_ARGS(&m_dxgiFactory));
 }
 
 }  // namespace Marbas
