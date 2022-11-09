@@ -34,7 +34,12 @@ class VulkanBufferContext final : public BufferContext {
   DestroyBuffer(Buffer* buffer) override;
 
  private:
+  uint32_t
+  FindMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties);
+
+ private:
   vk::Device m_device;
+  vk::PhysicalDevice m_physicalDevice;
 };
 
 }  // namespace Marbas

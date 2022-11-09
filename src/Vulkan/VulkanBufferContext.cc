@@ -49,15 +49,47 @@ VulkanBufferContext::CreateBuffer(BufferType bufferType, void* data, uint32_t si
 
   vulkanBuffer->vkBuffer = m_device.createBuffer(createInfo);
 
-  // TODO: create memory
+  auto memRequirement = m_device.getBufferMemoryRequirements(vulkanBuffer->vkBuffer);
+  vk::MemoryPropertyFlags memPropertyFlag;
+  memPropertyFlag |= vk::MemoryPropertyFlagBits::eHostVisible;
+  memPropertyFlag |= vk::MemoryPropertyFlagBits::eHostCoherent;
+  vk::MemoryAllocateInfo allocateInfo;
+  allocateInfo.setAllocationSize(memRequirement.size);
+  allocateInfo.setMemoryTypeIndex(FindMemoryType(memRequirement.memoryTypeBits, memPropertyFlag));
+  vulkanBuffer->vkMemory = m_device.allocateMemory(allocateInfo);
+  m_device.bindBufferMemory(vulkanBuffer->vkBuffer, vulkanBuffer->vkMemory, 0);
+
+  void* mapData = m_device.mapMemory(vulkanBuffer->vkMemory, 0, size);
+  memcpy(mapData, data, size);
+  m_device.unmapMemory(vulkanBuffer->vkMemory);
+
+  // TODO: add stage buffer for non static vertex buffer
 
   return vulkanBuffer;
 }
 
+uint32_t
+VulkanBufferContext::FindMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) {
+  auto memProperties = m_physicalDevice.getMemoryProperties();
+  for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
+    if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+      return i;
+    }
+  }
+  throw std::runtime_error("failed to find suitable memory type!");
+}
+
+// TODO
 void
 VulkanBufferContext::UpdateBuffer(Buffer* buffer, void* data, uint32_t size, uintptr_t offset) {}
 
 void
-VulkanBufferContext::DestroyBuffer(Buffer* buffer) {}
+VulkanBufferContext::DestroyBuffer(Buffer* buffer) {
+  auto* vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
+  m_device.destroyBuffer(vulkanBuffer->vkBuffer);
+  m_device.freeMemory(vulkanBuffer->vkMemory);
+
+  // TODO: free stage buffer and memory
+}
 
 }  // namespace Marbas
