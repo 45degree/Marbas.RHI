@@ -4,6 +4,7 @@
 #include <span>
 
 #include "GLFW/glfw3.h"
+#include "PipelineContext.hpp"
 #include "Swapchain.hpp"
 #include "Synchronic.hpp"
 
@@ -46,12 +47,20 @@ class RHIFactory {
   virtual void
   DestroyGPUSemaphore(Semaphore* semaphore) = 0;
 
+ public:
+  PipelineContext*
+  GetPipelineContext() {
+    return m_pipelineContext.get();
+  }
+
   // TODO: add supoort for offscreen
   // virtual void
   // OffscreenInit();
  public:
   static std::unique_ptr<RHIFactory>
   CreateInstance(const RendererType& rendererTyoe);
+
+  std::unique_ptr<PipelineContext> m_pipelineContext = nullptr;
 };
 
 }  // namespace Marbas

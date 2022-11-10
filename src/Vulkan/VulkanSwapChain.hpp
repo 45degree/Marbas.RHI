@@ -25,10 +25,10 @@ namespace Marbas {
 struct VulkanSwapchain final : public Swapchain {
   vk::SwapchainKHR swapChain;
   vk::PresentModeKHR presentMode;
-  uint32_t imageCount;
+  uint32_t imageCount = 2;
 
-  uint32_t width;
-  uint32_t height;
+  uint32_t width = 0;
+  uint32_t height = 0;
 };
 
 }  // namespace Marbas

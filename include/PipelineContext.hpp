@@ -39,6 +39,13 @@ class PipelineContext {
   DestroySampler(Sampler* sampler) = 0;
 
  public:
+  virtual ShaderModule*
+  CreateShaderModule(const std::string& spirvPath) = 0;
+
+  virtual void
+  DestroyShaderModule(ShaderModule* shaderModule) = 0;
+
+ public:
   virtual DescriptorSet*
   CreateDescriptorSet(const DescriptorPool* pool, const DescriptorSetLayout& layout) = 0;
 

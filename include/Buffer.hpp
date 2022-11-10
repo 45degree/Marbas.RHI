@@ -42,11 +42,19 @@ struct InputElementDesc {
   ElementType format = ElementType::R32G32B32_SFLOAT;
   uint32_t attribute = 0;
   uint32_t offset = 0;
-  VertexInputClass inputClass = VertexInputClass::VERTEX;
   uint32_t instanceStepRate = 0;
 };
 
-using InputLayoutDesc = std::vector<InputElementDesc>;
+struct InputElementView {
+  int binding = 0;
+  uint32_t stride = 0;
+  VertexInputClass inputClass = VertexInputClass::VERTEX;
+};
+
+struct InputLayoutDesc {
+  std::vector<InputElementDesc> elementDesc;
+  std::vector<InputElementView> viewDesc;
+};
 
 enum class BufferType {
   VERTEX_BUFFER,

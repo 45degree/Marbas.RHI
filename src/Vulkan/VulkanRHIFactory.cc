@@ -20,6 +20,7 @@
 
 #include "VulkanImage.hpp"
 #include "VulkanImageView.hpp"
+#include "VulkanPipelineContext.hpp"
 #include "VulkanRHIFactory.hpp"
 #include "VulkanSynchronic.hpp"
 #include "common.hpp"
@@ -155,6 +156,8 @@ VulkanRHIFactory::Init(GLFWwindow* window, uint32_t width, uint32_t height) {
     height = m_capabilities.currentExtent.height;
   }
   CreateSwapchain(width, height);
+
+  m_pipelineContext = std::make_unique<VulkanPipelineContext>(m_device);
 }
 
 void
@@ -271,9 +274,8 @@ int
 VulkanRHIFactory::Present(Swapchain* swapchain, std::span<Semaphore*> waitSemaphores, uint32_t imageIndex) {
   auto* vulkanSwapchain = static_cast<VulkanSwapchain*>(swapchain);
   std::vector<vk::Semaphore> semaphores;
-  for (const auto& waitSemaphore : waitSemaphores) {
-    semaphores.push_back(static_cast<const VulkanSemaphore*>(waitSemaphore)->semaphore);
-  }
+  std::transform(waitSemaphores.begin(), waitSemaphores.end(), std::back_inserter(semaphores),
+                 [](const auto* semaphore) { return static_cast<const VulkanSemaphore*>(semaphore)->semaphore; });
 
   vk::PresentInfoKHR presentInfo;
   presentInfo.setWaitSemaphores(semaphores);

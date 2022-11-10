@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "Buffer.hpp"
+#include "DescriptorSet.hpp"
 #include "Sampler.hpp"
 #include "ShaderModule.hpp"
 
@@ -212,7 +213,7 @@ enum class ShaderType {
 
 struct ShaderStageCreateInfo {
   ShaderType stage = ShaderType::VERTEX_SHADER;
-  ShaderModule& shaderModule;
+  ShaderModule* shaderModule = nullptr;
   std::string interName = "main";
 };
 
@@ -233,15 +234,15 @@ struct MultisampleCreateInfo {
  * graphics pipeline create info struct
  */
 
-class RenderTarget {};
-class RenderTargetDesc {
+struct RenderTarget {};
+struct RenderTargetDesc {
   bool isClear = true;
   bool isDepth = false;
+  ImageFormat format = ImageFormat::RGBA;
 };
 
-class PipelineSignature;
 struct GraphicsPipeLineCreateInfo {
-  PipelineSignature* pipelineSignatrue;
+  DescriptorSetLayout descriptorSetLayout = {};
   InputLayoutDesc vertexInputLayout = {};
   std::vector<ShaderStageCreateInfo> shaderStageCreateInfo = {};
   ViewportStateCreateInfo viewportStateCreateInfo = {};
@@ -253,7 +254,6 @@ struct GraphicsPipeLineCreateInfo {
   std::vector<RenderTargetDesc> outputRenderTarget = {};
 };
 
-class PipelineSignature {};  // PSO
 class Pipeline {};
 
 }  // namespace Marbas

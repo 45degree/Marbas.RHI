@@ -24,11 +24,14 @@ namespace Marbas {
 
 class VulkanPipelineContext final : public PipelineContext {
  public:
+  explicit VulkanPipelineContext(vk::Device device) : m_device(device) {}
+
+ public:
   Pipeline*
   CreatePipeline(GraphicsPipeLineCreateInfo& createInfo) override;
 
   void
-  DestroyPipeline(Pipeline* pipeline) override;
+  DestroyPipeline(Pipeline* pipeline) override {}
 
  public:
   Sampler*
@@ -38,6 +41,13 @@ class VulkanPipelineContext final : public PipelineContext {
   DestroySampler(Sampler* sampler) override;
 
  public:
+  ShaderModule*
+  CreateShaderModule(const std::string& spirvPath) override;
+
+  void
+  DestroyShaderModule(ShaderModule* shaderModule) override;
+
+ public:
   DescriptorSet*
   CreateDescriptorSet(const DescriptorPool* pool, const DescriptorSetLayout& layout) override;
 
@@ -45,16 +55,20 @@ class VulkanPipelineContext final : public PipelineContext {
   DestroyDescriptorSet(const DescriptorPool* pool, DescriptorSet* descriptorSet) override;
 
   void
-  BindImage(DescriptorSet* descriptorSet, uint16_t bindingPoint, ImageView* imageView, Sampler* sampler) override;
+  BindImage(DescriptorSet* descriptorSet, uint16_t bindingPoint, ImageView* imageView, Sampler* sampler) override {}
 
   void
-  BindBuffer(DescriptorSet* descriptorSet, uint16_t bindingPoint, Buffer* buffer, uint32_t offset) override;
+  BindBuffer(DescriptorSet* descriptorSet, uint16_t bindingPoint, Buffer* buffer, uint32_t offset) override {}
 
   DescriptorPool*
   CreateDescriptorPool(std::span<DescriptorPoolSize> descritorPoolSize, uint32_t maxSet) override;
 
   void
   DestroyDescriptorPool(DescriptorPool* descriptorPool) override;
+
+ private:
+  vk::RenderPass
+  CreateRenderPass(const std::vector<RenderTargetDesc>& renderTargetDesc);
 
  private:
   vk::Device m_device;

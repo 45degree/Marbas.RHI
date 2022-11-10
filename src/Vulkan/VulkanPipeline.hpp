@@ -22,9 +22,9 @@
 
 namespace Marbas {
 
-struct VulkanPipelineSignature : public PipelineSignature {};
-
-struct VulkanPipeine final : public Pipeline {
+struct VulkanPipeline final : public Pipeline {
+  vk::DescriptorSetLayout vkDescriptorSetLayout;
+  vk::PipelineLayout vkPipelineLayout;
   vk::Pipeline vkPipeline;
   vk::RenderPass vkRenderPass;
 };

@@ -32,6 +32,27 @@ ConvertToVulkanFormat(ImageFormat format) {
   return vk::Format::eR32G32B32A32Uint;
 }
 
+FORCE_INLINE vk::Format
+ConvertToVulkanFormat(ElementType type) {
+  switch (type) {
+    case ElementType::R32_SFLOAT:
+      return vk::Format::eR32Sfloat;
+    case ElementType::R32G32_SFLOAT:
+      return vk::Format::eR32G32Sfloat;
+    case ElementType::R32G32B32_SFLOAT:
+      return vk::Format::eR32G32B32Sfloat;
+    case ElementType::R32G32B32A32_SFLOAT:
+      return vk::Format::eR32G32B32A32Sfloat;
+    case ElementType::R32G32_SINT:
+      return vk::Format::eR32G32Sint;
+    case ElementType::R32G32B32A32_UINT:
+      return vk::Format::eR32G32B32A32Uint;
+    case ElementType::R64_SFLOAT:
+      return vk::Format::eR64Sfloat;
+  }
+  return vk::Format::eR32G32B32Sfloat;
+}
+
 FORCE_INLINE vk::ImageLayout
 ConvertToVulkanImageLayout(const ImageState& state) {
   switch (state) {

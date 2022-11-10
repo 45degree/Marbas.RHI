@@ -1,4 +1,4 @@
----@diagnostic disable: undefined-global
+---@diagnostic disable: undefined-global, undefined-field
 
 add_rules("mode.debug", "mode.release")
 
@@ -88,7 +88,7 @@ target("Marbas.RHI")
     add_undefines("CreateSemaphore");
   end
 
-  -- add_rules("UseVulkan")
+  add_rules("UseVulkan")
   add_rules("UseDirectX12")
 
   add_packages("glfw", "glog", "shaderc", "gtest", "stb", "fmt")

@@ -7,7 +7,7 @@ main(void) {
   int height = 600;
 
   glfwInit();
-  auto factory = Marbas::RHIFactory::CreateInstance(Marbas::RendererType::DirectX12);
+  auto factory = Marbas::RHIFactory::CreateInstance(Marbas::RendererType::VULKAN);
   auto* glfwWindow = glfwCreateWindow(width, height, "Test Window", nullptr, nullptr);
 
   factory->Init(glfwWindow, width, height);

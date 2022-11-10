@@ -5,6 +5,7 @@ target("HelloWindow")
   set_languages("c11", "cxx20")
 
   add_defines("USE_D3D12");
+  add_defines("USE_VULKAN");
 
   add_files("main.cc")
 

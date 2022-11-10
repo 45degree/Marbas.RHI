@@ -77,7 +77,7 @@ class VulkanRHIFactory final : public RHIFactory {
   vk::SurfaceCapabilitiesKHR m_capabilities;
   vk::PresentModeKHR m_presentMode;
 
-  VulkanSwapchain m_swapChain;
+  VulkanSwapchain m_swapChain = {};
 };
 
 }  // namespace Marbas
