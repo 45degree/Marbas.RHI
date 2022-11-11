@@ -7,6 +7,7 @@
 #include "Buffer.hpp"
 #include "DescriptorSet.hpp"
 #include "Image.hpp"
+#include "Pipeline.hpp"
 #include "common.hpp"
 
 namespace Marbas {
@@ -173,7 +174,79 @@ ConvertToVulkanDescriptorLayoutBinding(const DescriptorSetLayoutBinding& binding
   return vkBinding;
 }
 
-FORCE_INLINE void
-ConvetToVulkanSampleCount() {}
+FORCE_INLINE vk::CullModeFlags
+ConvertToVulkanCullMode(const CullMode& cullMode) {
+  switch (cullMode) {
+    case CullMode::NONE:
+      return vk::CullModeFlagBits::eNone;
+    case CullMode::FRONT:
+      return vk::CullModeFlagBits::eFront;
+    case CullMode::BACK:
+      return vk::CullModeFlagBits::eBack;
+    case CullMode::FRONT_AND_BACK:
+      return vk::CullModeFlagBits::eFrontAndBack;
+  }
+  return vk::CullModeFlagBits::eFront;
+}
+
+FORCE_INLINE vk::PrimitiveTopology
+ConvertToVulkanTopology(const PrimitiveTopology& topology) {
+  switch (topology) {
+    case PrimitiveTopology::POINT:
+      return vk::PrimitiveTopology::ePointList;
+    case PrimitiveTopology::LINE:
+      return vk::PrimitiveTopology::eLineList;
+    case PrimitiveTopology::TRIANGLE:
+      return vk::PrimitiveTopology::eTriangleList;
+    case PrimitiveTopology::PATCH:
+      return vk::PrimitiveTopology::ePatchList;
+  }
+  return vk::PrimitiveTopology::eTriangleList;
+}
+
+FORCE_INLINE vk::PolygonMode
+ConvertToVulkanPolyMode(const PolygonMode& polygonMode) {
+  switch (polygonMode) {
+    case PolygonMode::FILL:
+      return vk::PolygonMode::eFill;
+    case PolygonMode::POINT:
+      return vk::PolygonMode::ePoint;
+    case PolygonMode::LINE:
+      return vk::PolygonMode::eLine;
+  }
+  return vk::PolygonMode::eFill;
+}
+
+FORCE_INLINE vk::FrontFace
+ConvertToVulkanFrontFace(const FrontFace& frontFace) {
+  switch (frontFace) {
+    case FrontFace::CW:
+      return vk::FrontFace::eClockwise;
+    case FrontFace::CCW:
+      return vk::FrontFace::eCounterClockwise;
+  }
+  return vk::FrontFace::eClockwise;
+}
+
+FORCE_INLINE vk::SampleCountFlagBits
+ConvertToVulkanSampleCount(const SampleCount& sampleCount) {
+  switch (sampleCount) {
+    case SampleCount::BIT1:
+      return vk::SampleCountFlagBits::e1;
+    case SampleCount::BIT2:
+      return vk::SampleCountFlagBits::e2;
+    case SampleCount::BIT4:
+      return vk::SampleCountFlagBits::e4;
+    case SampleCount::BIT8:
+      return vk::SampleCountFlagBits::e8;
+    case SampleCount::BIT16:
+      return vk::SampleCountFlagBits::e16;
+    case SampleCount::BIT32:
+      return vk::SampleCountFlagBits::e32;
+    case SampleCount::BIT64:
+      return vk::SampleCountFlagBits::e64;
+  }
+  return vk::SampleCountFlagBits::e1;
+}
 
 }  // namespace Marbas

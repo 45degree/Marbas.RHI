@@ -70,6 +70,9 @@ class VulkanPipelineContext final : public PipelineContext {
   vk::RenderPass
   CreateRenderPass(const std::vector<RenderTargetDesc>& renderTargetDesc);
 
+  vk::PipelineLayout
+  CreatePipelineLayout(const DescriptorSetLayout& descriptorSetLayout);
+
  private:
   vk::Device m_device;
 };

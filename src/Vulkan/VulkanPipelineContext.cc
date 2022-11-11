@@ -130,6 +130,7 @@ VulkanPipelineContext::CreatePipeline(GraphicsPipeLineCreateInfo& createInfo) {
   auto* graphicsPipeline = new VulkanPipeline();
   graphicsPipeline->vkRenderPass = CreateRenderPass(createInfo.outputRenderTarget);
 
+  // render pass
   vk::GraphicsPipelineCreateInfo vkCreateInfo;
   vkCreateInfo.setRenderPass(graphicsPipeline->vkRenderPass);
 
@@ -161,28 +162,187 @@ VulkanPipelineContext::CreatePipeline(GraphicsPipeLineCreateInfo& createInfo) {
     vkVertexInputStateCreateInfo.setVertexAttributeDescriptions(vkInputAttributeDescs);
     vkVertexInputStateCreateInfo.setVertexBindingDescriptions(vkInputBindingDescs);
   }
+  vkCreateInfo.setPVertexInputState(&vkVertexInputStateCreateInfo);
 
   // input assembly state
+  vk::PipelineInputAssemblyStateCreateInfo vkInputAssemblyStateCreateInfo;
+  vkInputAssemblyStateCreateInfo.setPrimitiveRestartEnable(false);
+  vkInputAssemblyStateCreateInfo.setTopology(ConvertToVulkanTopology(createInfo.inputAssemblyState.topology));
+  vkCreateInfo.setPInputAssemblyState(&vkInputAssemblyStateCreateInfo);
 
   // shader stage
-  vk::PipelineShaderStageCreateInfo vkShaderStageCreateInfo;
+  std::vector<vk::PipelineShaderStageCreateInfo> vkShaderStageCreateInfos;
+  for (auto& shaderStageCreateInfo : createInfo.shaderStageCreateInfo) {
+    vk::PipelineShaderStageCreateInfo info;
+    auto module = static_cast<VulkanShaderModule*>(shaderStageCreateInfo.shaderModule);
+    info.setModule(module->vkShaderModule);
+    if (shaderStageCreateInfo.stage == ShaderType::VERTEX_SHADER) {
+      info.setStage(vk::ShaderStageFlagBits::eVertex);
+    } else if (shaderStageCreateInfo.stage == ShaderType::FRAGMENT_SHADER) {
+      info.setStage(vk::ShaderStageFlagBits::eFragment);
+    } else if (shaderStageCreateInfo.stage == ShaderType::GEOMETRY_SHADER) {
+      info.setStage(vk::ShaderStageFlagBits::eGeometry);
+    }
+    info.setPName(shaderStageCreateInfo.interName.c_str());
+    vkShaderStageCreateInfos.push_back(info);
+  }
+  vkCreateInfo.setStages(vkShaderStageCreateInfos);
 
   // view port
+  std::vector<vk::Viewport> vkViewports;
+  for (auto& viewportInfo : createInfo.viewportStateCreateInfo.viewportInfos) {
+    vk::Viewport vkViewport;
+    vkViewport.setHeight(viewportInfo.height);
+    vkViewport.setWidth(viewportInfo.width);
+    vkViewport.setMaxDepth(viewportInfo.maxDepth);
+    vkViewport.setMinDepth(viewportInfo.minDepth);
+    vkViewport.setX(viewportInfo.x);
+    vkViewport.setY(viewportInfo.y);
+
+    vkViewports.push_back(vkViewport);
+  }
+
+  std::vector<vk::Rect2D> vkScissors;
+  for (const auto& scissorInfo : createInfo.viewportStateCreateInfo.scissorInfos) {
+    vk::Rect2D vkScissor;
+    vkScissor.setExtent(vk::Extent2D(scissorInfo.width, scissorInfo.height));
+    vkScissor.setOffset(vk::Offset2D(scissorInfo.x, scissorInfo.y));
+    vkScissors.push_back(vkScissor);
+  }
+
+  vk::PipelineViewportStateCreateInfo vkViewportStateCreateInfo;
+  vkViewportStateCreateInfo.setViewports(vkViewports);
+  vkViewportStateCreateInfo.setScissors(vkScissors);
+  vkCreateInfo.setPViewportState(&vkViewportStateCreateInfo);
 
   // resterization state
   vk::PipelineRasterizationStateCreateInfo vkRasterizationStateCreateInfo;
+  vkRasterizationStateCreateInfo.setRasterizerDiscardEnable(false);
+  vkRasterizationStateCreateInfo.setCullMode(ConvertToVulkanCullMode(createInfo.rasterizationInfo.cullMode));
+  vkRasterizationStateCreateInfo.setLineWidth(1.0);
+  vkRasterizationStateCreateInfo.setPolygonMode(ConvertToVulkanPolyMode(createInfo.rasterizationInfo.polygonMode));
+  vkRasterizationStateCreateInfo.setFrontFace(ConvertToVulkanFrontFace(createInfo.rasterizationInfo.frontFace));
+
+  // vkRasterizationStateCreateInfo.setDepthClampEnable(createInfo.rasterizationInfo.depthCilpEnable);
+  vkRasterizationStateCreateInfo.setDepthClampEnable(false);
+  // vkRasterizationStateCreateInfo.setDepthBiasClamp(createInfo.rasterizationInfo.depthBiasClamp);
+  vkRasterizationStateCreateInfo.setDepthBiasConstantFactor(0);
+  // vkRasterizationStateCreateInfo.setDepthBiasSlopeFactor(createInfo.rasterizationInfo.slopeScaledDepthBias);
+  vkRasterizationStateCreateInfo.setDepthBiasEnable(true);
+
+  vkCreateInfo.setPRasterizationState(&vkRasterizationStateCreateInfo);
 
   // depth stecil
+  vk::PipelineDepthStencilStateCreateInfo vkDepthStencilStateCreateInfo;
+  vkDepthStencilStateCreateInfo.setDepthTestEnable(createInfo.depthStencilInfo.depthTestEnable);
+  vkDepthStencilStateCreateInfo.setDepthWriteEnable(createInfo.depthStencilInfo.depthWriteEnable);
+  vkDepthStencilStateCreateInfo.setDepthBoundsTestEnable(createInfo.depthStencilInfo.depthBoundsTestEnable);
+  vkDepthStencilStateCreateInfo.setStencilTestEnable(createInfo.depthStencilInfo.stencilTestEnable);
+  switch (createInfo.depthStencilInfo.depthCompareOp) {
+    case DepthCompareOp::ALWAYS:
+      vkDepthStencilStateCreateInfo.setDepthCompareOp(vk::CompareOp::eAlways);
+      break;
+    case DepthCompareOp::NEVER:
+      vkDepthStencilStateCreateInfo.setDepthCompareOp(vk::CompareOp::eNever);
+      break;
+    case DepthCompareOp::LESS:
+      vkDepthStencilStateCreateInfo.setDepthCompareOp(vk::CompareOp::eLess);
+      break;
+    case DepthCompareOp::EQUAL:
+      vkDepthStencilStateCreateInfo.setDepthCompareOp(vk::CompareOp::eEqual);
+      break;
+    case DepthCompareOp::LEQUAL:
+      vkDepthStencilStateCreateInfo.setDepthCompareOp(vk::CompareOp::eLessOrEqual);
+      break;
+    case DepthCompareOp::GREATER:
+      vkDepthStencilStateCreateInfo.setDepthCompareOp(vk::CompareOp::eGreater);
+      break;
+    case DepthCompareOp::NOTEQUAL:
+      vkDepthStencilStateCreateInfo.setDepthCompareOp(vk::CompareOp::eNotEqual);
+      break;
+    case DepthCompareOp::GEQUAL:
+      vkDepthStencilStateCreateInfo.setDepthCompareOp(vk::CompareOp::eGreaterOrEqual);
+      break;
+  }
+  vkCreateInfo.setPDepthStencilState(&vkDepthStencilStateCreateInfo);
 
   // blend
+  vk::PipelineColorBlendStateCreateInfo vkColorBlendStateCreateInfo;
+  std::vector<vk::PipelineColorBlendAttachmentState> vkColorBlendAttachmentStates;
+  vkColorBlendStateCreateInfo.setBlendConstants(createInfo.blendInfo.constances);
+  for (auto& attachment : createInfo.blendInfo.attachments) {
+    auto convertToVukanBlendOp = [](const BlendOp& blendOp) -> vk::BlendOp {
+      if (blendOp == BlendOp::ADD) return vk::BlendOp::eAdd;
+      if (blendOp == BlendOp::REVERSE_SUBTRACT) return vk::BlendOp::eReverseSubtract;
+      if (blendOp == BlendOp::SUBTRACT) return vk::BlendOp::eSubtract;
+
+      return vk::BlendOp::eAdd;
+    };
+
+    auto convertToVulkanFactory = [](const BlendFactor& factory) -> vk::BlendFactor {
+      switch (factory) {
+        case BlendFactor::ZERO:
+          return vk::BlendFactor::eZero;
+        case BlendFactor::ONE:
+          return vk::BlendFactor::eOne;
+        case BlendFactor::SRC_COLOR:
+          return vk::BlendFactor::eSrcColor;
+        case BlendFactor::ONE_MINUS_SRC_COLOR:
+          return vk::BlendFactor::eOneMinusSrcColor;
+        case BlendFactor::DST_COLOR:
+          return vk::BlendFactor::eDstColor;
+        case BlendFactor::ONE_MINUS_DST_COLOR:
+          return vk::BlendFactor::eOneMinusDstColor;
+        case BlendFactor::SRC_ALPHA:
+          return vk::BlendFactor::eSrcAlpha;
+        case BlendFactor::ONE_MINUS_SRC_ALPHA:
+          return vk::BlendFactor::eOneMinusSrcAlpha;
+        case BlendFactor::DST_ALPHA:
+          return vk::BlendFactor::eDstAlpha;
+        case BlendFactor::ONE_MINUS_DST_ALPHA:
+          return vk::BlendFactor::eOneMinusDstAlpha;
+        case BlendFactor::CONSTANT_COLOR:
+          return vk::BlendFactor::eConstantColor;
+        case BlendFactor::ONE_MINUS_CONSTANT_COLOR:
+          return vk::BlendFactor::eOneMinusConstantColor;
+        case BlendFactor::CONSTANT_ALPHA:
+          return vk::BlendFactor::eConstantAlpha;
+        case BlendFactor::ONE_MINUS_CONSTANT_ALPHA:
+          return vk::BlendFactor::eOneMinusConstantAlpha;
+      }
+    };
+
+    vk::PipelineColorBlendAttachmentState attachmentState;
+    attachmentState.setBlendEnable(attachment.blendEnable);
+    attachmentState.setColorBlendOp(convertToVukanBlendOp(attachment.colorBlendOp));
+    attachmentState.setAlphaBlendOp(convertToVukanBlendOp(attachment.alphaBlendOp));
+    attachmentState.setSrcColorBlendFactor(convertToVulkanFactory(attachment.srcColorBlendFactor));
+    attachmentState.setSrcAlphaBlendFactor(convertToVulkanFactory(attachment.srcAlphaBlendFactor));
+    attachmentState.setDstColorBlendFactor(convertToVulkanFactory(attachment.dstColorBlendFactor));
+    attachmentState.setDstAlphaBlendFactor(convertToVulkanFactory(attachment.dstAlphaBlendFactor));
+
+    vkColorBlendAttachmentStates.push_back(attachmentState);
+  }
+  vkColorBlendStateCreateInfo.setAttachments(vkColorBlendAttachmentStates);
+  // TODO: does directx12 supoort it?
+  vkColorBlendStateCreateInfo.setLogicOpEnable(false);
+  vkCreateInfo.setPColorBlendState(&vkColorBlendStateCreateInfo);
 
   // sample
+  vk::PipelineMultisampleStateCreateInfo vkMultisampleStateCreateInfo;
+  const auto& sampleCount = createInfo.multisampleCreateInfo.rasterizationSamples;
+  vkMultisampleStateCreateInfo.setSampleShadingEnable(false);
+  vkMultisampleStateCreateInfo.setRasterizationSamples(ConvertToVulkanSampleCount(sampleCount));
+  vkCreateInfo.setPMultisampleState(&vkMultisampleStateCreateInfo);
 
-  // auto result = m_device.createGraphicsPipeline(nullptr, vkCreateInfo);
-  // if (result.result != vk::Result::eSuccess) {
-  //   throw std::runtime_error("failed to create the vulkan graphics pipepine");
-  // }
-  // graphicsPipeline->vkPipeline = result.value;
+  // layout
+  vkCreateInfo.setLayout(CreatePipelineLayout(createInfo.descriptorSetLayout));
+
+  auto result = m_device.createGraphicsPipeline(nullptr, vkCreateInfo);
+  if (result.result != vk::Result::eSuccess) {
+    throw std::runtime_error("failed to create the vulkan graphics pipepine");
+  }
+  graphicsPipeline->vkPipeline = result.value;
   return graphicsPipeline;
 }
 
@@ -235,6 +395,13 @@ VulkanPipelineContext::CreateRenderPass(const std::vector<RenderTargetDesc>& ren
   vkRenderPassCreateInfo.setSubpasses(vkSubpassDescription);
 
   return m_device.createRenderPass(vkRenderPassCreateInfo);
+}
+
+vk::PipelineLayout
+VulkanPipelineContext::CreatePipelineLayout(const DescriptorSetLayout& descriptorSetLayout) {
+  // TODO:
+  vk::PipelineLayoutCreateInfo vkPipelineLayoutCreateInfo;
+  return m_device.createPipelineLayout(vkPipelineLayoutCreateInfo);
 }
 
 }  // namespace Marbas

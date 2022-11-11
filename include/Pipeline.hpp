@@ -51,16 +51,13 @@ enum class FrontFace {
 };
 
 struct RasterizationCreateInfo {
-  bool depthClampEnable = false;
-  bool rasterizerDiscardEnable = false;
   PolygonMode polygonMode = PolygonMode::FILL;
-  float lineWidth = 1.0f;
-  CullMode cullMode = CullMode::NONE;
+  CullMode cullMode = CullMode::BACK;
   FrontFace frontFace = FrontFace::CCW;
-  bool depthBiasEnable = false;
-  float depthBiasConstantFactor = 0.0f;
-  float depthBiasClamp = 0.0f;
-  float depthBiasSlopeFactor = 0.0f;
+  int depthBias = 0;
+  // float depthBiasClamp = 0;
+  // float slopeScaledDepthBias = 0;
+  // bool depthCilpEnable = true;
 };
 
 /**
@@ -143,8 +140,6 @@ struct BlendAttachment {
 };
 
 struct ColorBlendCreateInfo {
-  bool logicOpEnable = false;
-  LogicOp logicOp = LogicOp::COPY;
   std::vector<BlendAttachment> attachments = {};
   std::array<float, 4> constances = {0, 0, 0, 0};
 };
@@ -154,24 +149,24 @@ struct ColorBlendCreateInfo {
  */
 
 struct ViewportInfo {
-  uint32_t x = 0;
-  uint32_t y = 0;
-  uint32_t width = 800;
-  uint32_t height = 600;
-  uint32_t minDepth = 0;
-  uint32_t maxDepth = 1;
+  float x = 0;
+  float y = 0;
+  float width = 800;
+  float height = 600;
+  float minDepth = 0;
+  float maxDepth = 1;
 };
 
 struct ScissorInfo {
-  uint32_t x = 0;
-  uint32_t y = 0;
+  int32_t x = 0;
+  int32_t y = 0;
   uint32_t width = 800;
   uint32_t height = 600;
 };
 
 struct ViewportStateCreateInfo {
   std::vector<ViewportInfo> viewportInfos = {};
-  std::vector<ScissorInfo> scissorInfo = {};
+  std::vector<ScissorInfo> scissorInfos = {};
 };
 
 /**
@@ -181,14 +176,7 @@ struct ViewportStateCreateInfo {
 enum class PrimitiveTopology {
   POINT,
   LINE,
-  LINE_STRIP,
   TRIANGLE,
-  TRIANGLE_STRIP,
-  TRIANGLE_FAN,
-  LINE_WITH_ADJACENCY,
-  LINE_STRIP_WITH_ADJACENCY,
-  TRIANGLE_WITH_ADJACENCY,
-  TRIANGLE_STRIP_WITH_ADJACENCY,
   PATCH,
 };
 
@@ -198,7 +186,6 @@ enum class PrimitiveTopology {
  */
 struct InputAssemblyStateCreateInfo {
   PrimitiveTopology topology = PrimitiveTopology::LINE;
-  bool primitiveRestartEnable = false;
 };
 
 /**
@@ -223,11 +210,6 @@ struct ShaderStageCreateInfo {
 
 struct MultisampleCreateInfo {
   SampleCount rasterizationSamples = SampleCount::BIT1;
-  bool sampleShadingEnable = true;
-  float minSampleShading = 0;
-  std::vector<uint32_t> sampleMask = {};
-  bool alphaToCoverageEnable = true;
-  bool alphaToOneEnable = true;
 };
 
 /**
@@ -252,6 +234,17 @@ struct GraphicsPipeLineCreateInfo {
   MultisampleCreateInfo multisampleCreateInfo = {};
   ColorBlendCreateInfo blendInfo = {};
   std::vector<RenderTargetDesc> outputRenderTarget = {};
+};
+
+struct RasterizationDesc {
+  PolygonMode polygonMode = PolygonMode::FILL;
+  CullMode cullMode = CullMode::BACK;
+  FrontFace frontFace = FrontFace::CCW;
+  int depthBias = 0;
+  float depthBiasClamp = 0;
+  float slopeScaledDepthBias = 0;
+  bool depthCilpEnable = true;
+  bool multisampleEnable = false;
 };
 
 class Pipeline {};
