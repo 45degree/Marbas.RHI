@@ -23,20 +23,27 @@
 
 namespace Marbas {
 
+struct VulkanCommandPool final : public CommandPool {
+  vk::CommandPool vkCommandPool;
+};
+
 class VulkanCommandBuffer final : public CommandBuffer {
+  friend class VulkanBufferContext;
+
+ public:
+  VulkanCommandBuffer(vk::Device device, vk::CommandBuffer buffer, uint32_t queueFamily, vk::Queue queue)
+      : m_device(device), m_commandBuffer(buffer), m_queueFamily(queueFamily), m_queue(queue) {}
+  virtual ~VulkanCommandBuffer() = default;
+
  public:
   void
-  BindDescriptorSet(const Pipeline& pipeline, int first,
-                    std::span<DescriptorSet> descriptors) override;
+  BindDescriptorSet(const Pipeline& pipeline, int first, std::span<DescriptorSet> descriptors) override {}
 
   void
-  BindPipeline(const Pipeline& pipeline) override;
+  BindVertexBuffer(Buffer& buffer) override {}
 
   void
-  BindVertexBuffer(Buffer& buffer) override;
-
-  void
-  BindIndexBuffer(Buffer& buffer) override;
+  BindIndexBuffer(Buffer& buffer) override {}
 
   /**
    * @brief Draw primitives
@@ -47,8 +54,9 @@ class VulkanCommandBuffer final : public CommandBuffer {
    * @param firstInstance the instance ID of the first instance to draw.
    */
   void
-  Draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex,
-       uint32_t firstInstance) override;
+  Draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) override {
+    m_commandBuffer.draw(vertexCount, instanceCount, firstVertex, firstInstance);
+  }
 
   /**
    * @brief Draw primitives with indexed vertices
@@ -60,8 +68,10 @@ class VulkanCommandBuffer final : public CommandBuffer {
    * @param firstInstance the instance ID of the first instance to draw.
    */
   void
-  DrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex,
-              int32_t vertexOffset, uint32_t firstInstance) override;
+  DrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset,
+              uint32_t firstInstance) override {
+    m_commandBuffer.drawIndexed(indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
+  }
 
   void
   InsertBufferBarrier(const std::vector<BufferBarrier>& barrier) override;
@@ -72,15 +82,28 @@ class VulkanCommandBuffer final : public CommandBuffer {
   void
   TransformImageState(Image* image, ImageState srcState, ImageState dstState) override;
 
+ public:
   void
   Begin() override;
 
   void
   End() override;
 
+  void
+  BeginPipeline(Pipeline* pipeline, FrameBuffer* frameBuffer, const std::array<float, 4>& clearColor) override;
+
+  void
+  EndPipeline(Pipeline* pipeline) override;
+
+ public:
+  void
+  Submit(std::span<Semaphore*> waitSemaphore, std::span<Semaphore*> signalSemaphore, Fence* fence) override;
+
  private:
+  uint32_t m_queueFamily;
   vk::CommandBuffer m_commandBuffer;
   vk::Device m_device;
+  vk::Queue m_queue;
 };
 
 }  // namespace Marbas

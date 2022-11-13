@@ -17,6 +17,7 @@
 #include "VulkanBufferContext.hpp"
 
 #include "VulkanBuffer.hpp"
+#include "VulkanCommandBuffer.hpp"
 
 namespace Marbas {
 
@@ -90,6 +91,69 @@ VulkanBufferContext::DestroyBuffer(Buffer* buffer) {
   m_device.freeMemory(vulkanBuffer->vkMemory);
 
   // TODO: free stage buffer and memory
+}
+
+CommandPool*
+VulkanBufferContext::CreateCommandPool(CommandBufferUsage usage) {
+  auto* vulkanCommandPool = new VulkanCommandPool();
+
+  vk::CommandPoolCreateInfo vkCommandPoolCreateInfo;
+  if (usage == CommandBufferUsage::GRAPHICS) {
+    vkCommandPoolCreateInfo.setQueueFamilyIndex(m_graphicsQueueIndex);
+  } else if (usage == CommandBufferUsage::COMPUTE) {
+    vkCommandPoolCreateInfo.setQueueFamilyIndex(m_computeQueueIndex);
+  }
+
+  // TODO: how to set flags?
+  vkCommandPoolCreateInfo.setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
+
+  vulkanCommandPool->vkCommandPool = m_device.createCommandPool(vkCommandPoolCreateInfo);
+  vulkanCommandPool->usage = usage;
+
+  return vulkanCommandPool;
+}
+
+void
+VulkanBufferContext::DestroyCommandPool(CommandPool* commandPool) {
+  auto* vulkanCommandPool = static_cast<VulkanCommandPool*>(commandPool);
+  m_device.destroyCommandPool(vulkanCommandPool->vkCommandPool);
+
+  delete vulkanCommandPool;
+}
+
+CommandBuffer*
+VulkanBufferContext::CreateCommandBuffer(CommandPool* commandPool) {
+  auto* vulkanCommandPool = static_cast<VulkanCommandPool*>(commandPool);
+
+  vk::CommandBufferAllocateInfo vkCommandBufferAllocateInfo;
+  vkCommandBufferAllocateInfo.setCommandBufferCount(1);
+  vkCommandBufferAllocateInfo.setCommandPool(vulkanCommandPool->vkCommandPool);
+  vkCommandBufferAllocateInfo.setLevel(vk::CommandBufferLevel::ePrimary);
+
+  auto result = m_device.allocateCommandBuffers(vkCommandBufferAllocateInfo);
+
+  uint32_t queueFamilyIndex = 0;
+  vk::Queue queue;
+  if (vulkanCommandPool->usage == CommandBufferUsage::GRAPHICS) {
+    queueFamilyIndex = m_graphicsQueueIndex;
+    queue = m_graphicsQueue;
+  } else if (vulkanCommandPool->usage == CommandBufferUsage::COMPUTE) {
+    queueFamilyIndex = m_computeQueueIndex;
+    queue = m_computeQueue;
+  }
+
+  auto* vulkanCommandBuffer = new VulkanCommandBuffer(m_device, result[0], queueFamilyIndex, queue);
+
+  return vulkanCommandBuffer;
+}
+
+void
+VulkanBufferContext::DestroyCommandBuffer(CommandPool* commandPool, CommandBuffer* commandBuffer) {
+  auto* vulkanCommandBuffer = static_cast<VulkanCommandBuffer*>(commandBuffer);
+  auto* vulkanCommandPool = static_cast<VulkanCommandPool*>(commandPool);
+  m_device.freeCommandBuffers(vulkanCommandPool->vkCommandPool, vulkanCommandBuffer->m_commandBuffer);
+
+  delete vulkanCommandBuffer;
 }
 
 }  // namespace Marbas

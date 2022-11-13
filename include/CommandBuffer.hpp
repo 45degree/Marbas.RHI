@@ -32,7 +32,7 @@ enum class CommandBufferUsage {
 };
 
 struct CommandPool {
-  CommandBufferUsage usage = CommandBufferUsage::GRAPHICS;
+  CommandBufferUsage usage;
 };
 
 class CommandBuffer {
@@ -41,13 +41,23 @@ class CommandBuffer {
   BindDescriptorSet(const Pipeline& pipeline, int first, std::span<DescriptorSet> descriptors) = 0;
 
   virtual void
-  BindPipeline(const Pipeline& pipeline) = 0;
-
-  virtual void
   BindVertexBuffer(Buffer& buffer) = 0;
 
   virtual void
   BindIndexBuffer(Buffer& buffer) = 0;
+
+ public:
+  virtual void
+  Begin() = 0;
+
+  virtual void
+  End() = 0;
+
+  virtual void
+  BeginPipeline(Pipeline* pipeline, FrameBuffer* frameBuffer, const std::array<float, 4>& clearColor) = 0;
+
+  virtual void
+  EndPipeline(Pipeline* pipeline) = 0;
 
   /**
    * @brief Draw primitives
@@ -58,8 +68,7 @@ class CommandBuffer {
    * @param firstInstance the instance ID of the first instance to draw.
    */
   virtual void
-  Draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex,
-       uint32_t firstInstance) = 0;
+  Draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) = 0;
 
   /**
    * @brief Draw primitives with indexed vertices
@@ -71,9 +80,10 @@ class CommandBuffer {
    * @param firstInstance the instance ID of the first instance to draw.
    */
   virtual void
-  DrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex,
-              int32_t vertexOffset, uint32_t firstInstance) = 0;
+  DrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset,
+              uint32_t firstInstance) = 0;
 
+ public:
   virtual void
   InsertBufferBarrier(const std::vector<BufferBarrier>& barrier) = 0;
 
@@ -83,15 +93,9 @@ class CommandBuffer {
   virtual void
   TransformImageState(Image* image, ImageState srcState, ImageState dstState) = 0;
 
+ public:
   virtual void
-  Begin() = 0;
-
-  virtual void
-  End() = 0;
-
- protected:
-  CommandBufferUsage m_usage;
-  uint32_t m_queueFamily;
+  Submit(std::span<Semaphore*> waitSemaphore, std::span<Semaphore*> signalSemaphore, Fence* fence) = 0;
 };
 
 }  // namespace Marbas

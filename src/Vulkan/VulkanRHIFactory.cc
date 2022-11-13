@@ -18,6 +18,7 @@
 
 #include <glog/logging.h>
 
+#include "VulkanBufferContext.hpp"
 #include "VulkanImage.hpp"
 #include "VulkanImageView.hpp"
 #include "VulkanPipelineContext.hpp"
@@ -28,6 +29,7 @@
 namespace Marbas {
 
 VulkanRHIFactory::VulkanRHIFactory() { glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API); }
+VulkanRHIFactory::~VulkanRHIFactory() = default;
 
 void
 VulkanRHIFactory::Init(GLFWwindow* window, uint32_t width, uint32_t height) {
@@ -78,17 +80,17 @@ VulkanRHIFactory::Init(GLFWwindow* window, uint32_t width, uint32_t height) {
   auto families = m_physicalDevice.getQueueFamilyProperties();
   uint32_t index = 0;
   for (const auto& family : families) {
-    if (family.queueFlags | vk::QueueFlagBits::eGraphics) {
+    if (family.queueFlags & vk::QueueFlagBits::eGraphics) {
       m_graphicsQueueFamilyIndex = index;
     }
-    if (family.queueFlags | vk::QueueFlagBits::eTransfer) {
+    if (family.queueFlags & vk::QueueFlagBits::eTransfer) {
       m_transferQueueFamilyIndex = index;
+    }
+    if (family.queueFlags & vk::QueueFlagBits::eCompute) {
+      m_computeQueueFamilyIndex = index;
     }
     if (m_physicalDevice.getSurfaceSupportKHR(index, m_surface)) {
       m_presentQueueFamilyIndex = index;
-    }
-    if (m_graphicsQueueFamilyIndex && m_presentQueueFamilyIndex && m_transferQueueFamilyIndex) {
-      break;
     }
     index++;
   }
@@ -120,6 +122,13 @@ VulkanRHIFactory::Init(GLFWwindow* window, uint32_t width, uint32_t height) {
     queueCreateInfos.push_back(queueCreateInfo);
   }
 
+  if (m_computeQueueFamilyIndex != m_graphicsQueueFamilyIndex &&
+      m_computeQueueFamilyIndex != m_presentQueueFamilyIndex &&
+      m_computeQueueFamilyIndex != m_transferQueueFamilyIndex) {
+    queueCreateInfo.setQueueFamilyIndex(m_computeQueueFamilyIndex);
+    queueCreateInfos.push_back(queueCreateInfo);
+  }
+
   // create device and queue
   deviceCreateInfo.setQueueCreateInfos(queueCreateInfos);
   m_device = m_physicalDevice.createDevice(deviceCreateInfo);
@@ -127,18 +136,20 @@ VulkanRHIFactory::Init(GLFWwindow* window, uint32_t width, uint32_t height) {
   m_graphicsQueue = m_device.getQueue(m_graphicsQueueFamilyIndex, 0);
   m_presentQueue = m_device.getQueue(m_presentQueueFamilyIndex, 0);
   m_transferQueue = m_device.getQueue(m_transferQueueFamilyIndex, 0);
+  m_computeQueue = m_device.getQueue(m_computeQueueFamilyIndex, 0);
 
   // find surface format and capabilities
   m_capabilities = m_physicalDevice.getSurfaceCapabilitiesKHR(m_surface);
   auto surfaceFormats = m_physicalDevice.getSurfaceFormatsKHR(m_surface);
-  m_surfaceFormat = surfaceFormats[0];
   auto formatResultIter = std::find_if(surfaceFormats.cbegin(), surfaceFormats.cend(), [](const auto& surfaceFormat) {
-    return surfaceFormat.format == vk::Format::eR8G8B8A8Unorm || surfaceFormat.format == vk::Format::eB8G8R8A8Unorm ||
-           surfaceFormat.format == vk::Format::eR8G8B8Unorm || surfaceFormat.format == vk::Format::eB8G8R8Unorm;
+    return surfaceFormat.format == vk::Format::eR8G8B8A8Srgb;
   });
-  if (formatResultIter != surfaceFormats.cend()) {
-    m_surfaceFormat = *formatResultIter;
+  if (formatResultIter == surfaceFormats.cend()) {
+    constexpr std::string_view errMes = "can't find surface support RRBA";
+    LOG(ERROR) << errMes;
+    throw std::runtime_error(errMes.data());
   }
+  m_surfaceFormat = *formatResultIter;
 
   auto presentModes = m_physicalDevice.getSurfacePresentModesKHR(m_surface);
   m_presentMode = vk::PresentModeKHR::eFifo;
@@ -158,6 +169,15 @@ VulkanRHIFactory::Init(GLFWwindow* window, uint32_t width, uint32_t height) {
   CreateSwapchain(width, height);
 
   m_pipelineContext = std::make_unique<VulkanPipelineContext>(m_device);
+  m_bufferContext = std::make_unique<VulkanBufferContext>(VulkanBufferContextCreateInfo{
+      .device = m_device,
+      .graphicsQueueIndex = m_graphicsQueueFamilyIndex,
+      .computeQueueIndex = m_computeQueueFamilyIndex,
+      .transfermQueueIndex = m_transferQueueFamilyIndex,
+      .graphicsQueue = m_graphicsQueue,
+      .computeQueue = m_computeQueue,
+      .transferQueue = m_transferQueue,
+  });
 }
 
 void
@@ -204,7 +224,6 @@ VulkanRHIFactory::CreateSwapchain(uint32_t width, uint32_t height) {
     vulkanImage->arrayLayer = 1;
     vulkanImage->height = height;
     vulkanImage->width = width;
-    // TODO
     vulkanImage->format = ImageFormat::RGBA;
 
     m_swapChain.images.push_back(vulkanImage);
@@ -235,7 +254,8 @@ VulkanRHIFactory::CreateSwapchain(uint32_t width, uint32_t height) {
   }
 }
 
-VulkanRHIFactory::~VulkanRHIFactory() {
+void
+VulkanRHIFactory::Quit() {
   m_device.waitIdle();
   for (auto* imageView : m_swapChain.imageViews) {
     auto* vulkanImageView = static_cast<VulkanImageView*>(imageView);
@@ -303,6 +323,19 @@ VulkanRHIFactory::CreateFence() {
   fence->m_fence = m_device.createFence(createInfo);
 
   return fence;
+}
+
+void
+VulkanRHIFactory::WaitForFence(Fence* fence) {
+  auto* vulkanFence = static_cast<VulkanFence*>(fence);
+  auto result = m_device.waitForFences(vulkanFence->m_fence, true, std::numeric_limits<uint32_t>::max());
+  return;
+}
+
+void
+VulkanRHIFactory::ResetFence(Fence* fence) {
+  auto* vulkanFence = static_cast<VulkanFence*>(fence);
+  m_device.resetFences(vulkanFence->m_fence);
 }
 
 void

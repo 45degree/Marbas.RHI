@@ -25,7 +25,7 @@
 namespace Marbas {
 
 struct DirectX12Swapchain final : public Swapchain {
-  IDXGISwapChain* swapchain = nullptr;
+  IDXGISwapChain4* swapchain = nullptr;
   uint32_t imageCount;
 
   uint32_t width;

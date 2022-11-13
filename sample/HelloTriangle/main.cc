@@ -12,7 +12,8 @@ main(void) {
   factory->Init(glfwWindow, width, height);
 
   auto* pipelineContext = factory->GetPipelineContext();
-
+  auto* bufferContext = factory->GetBufferContext();
+  auto* swapchain = factory->GetSwapchain();
   auto* vertexShader = pipelineContext->CreateShaderModule("shader.vert.spv");
   auto* fragShader = pipelineContext->CreateShaderModule("shader.frag.spv");
 
@@ -20,6 +21,7 @@ main(void) {
   Marbas::RenderTargetDesc renderTargetDesc{
       .isClear = true,
       .isDepth = false,
+      .isPresent = true,
       .format = Marbas::ImageFormat::RGBA,
   };
 
@@ -41,8 +43,8 @@ main(void) {
   Marbas::ViewportInfo viewportInfo;
   viewportInfo.x = 0;
   viewportInfo.y = 0;
-  viewportInfo.width = width;
-  viewportInfo.height = height;
+  viewportInfo.width = static_cast<float>(width);
+  viewportInfo.height = static_cast<float>(height);
   viewportInfo.minDepth = 0;
   viewportInfo.maxDepth = 1;
 
@@ -69,13 +71,69 @@ main(void) {
 
   auto* pipeline = pipelineContext->CreatePipeline(pipelineCreateInfo);
 
-  while (!glfwWindowShouldClose(glfwWindow)) {
-    glfwPollEvents();
+  // frame buffer
+  std::vector<Marbas::FrameBuffer*> frameBuffers;
+  for (int i = 0; i < swapchain->imageViews.size(); i++) {
+    Marbas::FrameBufferCreateInfo createInfo;
+    createInfo.height = height;
+    createInfo.width = width;
+    createInfo.layer = 1;
+    createInfo.pieline = pipeline;
+    createInfo.attachments = std::span(swapchain->imageViews.begin() + i, 1);
+    frameBuffers.push_back(pipelineContext->CreateFrameBuffer(createInfo));
   }
 
+  // command buffer
+  auto imageCount = swapchain->imageViews.size();
+  auto* commandPool = bufferContext->CreateCommandPool(Marbas::CommandBufferUsage::GRAPHICS);
+  auto* commandBuffer = bufferContext->CreateCommandBuffer(commandPool);
+  std::vector<Marbas::Semaphore*> aviableSemaphore;
+  std::vector<Marbas::Semaphore*> waitSemaphore;
+  for (int i = 0; i < imageCount; i++) {
+    aviableSemaphore.push_back(factory->CreateGPUSemaphore());
+    waitSemaphore.push_back(factory->CreateGPUSemaphore());
+  }
+
+  Marbas::Fence* fence = factory->CreateFence();
+
+  uint32_t frameIndex = 0;
+  while (!glfwWindowShouldClose(glfwWindow)) {
+    glfwPollEvents();
+    factory->ResetFence(fence);
+    auto nextImage = factory->AcquireNextImage(swapchain, aviableSemaphore[frameIndex]);
+
+    commandBuffer->Begin();
+    commandBuffer->BeginPipeline(pipeline, frameBuffers[nextImage], {0, 0, 0, 1});
+    commandBuffer->Draw(3, 1, 0, 0);
+    commandBuffer->EndPipeline(pipeline);
+    commandBuffer->End();
+
+    commandBuffer->Submit({aviableSemaphore.begin() + frameIndex, 1}, {waitSemaphore.begin() + frameIndex, 1}, fence);
+
+    factory->Present(swapchain, {waitSemaphore.begin() + frameIndex, 1}, nextImage);
+    factory->WaitForFence(fence);
+    frameIndex = (frameIndex + 1) % imageCount;
+  }
+
+  factory->WaitIdle();
   pipelineContext->DestroyShaderModule(vertexShader);
   pipelineContext->DestroyShaderModule(fragShader);
+  for (auto* framebuffer : frameBuffers) {
+    pipelineContext->DestroyFrameBuffer(framebuffer);
+  }
   pipelineContext->DestroyPipeline(pipeline);
+
+  bufferContext->DestroyCommandBuffer(commandPool, commandBuffer);
+  bufferContext->DestroyCommandPool(commandPool);
+
+  factory->DestroyFence(fence);
+  for (auto* semaphore : waitSemaphore) {
+    factory->DestroyGPUSemaphore(semaphore);
+  }
+  for (auto* semaphore : aviableSemaphore) {
+    factory->DestroyGPUSemaphore(semaphore);
+  }
+  factory->Quit();
 
   return 0;
 }

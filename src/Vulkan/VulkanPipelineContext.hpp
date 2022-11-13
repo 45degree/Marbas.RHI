@@ -24,14 +24,14 @@ namespace Marbas {
 
 class VulkanPipelineContext final : public PipelineContext {
  public:
-  explicit VulkanPipelineContext(vk::Device device) : m_device(device) {}
+  explicit VulkanPipelineContext(vk::Device device) : PipelineContext(), m_device(device) {}
 
  public:
   Pipeline*
   CreatePipeline(GraphicsPipeLineCreateInfo& createInfo) override;
 
   void
-  DestroyPipeline(Pipeline* pipeline) override {}
+  DestroyPipeline(Pipeline* pipeline) override;
 
  public:
   Sampler*
@@ -72,6 +72,13 @@ class VulkanPipelineContext final : public PipelineContext {
 
   vk::PipelineLayout
   CreatePipelineLayout(const DescriptorSetLayout& descriptorSetLayout);
+
+ public:
+  FrameBuffer*
+  CreateFrameBuffer(const FrameBufferCreateInfo& createInfo) override;
+
+  void
+  DestroyFrameBuffer(FrameBuffer* frameBuffer) override;
 
  private:
   vk::Device m_device;

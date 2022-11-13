@@ -32,6 +32,9 @@ class DirectX12RHIFactory final : public RHIFactory {
   void
   Init(GLFWwindow* window, uint32_t width, uint32_t height) override;
 
+  void
+  Quit() override {}
+
  public:
   Swapchain*
   GetSwapchain() override;
@@ -42,9 +45,18 @@ class DirectX12RHIFactory final : public RHIFactory {
   int
   Present(Swapchain* swapchain, std::span<Semaphore*> waitSemaphores, uint32_t imageIndex) override;
 
+  void
+  WaitIdle() override {}
+
  public:
   Fence*
   CreateFence() override;
+
+  void
+  WaitForFence(Fence* fence) override {}
+
+  void
+  ResetFence(Fence* fence) override {}
 
   void
   DestroyFence(Fence* fence) override;

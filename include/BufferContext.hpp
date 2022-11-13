@@ -19,10 +19,12 @@
 #include <span>
 
 #include "Buffer.hpp"
+#include "CommandBuffer.hpp"
 
 namespace Marbas {
 
 class BufferContext {
+ public:
   virtual Buffer*
   CreateBuffer(BufferType bufferType, void* data, uint32_t size, bool isStatic) = 0;
 
@@ -31,6 +33,18 @@ class BufferContext {
 
   virtual void
   DestroyBuffer(Buffer* buffer) = 0;
+
+  virtual CommandPool*
+  CreateCommandPool(CommandBufferUsage usage) = 0;
+
+  virtual void
+  DestroyCommandPool(CommandPool* commandPool) = 0;
+
+  virtual CommandBuffer*
+  CreateCommandBuffer(CommandPool* commandPool) = 0;
+
+  virtual void
+  DestroyCommandBuffer(CommandPool* commandPool, CommandBuffer* commandBuffer) = 0;
 };
 
 }  // namespace Marbas

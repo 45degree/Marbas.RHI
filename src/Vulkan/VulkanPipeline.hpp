@@ -29,4 +29,8 @@ struct VulkanPipeline final : public Pipeline {
   vk::RenderPass vkRenderPass;
 };
 
+struct VulkanFrameBuffer final : public FrameBuffer {
+  vk::Framebuffer vkFrameBuffer;
+};
+
 }  // namespace Marbas

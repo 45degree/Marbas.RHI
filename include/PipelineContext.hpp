@@ -63,6 +63,13 @@ class PipelineContext {
 
   virtual void
   DestroyDescriptorPool(DescriptorPool* descriptorPool) = 0;
+
+ public:
+  virtual FrameBuffer*
+  CreateFrameBuffer(const FrameBufferCreateInfo& createInfo) = 0;
+
+  virtual void
+  DestroyFrameBuffer(FrameBuffer* frameBuffer) = 0;
 };
 
 }  // namespace Marbas

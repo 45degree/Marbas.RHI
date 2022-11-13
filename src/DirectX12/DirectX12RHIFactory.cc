@@ -107,17 +107,21 @@ DirectX12RHIFactory::Init(GLFWwindow* window, uint32_t width, uint32_t height) {
   sd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
   sd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 
-  m_dxgiFactory->CreateSwapChain(m_commandQueue, &sd, &m_swapchain.swapchain);
+  IDXGISwapChain* swapchain;
+  m_dxgiFactory->CreateSwapChain(m_commandQueue, &sd, &swapchain);
+  swapchain->QueryInterface(IID_PPV_ARGS(&m_swapchain.swapchain));
   DLOG_ASSERT(m_swapchain.swapchain != nullptr);
 }
 
 Swapchain*
 DirectX12RHIFactory::GetSwapchain() {
-  return nullptr;
+  return &m_swapchain;
 }
 
 uint32_t
 DirectX12RHIFactory::AcquireNextImage(Swapchain* swapchain, const Semaphore* semaphore) {
+  auto* d3dSwapchain = static_cast<DirectX12Swapchain*>(swapchain);
+
   return 0;
 }
 

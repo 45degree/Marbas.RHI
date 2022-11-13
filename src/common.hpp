@@ -21,7 +21,7 @@
 
 namespace Marbas {
 
-#ifdef _MSC_VER_  // for MSVC
+#ifdef _MSC_VER  // for MSVC
 #define FORCE_INLINE __forceinline
 #elif defined __GNUC__  // for gcc on Linux/Apple OS X
 #define FORCE_INLINE __inline__ __attribute__((always_inline))

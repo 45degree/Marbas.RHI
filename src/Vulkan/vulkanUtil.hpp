@@ -17,20 +17,31 @@ FORCE_INLINE vk::Format
 ConvertToVulkanFormat(ImageFormat format) {
   switch (format) {
     case ImageFormat::RED:
+      return vk::Format::eR8Srgb;
     case ImageFormat::RG:
+      return vk::Format::eR8G8Srgb;
     case ImageFormat::RGB:
+      return vk::Format::eR8G8B8Srgb;
     case ImageFormat::BGR:
+      return vk::Format::eB8G8R8Srgb;
     case ImageFormat::RGBA:
+      return vk::Format::eR8G8B8A8Srgb;
     case ImageFormat::BGRA:
-    case ImageFormat::R32:
+      return vk::Format::eB8G8R8A8Srgb;
+    case ImageFormat::R32F:
+      return vk::Format::eR32Sfloat;
     case ImageFormat::RG16F:
+      return vk::Format::eR16G16Sfloat;
     case ImageFormat::RG32F:
+      return vk::Format::eR32G32Sfloat;
     case ImageFormat::RGB16F:
+      return vk::Format::eR16G16B16Sfloat;
     case ImageFormat::RGB32F:
+      return vk::Format::eR32G32B32Sfloat;
     case ImageFormat::DEPTH:
-      break;
+      return vk::Format::eD32Sfloat;
   }
-  return vk::Format::eR32G32B32A32Uint;
+  return vk::Format::eR8G8B8A8Unorm;
 }
 
 FORCE_INLINE vk::Format

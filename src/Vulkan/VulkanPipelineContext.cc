@@ -4,6 +4,7 @@
 #include <optional>
 
 #include "VulkanDescriptor.hpp"
+#include "VulkanImage.hpp"
 #include "VulkanPipeline.hpp"
 #include "VulkanShaderModule.hpp"
 #include "vulkanUtil.hpp"
@@ -228,7 +229,7 @@ VulkanPipelineContext::CreatePipeline(GraphicsPipeLineCreateInfo& createInfo) {
   // vkRasterizationStateCreateInfo.setDepthBiasClamp(createInfo.rasterizationInfo.depthBiasClamp);
   vkRasterizationStateCreateInfo.setDepthBiasConstantFactor(0);
   // vkRasterizationStateCreateInfo.setDepthBiasSlopeFactor(createInfo.rasterizationInfo.slopeScaledDepthBias);
-  vkRasterizationStateCreateInfo.setDepthBiasEnable(true);
+  vkRasterizationStateCreateInfo.setDepthBiasEnable(false);
 
   vkCreateInfo.setPRasterizationState(&vkRasterizationStateCreateInfo);
 
@@ -336,14 +337,63 @@ VulkanPipelineContext::CreatePipeline(GraphicsPipeLineCreateInfo& createInfo) {
   vkCreateInfo.setPMultisampleState(&vkMultisampleStateCreateInfo);
 
   // layout
-  vkCreateInfo.setLayout(CreatePipelineLayout(createInfo.descriptorSetLayout));
+  auto vkPipelineLayout = CreatePipelineLayout(createInfo.descriptorSetLayout);
+  vkCreateInfo.setLayout(vkPipelineLayout);
 
   auto result = m_device.createGraphicsPipeline(nullptr, vkCreateInfo);
   if (result.result != vk::Result::eSuccess) {
     throw std::runtime_error("failed to create the vulkan graphics pipepine");
   }
   graphicsPipeline->vkPipeline = result.value;
+  graphicsPipeline->pipelineType = PipelineType::GRAPHICS;
+  graphicsPipeline->vkPipelineLayout = vkPipelineLayout;
   return graphicsPipeline;
+}
+
+void
+VulkanPipelineContext::DestroyPipeline(Pipeline* pipeline) {
+  auto* vulkanPipeline = static_cast<VulkanPipeline*>(pipeline);
+  m_device.destroyRenderPass(vulkanPipeline->vkRenderPass);
+  m_device.destroyPipeline(vulkanPipeline->vkPipeline);
+  m_device.destroyPipelineLayout(vulkanPipeline->vkPipelineLayout);
+  m_device.destroyDescriptorSetLayout(vulkanPipeline->vkDescriptorSetLayout);
+
+  delete vulkanPipeline;
+}
+
+FrameBuffer*
+VulkanPipelineContext::CreateFrameBuffer(const FrameBufferCreateInfo& createInfo) {
+  auto* vulkanPipeline = static_cast<VulkanPipeline*>(createInfo.pieline);
+  auto vkRenderPass = vulkanPipeline->vkRenderPass;
+
+  vk::FramebufferCreateInfo vkFramebufferCreateInfo;
+  std::vector<vk::ImageView> vkAttachments;
+  std::transform(createInfo.attachments.begin(), createInfo.attachments.end(), std::back_inserter(vkAttachments),
+                 [](auto&& attachment) { return static_cast<VulkanImageView*>(attachment)->imageView; });
+
+  vkFramebufferCreateInfo.setRenderPass(vkRenderPass);
+  vkFramebufferCreateInfo.setAttachments(vkAttachments);
+  vkFramebufferCreateInfo.setLayers(createInfo.layer);
+  vkFramebufferCreateInfo.setHeight(createInfo.height);
+  vkFramebufferCreateInfo.setWidth(createInfo.width);
+
+  auto vkFramebuffer = m_device.createFramebuffer(vkFramebufferCreateInfo);
+
+  auto* vulkanFrameBuffer = new VulkanFrameBuffer();
+  vulkanFrameBuffer->vkFrameBuffer = vkFramebuffer;
+  vulkanFrameBuffer->width = createInfo.width;
+  vulkanFrameBuffer->height = createInfo.height;
+  vulkanFrameBuffer->layerCount = createInfo.layer;
+
+  return vulkanFrameBuffer;
+}
+
+void
+VulkanPipelineContext::DestroyFrameBuffer(FrameBuffer* frameBuffer) {
+  auto* vulkanFrameBuffer = static_cast<VulkanFrameBuffer*>(frameBuffer);
+  m_device.destroyFramebuffer(vulkanFrameBuffer->vkFrameBuffer);
+
+  delete vulkanFrameBuffer;
 }
 
 vk::RenderPass
@@ -359,7 +409,6 @@ VulkanPipelineContext::CreateRenderPass(const std::vector<RenderTargetDesc>& ren
 
     if (!renderTargetDesc.isDepth) {
       description.setInitialLayout(vk::ImageLayout::eUndefined);
-      description.setFinalLayout(vk::ImageLayout::eColorAttachmentOptimal);
       reference.setLayout(vk::ImageLayout::eColorAttachmentOptimal);
       colorAttachmentReferences.push_back(reference);
     } else {
@@ -373,18 +422,26 @@ VulkanPipelineContext::CreateRenderPass(const std::vector<RenderTargetDesc>& ren
     // TODO:
     description.setSamples(vk::SampleCountFlagBits::e1);
 
-    if (!renderTargetDesc.isClear) {
+    if (renderTargetDesc.isClear) {
       description.setLoadOp(vk::AttachmentLoadOp::eClear);
     } else {
       description.setLoadOp(vk::AttachmentLoadOp::eDontCare);
     }
     description.setStoreOp(vk::AttachmentStoreOp::eStore);
 
+    if (renderTargetDesc.isPresent && !renderTargetDesc.isDepth) {
+      description.setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
+    } else if (!renderTargetDesc.isPresent && !renderTargetDesc.isDepth) {
+      description.setFinalLayout(vk::ImageLayout::eColorAttachmentOptimal);
+    }
+
     attachmentDescriptions.push_back(description);
   }
 
   vk::SubpassDescription vkSubpassDescription;
   vkSubpassDescription.setColorAttachments(colorAttachmentReferences);
+  // TODO
+  vkSubpassDescription.setPipelineBindPoint(vk::PipelineBindPoint::eGraphics);
 
   if (depthAttachmentReference.has_value()) {
     vkSubpassDescription.setPDepthStencilAttachment(&depthAttachmentReference.value());

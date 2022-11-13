@@ -5,6 +5,8 @@
 #include "Buffer.hpp"
 #include "VulkanBuffer.hpp"
 #include "VulkanImage.hpp"
+#include "VulkanPipeline.hpp"
+#include "VulkanSynchronic.hpp"
 #include "common.hpp"
 #include "vulkanUtil.hpp"
 
@@ -89,6 +91,75 @@ VulkanCommandBuffer::TransformImageState(Image* image, ImageState srcState, Imag
 
   m_commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands, vk::PipelineStageFlagBits::eAllCommands,
                                   vk::DependencyFlagBits::eByRegion, nullptr, nullptr, imageMemoryBarrier);
+}
+
+void
+VulkanCommandBuffer::Begin() {
+  vk::CommandBufferBeginInfo vkBeginInfo;
+  vkBeginInfo.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+  m_commandBuffer.begin(vkBeginInfo);
+}
+
+void
+VulkanCommandBuffer::End() {
+  m_commandBuffer.end();
+}
+
+void
+VulkanCommandBuffer::BeginPipeline(Pipeline* pipeline, FrameBuffer* frameBuffer,
+                                   const std::array<float, 4>& clearColor) {
+  auto* vulkanPipeline = static_cast<VulkanPipeline*>(pipeline);
+  auto* vulkanFrameBuffer = static_cast<VulkanFrameBuffer*>(frameBuffer);
+  auto vkRenderPass = vulkanPipeline->vkRenderPass;
+  auto vkPipeline = vulkanPipeline->vkPipeline;
+  auto vkFramebuffer = vulkanFrameBuffer->vkFrameBuffer;
+  const auto& height = frameBuffer->height;
+  const auto& width = frameBuffer->width;
+
+  vk::RenderPassBeginInfo vkRenderPassBeginInfo;
+  vk::ClearColorValue clearColorValue(clearColor);
+  vk::ClearValue clearValue(clearColorValue);
+
+  vkRenderPassBeginInfo.setRenderPass(vkRenderPass);
+  vkRenderPassBeginInfo.setFramebuffer(vkFramebuffer);
+  vkRenderPassBeginInfo.setRenderArea(vk::Rect2D(vk::Offset2D(0, 0), vk::Extent2D(width, height)));
+  vkRenderPassBeginInfo.setClearValues(clearValue);
+
+  m_commandBuffer.beginRenderPass(vkRenderPassBeginInfo, vk::SubpassContents::eInline);
+
+  if (vulkanPipeline->pipelineType == PipelineType::GRAPHICS) {
+    m_commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, vkPipeline);
+  } else if (vulkanPipeline->pipelineType == PipelineType::COMPUTE) {
+    m_commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, vkPipeline);
+  }
+}
+
+void
+VulkanCommandBuffer::EndPipeline(Pipeline* pipeline) {
+  m_commandBuffer.endRenderPass();
+}
+
+void
+VulkanCommandBuffer::Submit(std::span<Semaphore*> waitSemaphore, std::span<Semaphore*> signalSemaphore, Fence* fence) {
+  std::vector<vk::Semaphore> vkWaitSemaphore, vkSignalSemaphore;
+  std::transform(waitSemaphore.begin(), waitSemaphore.end(), std::back_inserter(vkWaitSemaphore),
+                 [](auto* semaphore) { return static_cast<VulkanSemaphore*>(semaphore)->semaphore; });
+  std::transform(signalSemaphore.begin(), signalSemaphore.end(), std::back_inserter(vkSignalSemaphore),
+                 [](auto* semaphore) { return static_cast<VulkanSemaphore*>(semaphore)->semaphore; });
+
+  vk::SubmitInfo vkSubmitInfo;
+  vk::PipelineStageFlags waitDstStage = vk::PipelineStageFlagBits::eAllCommands;
+  vkSubmitInfo.setSignalSemaphores(vkSignalSemaphore);
+  vkSubmitInfo.setWaitSemaphores(vkWaitSemaphore);
+  vkSubmitInfo.setCommandBuffers(m_commandBuffer);
+  vkSubmitInfo.setWaitDstStageMask(waitDstStage);
+
+  auto* vulkanFence = static_cast<VulkanFence*>(fence);
+  if (vulkanFence != nullptr) {
+    m_queue.submit(vkSubmitInfo, vulkanFence->m_fence);
+  } else {
+    m_queue.submit(vkSubmitInfo);
+  }
 }
 
 }  // namespace Marbas

@@ -38,9 +38,20 @@ class VulkanRHIFactory final : public RHIFactory {
   int
   Present(Swapchain* swapchain, std::span<Semaphore*> waitSemaphores, uint32_t imageIndex) override;
 
+  void
+  WaitIdle() override {
+    m_device.waitIdle();
+  }
+
  public:
   Fence*
   CreateFence() override;
+
+  void
+  WaitForFence(Fence* fence) override;
+
+  void
+  ResetFence(Fence* fence) override;
 
   void
   DestroyFence(Fence* fence) override;
@@ -54,6 +65,9 @@ class VulkanRHIFactory final : public RHIFactory {
   void
   Init(GLFWwindow* window, uint32_t width, uint32_t height) override;
 
+  void
+  Quit() override;
+
  private:
   void
   CreateSwapchain(uint32_t width, uint32_t height);
@@ -66,10 +80,12 @@ class VulkanRHIFactory final : public RHIFactory {
   uint32_t m_graphicsQueueFamilyIndex = 0;
   uint32_t m_presentQueueFamilyIndex = 0;
   uint32_t m_transferQueueFamilyIndex = 0;
+  uint32_t m_computeQueueFamilyIndex = 0;
 
   vk::Queue m_graphicsQueue;
   vk::Queue m_presentQueue;
   vk::Queue m_transferQueue;
+  vk::Queue m_computeQueue;
 
   vk::Instance m_instance;
   vk::SurfaceKHR m_surface;

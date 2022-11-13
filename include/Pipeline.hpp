@@ -18,6 +18,7 @@
 
 #include <array>
 #include <cstdint>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -27,6 +28,11 @@
 #include "ShaderModule.hpp"
 
 namespace Marbas {
+
+enum class PipelineType {
+  GRAPHICS,
+  COMPUTE,
+};
 
 /**
  * Rasterization Create Info
@@ -52,7 +58,7 @@ enum class FrontFace {
 
 struct RasterizationCreateInfo {
   PolygonMode polygonMode = PolygonMode::FILL;
-  CullMode cullMode = CullMode::BACK;
+  CullMode cullMode = CullMode::FRONT;
   FrontFace frontFace = FrontFace::CCW;
   int depthBias = 0;
   // float depthBiasClamp = 0;
@@ -220,6 +226,7 @@ struct RenderTarget {};
 struct RenderTargetDesc {
   bool isClear = true;
   bool isDepth = false;
+  bool isPresent = false;
   ImageFormat format = ImageFormat::RGBA;
 };
 
@@ -247,6 +254,21 @@ struct RasterizationDesc {
   bool multisampleEnable = false;
 };
 
-class Pipeline {};
+struct Pipeline {
+  PipelineType pipelineType;
+};
+
+struct FrameBufferCreateInfo {
+  uint32_t height;
+  uint32_t width;
+  uint32_t layer;
+  Pipeline* pieline;
+  std::span<ImageView*> attachments;
+};
+struct FrameBuffer {
+  uint32_t height;
+  uint32_t width;
+  uint32_t layerCount;
+};
 
 }  // namespace Marbas

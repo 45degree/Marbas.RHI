@@ -53,7 +53,7 @@ enum class ImageFormat {
   BGR,
   RGBA,
   BGRA,
-  R32,
+  R32F,
   RG16F,
   RG32F,
   RGB16F,
