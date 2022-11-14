@@ -23,6 +23,7 @@
 namespace Marbas {
 
 struct Swapchain {
+  ImageFormat imageFormat;
   std::vector<Image*> images = {};
   std::vector<ImageView*> imageViews = {};
 };

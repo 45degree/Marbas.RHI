@@ -22,7 +22,7 @@ main(void) {
       .isClear = true,
       .isDepth = false,
       .isPresent = true,
-      .format = Marbas::ImageFormat::RGBA,
+      .format = swapchain->imageFormat,
   };
 
   Marbas::BlendAttachment renderTargetBlendAttachment;
@@ -103,7 +103,7 @@ main(void) {
     auto nextImage = factory->AcquireNextImage(swapchain, aviableSemaphore[frameIndex]);
 
     commandBuffer->Begin();
-    commandBuffer->BeginPipeline(pipeline, frameBuffers[nextImage], {0, 0, 0, 1});
+    commandBuffer->BeginPipeline(pipeline, frameBuffers[nextImage], {1, 1, 1, 1});
     commandBuffer->Draw(3, 1, 0, 0);
     commandBuffer->EndPipeline(pipeline);
     commandBuffer->End();

@@ -142,10 +142,10 @@ VulkanRHIFactory::Init(GLFWwindow* window, uint32_t width, uint32_t height) {
   m_capabilities = m_physicalDevice.getSurfaceCapabilitiesKHR(m_surface);
   auto surfaceFormats = m_physicalDevice.getSurfaceFormatsKHR(m_surface);
   auto formatResultIter = std::find_if(surfaceFormats.cbegin(), surfaceFormats.cend(), [](const auto& surfaceFormat) {
-    return surfaceFormat.format == vk::Format::eR8G8B8A8Srgb;
+    return surfaceFormat.format == vk::Format::eR8G8B8A8Srgb || surfaceFormat.format == vk::Format::eB8G8R8A8Srgb;
   });
   if (formatResultIter == surfaceFormats.cend()) {
-    constexpr std::string_view errMes = "can't find surface support RRBA";
+    constexpr std::string_view errMes = "can't find surface support RGBA or BGRA";
     LOG(ERROR) << errMes;
     throw std::runtime_error(errMes.data());
   }
@@ -224,7 +224,13 @@ VulkanRHIFactory::CreateSwapchain(uint32_t width, uint32_t height) {
     vulkanImage->arrayLayer = 1;
     vulkanImage->height = height;
     vulkanImage->width = width;
-    vulkanImage->format = ImageFormat::RGBA;
+    if (m_surfaceFormat.format == vk::Format::eB8G8R8A8Srgb) {
+      vulkanImage->format = ImageFormat::BGRA;
+      m_swapChain.imageFormat = ImageFormat::BGRA;
+    } else if (m_surfaceFormat.format == vk::Format::eR8G8B8A8Srgb) {
+      vulkanImage->format = ImageFormat::RGBA;
+      m_swapChain.imageFormat = ImageFormat::RGBA;
+    }
 
     m_swapChain.images.push_back(vulkanImage);
 

@@ -313,6 +313,8 @@ VulkanPipelineContext::CreatePipeline(GraphicsPipeLineCreateInfo& createInfo) {
       }
     };
 
+    auto writeMask = vk::ColorComponentFlagBits::eA | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eG |
+                     vk::ColorComponentFlagBits::eR;
     vk::PipelineColorBlendAttachmentState attachmentState;
     attachmentState.setBlendEnable(attachment.blendEnable);
     attachmentState.setColorBlendOp(convertToVukanBlendOp(attachment.colorBlendOp));
@@ -321,6 +323,7 @@ VulkanPipelineContext::CreatePipeline(GraphicsPipeLineCreateInfo& createInfo) {
     attachmentState.setSrcAlphaBlendFactor(convertToVulkanFactory(attachment.srcAlphaBlendFactor));
     attachmentState.setDstColorBlendFactor(convertToVulkanFactory(attachment.dstColorBlendFactor));
     attachmentState.setDstAlphaBlendFactor(convertToVulkanFactory(attachment.dstAlphaBlendFactor));
+    attachmentState.setColorWriteMask(writeMask);
 
     vkColorBlendAttachmentStates.push_back(attachmentState);
   }
