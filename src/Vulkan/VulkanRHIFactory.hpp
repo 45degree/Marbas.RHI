@@ -32,6 +32,9 @@ class VulkanRHIFactory final : public RHIFactory {
   Swapchain*
   GetSwapchain() override;
 
+  Swapchain*
+  RecreateSwapchain(Swapchain* oldSwapchain, uint32_t width, uint32_t height) override;
+
   uint32_t
   AcquireNextImage(Swapchain* swapchain, const Semaphore* semaphore) override;
 
@@ -71,6 +74,9 @@ class VulkanRHIFactory final : public RHIFactory {
  private:
   void
   CreateSwapchain(uint32_t width, uint32_t height);
+
+  void
+  DestroySwapchain();
 
  private:
   vk::Instance m_instace;

@@ -255,20 +255,20 @@ struct RasterizationDesc {
 };
 
 struct Pipeline {
-  PipelineType pipelineType;
+  PipelineType pipelineType = PipelineType::GRAPHICS;
 };
 
 struct FrameBufferCreateInfo {
-  uint32_t height;
-  uint32_t width;
-  uint32_t layer;
-  Pipeline* pieline;
+  uint32_t height = 800;
+  uint32_t width = 600;
+  uint32_t layer = 1;
+  Pipeline* pieline = nullptr;
   std::span<ImageView*> attachments;
 };
 struct FrameBuffer {
-  uint32_t height;
-  uint32_t width;
-  uint32_t layerCount;
+  uint32_t height = 800;
+  uint32_t width = 600;
+  uint32_t layerCount = 1;
 };
 
 }  // namespace Marbas

@@ -110,7 +110,22 @@ main(void) {
 
     commandBuffer->Submit({aviableSemaphore.begin() + frameIndex, 1}, {waitSemaphore.begin() + frameIndex, 1}, fence);
 
-    factory->Present(swapchain, {waitSemaphore.begin() + frameIndex, 1}, nextImage);
+    if (factory->Present(swapchain, {waitSemaphore.begin() + frameIndex, 1}, nextImage) == -1) {
+      glfwGetFramebufferSize(glfwWindow, &width, &height);
+      factory->RecreateSwapchain(swapchain, width, height);
+      // recreate framebuffer
+      for (int i = 0; i < frameBuffers.size(); i++) {
+        pipelineContext->DestroyFrameBuffer(frameBuffers[i]);
+
+        Marbas::FrameBufferCreateInfo createInfo;
+        createInfo.height = height;
+        createInfo.width = width;
+        createInfo.layer = 1;
+        createInfo.pieline = pipeline;
+        createInfo.attachments = std::span(swapchain->imageViews.begin() + i, 1);
+        frameBuffers[i] = pipelineContext->CreateFrameBuffer(createInfo);
+      }
+    }
     factory->WaitForFence(fence);
     frameIndex = (frameIndex + 1) % imageCount;
   }

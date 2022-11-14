@@ -261,8 +261,7 @@ VulkanRHIFactory::CreateSwapchain(uint32_t width, uint32_t height) {
 }
 
 void
-VulkanRHIFactory::Quit() {
-  m_device.waitIdle();
+VulkanRHIFactory::DestroySwapchain() {
   for (auto* imageView : m_swapChain.imageViews) {
     auto* vulkanImageView = static_cast<VulkanImageView*>(imageView);
     m_device.destroyImageView(vulkanImageView->imageView);
@@ -270,7 +269,12 @@ VulkanRHIFactory::Quit() {
     delete vulkanImageView;
   }
   m_device.destroySwapchainKHR(m_swapChain.swapChain);
+}
 
+void
+VulkanRHIFactory::Quit() {
+  m_device.waitIdle();
+  DestroySwapchain();
   m_device.destroy();
   m_instance.destroySurfaceKHR(m_surface);
   m_instance.destroy();
@@ -278,6 +282,14 @@ VulkanRHIFactory::Quit() {
 
 Swapchain*
 VulkanRHIFactory::GetSwapchain() {
+  return &m_swapChain;
+}
+
+Swapchain*
+VulkanRHIFactory::RecreateSwapchain(Swapchain* oldSwapchain, uint32_t width, uint32_t height) {
+  m_device.waitIdle();
+  DestroySwapchain();
+  CreateSwapchain(width, height);
   return &m_swapChain;
 }
 

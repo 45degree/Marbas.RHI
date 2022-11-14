@@ -10,11 +10,16 @@ add_requires("shaderc")
 add_requires("stb 2021.09.10")
 add_requires("fmt 9.1.0")
 
+option("use vulkan")
+  set_default(true)
+option_end()
+
 if is_plat("linux") then
   add_requires("pkgconfig::vulkan")
   add_requires("spirv-cross 1.2.189+1");
 else
   option("Vulkan SDK Path")
+    add_deps("use vulkan")
     set_default("D:/VulkanSDK/1.3.224.1")
     set_description("Vulkan SDK Path")
     set_showmenu(true)
@@ -58,8 +63,6 @@ rule("UseVulkan")
       target:add("links", path.join(vulkanLibPath, "vulkan-1"))
       target:add('rpathdirs', vulkanBinPath)
     end
-    target:add('files', 'src/Vulkan/**.cc')
-    target:add('defines', "USE_VULKAN")
   end)
 rule_end()
 
@@ -68,9 +71,6 @@ rule("UseDirectX12")
     if not is_plat("windows") then
       return
     end
-
-    target:add("defines", "USE_D3D12", 'NOMINMAX')
-    target:add('files', 'src/DirectX12/**.cc')
     target:add('links', 'd3d12')
     target:add('links', 'dxgi')
   end)
@@ -88,10 +88,21 @@ target("Marbas.RHI")
     add_undefines("CreateSemaphore");
   end
 
-  add_rules("UseVulkan")
-  add_rules("UseDirectX12")
+  if has_config("use vulkan") then
+    add_rules("UseVulkan")
+    add_defines("USE_VULKAN")
+    add_files("src/Vulkan/**.cc")
+  end
 
+  if has_config("use directx12") then
+    add_rules("UseDirectX12")
+    add_defines("USE_D3D12", 'NOMINMAX')
+    add_files('src/DirectX12/**.cc')
+  end
+
+  add_deps("imgui-docking")
   add_packages("glfw", "glog", "shaderc", "gtest", "stb", "fmt")
 target_end()
 
 includes("sample")
+includes("3rdParty")

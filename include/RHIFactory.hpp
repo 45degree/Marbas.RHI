@@ -28,6 +28,9 @@ class RHIFactory {
   virtual Swapchain*
   GetSwapchain() = 0;
 
+  virtual Swapchain*
+  RecreateSwapchain(Swapchain* oldSwapchain, uint32_t width, uint32_t height) = 0;
+
   virtual uint32_t
   AcquireNextImage(Swapchain* swapchain, const Semaphore* semaphore) = 0;
 
