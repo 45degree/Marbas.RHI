@@ -21,6 +21,7 @@
 #include "VulkanBufferContext.hpp"
 #include "VulkanImage.hpp"
 #include "VulkanImageView.hpp"
+#include "VulkanImguiContext.hpp"
 #include "VulkanPipelineContext.hpp"
 #include "VulkanRHIFactory.hpp"
 #include "VulkanSynchronic.hpp"
@@ -208,6 +209,15 @@ VulkanRHIFactory::Init(GLFWwindow* window, uint32_t width, uint32_t height) {
       .computeQueue = m_computeQueue,
       .transferQueue = m_transferQueue,
   });
+  m_imguiContext = std::make_unique<VulkanImguiContext>(VulkanImguiCreateInfo{
+      .glfwWindow = window,
+      .instance = m_instance,
+      .physicalDevice = m_physicalDevice,
+      .graphicsQueueFamilyIndex = m_graphicsQueueFamilyIndex,
+      .graphicsQueue = m_graphicsQueue,
+      .device = m_device,
+      .swapchain = &m_swapChain,
+  });
 }
 
 void
@@ -215,6 +225,7 @@ VulkanRHIFactory::CreateSwapchain(uint32_t width, uint32_t height) {
   int imageCount = 2;
   m_swapChain.width = width;
   m_swapChain.height = height;
+  m_swapChain.surfaceFormat = m_surfaceFormat;
 
   vk::SwapchainCreateInfoKHR swapChainCreateInfo;
   swapChainCreateInfo.setImageColorSpace(m_surfaceFormat.colorSpace);

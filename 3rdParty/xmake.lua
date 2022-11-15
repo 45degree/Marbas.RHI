@@ -6,12 +6,14 @@ target('imgui-docking')
   add_headerfiles("imgui/*.h")
   add_headerfiles("imgui/backends/*.h")
 
-  add_includedirs("imgui/")
+  add_includedirs("imgui/", {public = true})
   add_includedirs("imgui/backends/")
+  add_includedirs(".", { public = true })
 
   add_files("imgui/*.cpp")
   add_files("imgui/backends/imgui_impl_glfw.cpp")
   add_files("imgui/backends/imgui_impl_opengl3.cpp")
+
 
   if has_config("use vulkan") then
     add_files("imgui/backends/imgui_impl_vulkan.cpp")

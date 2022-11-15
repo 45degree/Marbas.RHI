@@ -23,6 +23,7 @@
 namespace Marbas {
 
 struct VulkanSwapchain final : public Swapchain {
+  vk::SurfaceFormatKHR surfaceFormat;
   vk::SwapchainKHR swapChain;
   vk::PresentModeKHR presentMode;
   uint32_t imageCount = 2;

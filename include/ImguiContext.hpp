@@ -6,13 +6,15 @@
 
 namespace Marbas {
 
+struct ImguiRenderDataInfo {
+  const Semaphore* waitSemaphore = nullptr;
+  const Semaphore* signalSemaphore = nullptr;
+};
+
 class ImguiContext {
  public:
   virtual void
   Resize(uint32_t width, uint32_t height) = 0;
-
-  virtual void
-  CreateImguiContext() = 0;
 
   virtual void
   ClearUp() = 0;
@@ -24,7 +26,7 @@ class ImguiContext {
   NewFrame() = 0;
 
   virtual void
-  RenderData(const Semaphore* waitSemaphore, const Semaphore* signalSemaphore, uint32_t imageIndex) = 0;
+  RenderData(uint32_t imageIndex, const ImguiRenderDataInfo& renderInfo) = 0;
 };
 
 }  // namespace Marbas

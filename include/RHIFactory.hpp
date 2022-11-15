@@ -5,6 +5,7 @@
 
 #include "BufferContext.hpp"
 #include "GLFW/glfw3.h"
+#include "ImguiContext.hpp"
 #include "PipelineContext.hpp"
 #include "Swapchain.hpp"
 #include "Synchronic.hpp"
@@ -70,6 +71,11 @@ class RHIFactory {
     return m_bufferContext.get();
   }
 
+  ImguiContext*
+  GetImguiContext() {
+    return m_imguiContext.get();
+  }
+
   // TODO: add supoort for offscreen
   // virtual void
   // OffscreenInit();
@@ -79,6 +85,7 @@ class RHIFactory {
 
   std::unique_ptr<PipelineContext> m_pipelineContext = nullptr;
   std::unique_ptr<BufferContext> m_bufferContext = nullptr;
+  std::unique_ptr<ImguiContext> m_imguiContext = nullptr;
 };
 
 }  // namespace Marbas
