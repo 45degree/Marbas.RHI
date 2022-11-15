@@ -22,7 +22,7 @@
 namespace Marbas {
 
 Buffer*
-VulkanBufferContext::CreateBuffer(BufferType bufferType, void* data, uint32_t size, bool isStatic) {
+VulkanBufferContext::CreateBuffer(BufferType bufferType, const void* data, uint32_t size, bool isStatic) {
   auto* vulkanBuffer = new VulkanBuffer();
   vulkanBuffer->size = size;
   vulkanBuffer->bufferType = bufferType;
@@ -80,9 +80,9 @@ VulkanBufferContext::FindMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags
   throw std::runtime_error("failed to find suitable memory type!");
 }
 
-// TODO
+// TODO:
 void
-VulkanBufferContext::UpdateBuffer(Buffer* buffer, void* data, uint32_t size, uintptr_t offset) {}
+VulkanBufferContext::UpdateBuffer(Buffer* buffer, const void* data, uint32_t size, uintptr_t offset) {}
 
 void
 VulkanBufferContext::DestroyBuffer(Buffer* buffer) {

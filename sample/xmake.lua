@@ -2,3 +2,4 @@
 
 includes("HelloWindow")
 includes("HelloTriangle")
+includes("HelloVertexAndIndex")

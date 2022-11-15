@@ -40,10 +40,10 @@ class CommandBuffer {
   BindDescriptorSet(const Pipeline& pipeline, int first, std::span<DescriptorSet> descriptors) = 0;
 
   virtual void
-  BindVertexBuffer(Buffer& buffer) = 0;
+  BindVertexBuffer(Buffer* buffer) = 0;
 
   virtual void
-  BindIndexBuffer(Buffer& buffer) = 0;
+  BindIndexBuffer(Buffer* buffer) = 0;
 
  public:
   virtual void

@@ -200,6 +200,7 @@ VulkanRHIFactory::Init(GLFWwindow* window, uint32_t width, uint32_t height) {
   m_pipelineContext = std::make_unique<VulkanPipelineContext>(m_device);
   m_bufferContext = std::make_unique<VulkanBufferContext>(VulkanBufferContextCreateInfo{
       .device = m_device,
+      .physicalDevice = m_physicalDevice,
       .graphicsQueueIndex = m_graphicsQueueFamilyIndex,
       .computeQueueIndex = m_computeQueueFamilyIndex,
       .transfermQueueIndex = m_transferQueueFamilyIndex,

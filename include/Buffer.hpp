@@ -52,8 +52,8 @@ struct InputElementView {
 };
 
 struct InputLayoutDesc {
-  std::vector<InputElementDesc> elementDesc;
-  std::vector<InputElementView> viewDesc;
+  std::vector<InputElementDesc> elementDesc = {};
+  std::vector<InputElementView> viewDesc = {};
 };
 
 enum class BufferType {

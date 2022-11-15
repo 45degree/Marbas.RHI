@@ -137,10 +137,10 @@ VulkanPipelineContext::CreatePipeline(GraphicsPipeLineCreateInfo& createInfo) {
 
   // input state
   vk::PipelineVertexInputStateCreateInfo vkVertexInputStateCreateInfo;
+  std::vector<vk::VertexInputAttributeDescription> vkInputAttributeDescs;
+  std::vector<vk::VertexInputBindingDescription> vkInputBindingDescs;
   if (!createInfo.vertexInputLayout.elementDesc.empty()) {
-    std::vector<vk::VertexInputAttributeDescription> vkInputAttributeDescs;
-    std::vector<vk::VertexInputBindingDescription> vkInputBindingDescs;
-    for (auto layout : createInfo.vertexInputLayout.elementDesc) {
+    for (const auto& layout : createInfo.vertexInputLayout.elementDesc) {
       vk::VertexInputAttributeDescription vkInputAttributeDesc;
       vkInputAttributeDesc.setBinding(layout.binding);
       vkInputAttributeDesc.setLocation(layout.attribute);
@@ -148,7 +148,7 @@ VulkanPipelineContext::CreatePipeline(GraphicsPipeLineCreateInfo& createInfo) {
       vkInputAttributeDesc.setFormat(ConvertToVulkanFormat(layout.format));
       vkInputAttributeDescs.push_back(vkInputAttributeDesc);
     }
-    for (auto viewDesc : createInfo.vertexInputLayout.viewDesc) {
+    for (const auto& viewDesc : createInfo.vertexInputLayout.viewDesc) {
       vk::VertexInputBindingDescription vkInputBindingDesc;
       vkInputBindingDesc.setBinding(viewDesc.binding);
       vkInputBindingDesc.setStride(viewDesc.stride);

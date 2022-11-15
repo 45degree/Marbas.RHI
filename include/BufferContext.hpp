@@ -26,10 +26,10 @@ namespace Marbas {
 class BufferContext {
  public:
   virtual Buffer*
-  CreateBuffer(BufferType bufferType, void* data, uint32_t size, bool isStatic) = 0;
+  CreateBuffer(BufferType bufferType, const void* data, uint32_t size, bool isStatic) = 0;
 
   virtual void
-  UpdateBuffer(Buffer* buffer, void* data, uint32_t size, uintptr_t offset) = 0;
+  UpdateBuffer(Buffer* buffer, const void* data, uint32_t size, uintptr_t offset) = 0;
 
   virtual void
   DestroyBuffer(Buffer* buffer) = 0;

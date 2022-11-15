@@ -94,6 +94,20 @@ VulkanCommandBuffer::TransformImageState(Image* image, ImageState srcState, Imag
 }
 
 void
+VulkanCommandBuffer::BindVertexBuffer(Buffer* buffer) {
+  auto* vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
+  auto& vkBuffer = vulkanBuffer->vkBuffer;
+  m_commandBuffer.bindVertexBuffers(0, vkBuffer, static_cast<vk::DeviceSize>(0));
+}
+
+void
+VulkanCommandBuffer::BindIndexBuffer(Buffer* buffer) {
+  auto* vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
+  auto& vkBuffer = vulkanBuffer->vkBuffer;
+  m_commandBuffer.bindIndexBuffer(vkBuffer, 0, vk::IndexType::eUint32);
+}
+
+void
 VulkanCommandBuffer::Begin() {
   vk::CommandBufferBeginInfo vkBeginInfo;
   vkBeginInfo.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);

@@ -24,6 +24,7 @@ namespace Marbas {
 
 struct VulkanBufferContextCreateInfo final {
   vk::Device device;
+  vk::PhysicalDevice physicalDevice;
   uint32_t graphicsQueueIndex;
   uint32_t computeQueueIndex;
   uint32_t transfermQueueIndex;
@@ -37,6 +38,7 @@ class VulkanBufferContext final : public BufferContext {
   explicit VulkanBufferContext(const VulkanBufferContextCreateInfo& createInfo)
       : BufferContext(),
         m_device(createInfo.device),
+        m_physicalDevice(createInfo.physicalDevice),
         m_computeQueueIndex(createInfo.computeQueueIndex),
         m_graphicsQueueIndex(createInfo.graphicsQueueIndex),
         m_transfermQueueIndex(createInfo.transfermQueueIndex),
@@ -46,10 +48,10 @@ class VulkanBufferContext final : public BufferContext {
 
  public:
   Buffer*
-  CreateBuffer(BufferType bufferType, void* data, uint32_t size, bool isStatic) override;
+  CreateBuffer(BufferType bufferType, const void* data, uint32_t size, bool isStatic) override;
 
   void
-  UpdateBuffer(Buffer* buffer, void* data, uint32_t size, uintptr_t offset) override;
+  UpdateBuffer(Buffer* buffer, const void* data, uint32_t size, uintptr_t offset) override;
 
   void
   DestroyBuffer(Buffer* buffer) override;
