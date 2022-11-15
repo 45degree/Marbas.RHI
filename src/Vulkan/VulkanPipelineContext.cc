@@ -15,7 +15,7 @@ Sampler*
 VulkanPipelineContext::CreateSampler() {
   // TODO:
   vk::SamplerCreateInfo createInfo;
-  m_device.createSampler(createInfo);
+  auto sampler = m_device.createSampler(createInfo);
 
   return nullptr;
 }
@@ -207,12 +207,15 @@ VulkanPipelineContext::CreatePipeline(GraphicsPipeLineCreateInfo& createInfo) {
   vkRasterizationStateCreateInfo.setPolygonMode(ConvertToVulkanPolyMode(createInfo.rasterizationInfo.polygonMode));
   vkRasterizationStateCreateInfo.setFrontFace(ConvertToVulkanFrontFace(createInfo.rasterizationInfo.frontFace));
 
-  // vkRasterizationStateCreateInfo.setDepthClampEnable(createInfo.rasterizationInfo.depthCilpEnable);
-  vkRasterizationStateCreateInfo.setDepthClampEnable(false);
-  // vkRasterizationStateCreateInfo.setDepthBiasClamp(createInfo.rasterizationInfo.depthBiasClamp);
+  vkRasterizationStateCreateInfo.setDepthClampEnable(true);
+  vkRasterizationStateCreateInfo.setDepthBiasClamp(createInfo.rasterizationInfo.depthBiasClamp);
   vkRasterizationStateCreateInfo.setDepthBiasConstantFactor(0);
-  // vkRasterizationStateCreateInfo.setDepthBiasSlopeFactor(createInfo.rasterizationInfo.slopeScaledDepthBias);
+  vkRasterizationStateCreateInfo.setDepthBiasSlopeFactor(createInfo.rasterizationInfo.slopeScaledDepthBias);
   vkRasterizationStateCreateInfo.setDepthBiasEnable(false);
+
+  vk::PipelineRasterizationDepthClipStateCreateInfoEXT vkDepthClipStateCreateInfo;
+  vkDepthClipStateCreateInfo.setDepthClipEnable(createInfo.rasterizationInfo.depthCilpEnable);
+  vkRasterizationStateCreateInfo.setPNext(&vkDepthClipStateCreateInfo);
 
   vkCreateInfo.setPRasterizationState(&vkRasterizationStateCreateInfo);
 

@@ -61,9 +61,9 @@ struct RasterizationCreateInfo {
   CullMode cullMode = CullMode::FRONT;
   FrontFace frontFace = FrontFace::CCW;
   int depthBias = 0;
-  // float depthBiasClamp = 0;
-  // float slopeScaledDepthBias = 0;
-  // bool depthCilpEnable = true;
+  float depthBiasClamp = 0;
+  float slopeScaledDepthBias = 0;
+  bool depthCilpEnable = true;
 };
 
 /**

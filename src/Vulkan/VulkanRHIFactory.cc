@@ -32,14 +32,31 @@ VulkanRHIFactory::VulkanRHIFactory() { glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_A
 VulkanRHIFactory::~VulkanRHIFactory() = default;
 
 void
-VulkanRHIFactory::Init(GLFWwindow* window, uint32_t width, uint32_t height) {
+VulkanRHIFactory::CreateInstance(GLFWwindow* glfwWindow) {
   // get glfw extensions
   uint32_t glfwExtensionCount = 0;
   const char** glfwExtensions;
   glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
+  // combine all extension needed to enable
+  std::vector vulkanExtensions = {"VK_EXT_depth_clip_enable"};
+  for (int i = 0; i < glfwExtensionCount; i++) {
+    auto iter = std::find_if(vulkanExtensions.begin(), vulkanExtensions.end(), [&](const char* extension) -> bool {
+      return std::strcmp(extension, *(glfwExtensions + i)) == 0;
+    });
+    if (iter == vulkanExtensions.end()) {
+      vulkanExtensions.push_back(*(glfwExtensions + i));
+    }
+  }
+
   // validation layers
+#ifndef NDEBUG
   std::array<const char*, 1> layers = {"VK_LAYER_KHRONOS_validation"};
+#else
+  std::array<const char*, 0> layers = {};
+#endif
+
+  // TODO: set error callback functions
 
   // create vulkan instance
   vk::InstanceCreateInfo instanceCreateInfo;
@@ -49,6 +66,11 @@ VulkanRHIFactory::Init(GLFWwindow* window, uint32_t width, uint32_t height) {
   instanceCreateInfo.setPpEnabledLayerNames(layers.data());
 
   m_instance = vk::createInstance(instanceCreateInfo);
+}
+
+void
+VulkanRHIFactory::Init(GLFWwindow* window, uint32_t width, uint32_t height) {
+  CreateInstance(window);
 
   // set surface KHR
   VkSurfaceKHR surface;
@@ -103,6 +125,13 @@ VulkanRHIFactory::Init(GLFWwindow* window, uint32_t width, uint32_t height) {
   deviceCreateInfo.setPEnabledExtensionNames(deviceExtensions);
   std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
   std::array<float, 1> priorities = {1.0};
+
+  // set device features
+  vk::PhysicalDeviceFeatures features;
+  features.setDepthClamp(true);
+  features.setGeometryShader(true);
+  features.setDepthBiasClamp(true);
+  deviceCreateInfo.setPEnabledFeatures(&features);
 
   // create graphics queue create info
   vk::DeviceQueueCreateInfo queueCreateInfo;
@@ -305,7 +334,7 @@ VulkanRHIFactory::AcquireNextImage(Swapchain* swapchain, const Semaphore* semaph
     return -1;
   }
   DLOG_ASSERT(nextImageResult.result == vk::Result::eSuccess);
-  return nextImageResult.value;
+  return static_cast<int>(nextImageResult.value);
 }
 
 int

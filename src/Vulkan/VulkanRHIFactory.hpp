@@ -73,6 +73,9 @@ class VulkanRHIFactory final : public RHIFactory {
 
  private:
   void
+  CreateInstance(GLFWwindow* glfwWindow);
+
+  void
   CreateSwapchain(uint32_t width, uint32_t height);
 
   void
