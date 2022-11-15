@@ -222,10 +222,11 @@ VulkanRHIFactory::Init(GLFWwindow* window, uint32_t width, uint32_t height) {
 
 void
 VulkanRHIFactory::CreateSwapchain(uint32_t width, uint32_t height) {
-  int imageCount = 2;
+  int imageCount = 3;
   m_swapChain.width = width;
   m_swapChain.height = height;
   m_swapChain.surfaceFormat = m_surfaceFormat;
+  m_swapChain.imageCount = 3;
 
   vk::SwapchainCreateInfoKHR swapChainCreateInfo;
   swapChainCreateInfo.setImageColorSpace(m_surfaceFormat.colorSpace);

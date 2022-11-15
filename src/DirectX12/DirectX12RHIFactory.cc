@@ -118,7 +118,7 @@ DirectX12RHIFactory::GetSwapchain() {
   return &m_swapchain;
 }
 
-uint32_t
+int
 DirectX12RHIFactory::AcquireNextImage(Swapchain* swapchain, const Semaphore* semaphore) {
   auto* d3dSwapchain = static_cast<DirectX12Swapchain*>(swapchain);
 

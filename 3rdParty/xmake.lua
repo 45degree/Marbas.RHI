@@ -16,6 +16,7 @@ target('imgui-docking')
 
 
   if has_config("use vulkan") then
+    add_rules("UseVulkan")
     add_files("imgui/backends/imgui_impl_vulkan.cpp")
   end
 

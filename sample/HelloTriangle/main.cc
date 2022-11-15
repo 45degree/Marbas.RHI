@@ -125,6 +125,7 @@ main(void) {
     if (nextImage == -1) {
       glfwGetFramebufferSize(glfwWindow, &width, &height);
       onResize(width, height);
+      continue;
     }
 
     std::array<Marbas::ViewportInfo, 1> viewportInfos = {viewportInfo};
