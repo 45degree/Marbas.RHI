@@ -190,31 +190,14 @@ VulkanPipelineContext::CreatePipeline(GraphicsPipeLineCreateInfo& createInfo) {
   vkCreateInfo.setStages(vkShaderStageCreateInfos);
 
   // view port
-  std::vector<vk::Viewport> vkViewports;
-  for (auto& viewportInfo : createInfo.viewportStateCreateInfo.viewportInfos) {
-    vk::Viewport vkViewport;
-    vkViewport.setHeight(viewportInfo.height);
-    vkViewport.setWidth(viewportInfo.width);
-    vkViewport.setMaxDepth(viewportInfo.maxDepth);
-    vkViewport.setMinDepth(viewportInfo.minDepth);
-    vkViewport.setX(viewportInfo.x);
-    vkViewport.setY(viewportInfo.y);
-
-    vkViewports.push_back(vkViewport);
-  }
-
-  std::vector<vk::Rect2D> vkScissors;
-  for (const auto& scissorInfo : createInfo.viewportStateCreateInfo.scissorInfos) {
-    vk::Rect2D vkScissor;
-    vkScissor.setExtent(vk::Extent2D(scissorInfo.width, scissorInfo.height));
-    vkScissor.setOffset(vk::Offset2D(scissorInfo.x, scissorInfo.y));
-    vkScissors.push_back(vkScissor);
-  }
-
   vk::PipelineViewportStateCreateInfo vkViewportStateCreateInfo;
-  vkViewportStateCreateInfo.setViewports(vkViewports);
-  vkViewportStateCreateInfo.setScissors(vkScissors);
   vkCreateInfo.setPViewportState(&vkViewportStateCreateInfo);
+
+  // dynamic state
+  std::vector<vk::DynamicState> dynamicStates = {vk::DynamicState::eViewport, vk::DynamicState::eScissor};
+  vk::PipelineDynamicStateCreateInfo vkPipelineDynamicStateCreateInfo;
+  vkPipelineDynamicStateCreateInfo.setDynamicStates(dynamicStates);
+  vkCreateInfo.setPDynamicState(&vkPipelineDynamicStateCreateInfo);
 
   // resterization state
   vk::PipelineRasterizationStateCreateInfo vkRasterizationStateCreateInfo;

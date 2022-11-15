@@ -27,12 +27,11 @@ namespace Marbas {
 enum class CommandBufferUsage {
   GRAPHICS,
   COMPUTE,
-  PRESENT,
   TRANSFER,
 };
 
 struct CommandPool {
-  CommandBufferUsage usage;
+  CommandBufferUsage usage = CommandBufferUsage::GRAPHICS;
 };
 
 class CommandBuffer {
@@ -55,6 +54,12 @@ class CommandBuffer {
 
   virtual void
   BeginPipeline(Pipeline* pipeline, FrameBuffer* frameBuffer, const std::array<float, 4>& clearColor) = 0;
+
+  virtual void
+  SetViewports(std::span<ViewportInfo> viewportInfos) = 0;
+
+  virtual void
+  SetScissors(std::span<ScissorInfo> scissorInfos) = 0;
 
   virtual void
   EndPipeline(Pipeline* pipeline) = 0;

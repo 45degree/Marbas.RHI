@@ -170,11 +170,6 @@ struct ScissorInfo {
   uint32_t height = 600;
 };
 
-struct ViewportStateCreateInfo {
-  std::vector<ViewportInfo> viewportInfos = {};
-  std::vector<ScissorInfo> scissorInfos = {};
-};
-
 /**
  * input assembly state create struct
  */
@@ -234,7 +229,6 @@ struct GraphicsPipeLineCreateInfo {
   DescriptorSetLayout descriptorSetLayout = {};
   InputLayoutDesc vertexInputLayout = {};
   std::vector<ShaderStageCreateInfo> shaderStageCreateInfo = {};
-  ViewportStateCreateInfo viewportStateCreateInfo = {};
   InputAssemblyStateCreateInfo inputAssemblyState = {};
   RasterizationCreateInfo rasterizationInfo = {};
   DepthStencilCreateInfo depthStencilInfo = {};

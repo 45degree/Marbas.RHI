@@ -64,8 +64,6 @@ main(void) {
   pipelineCreateInfo.depthStencilInfo.stencilTestEnable = false;
   pipelineCreateInfo.depthStencilInfo.depthBoundsTestEnable = false;
   pipelineCreateInfo.depthStencilInfo.depthWriteEnable = false;
-  pipelineCreateInfo.viewportStateCreateInfo.viewportInfos.push_back(viewportInfo);
-  pipelineCreateInfo.viewportStateCreateInfo.scissorInfos.push_back(scissorInfo);
   pipelineCreateInfo.inputAssemblyState.topology = Marbas::PrimitiveTopology::TRIANGLE;
   pipelineCreateInfo.blendInfo.attachments.push_back(renderTargetBlendAttachment);
 
@@ -96,14 +94,46 @@ main(void) {
 
   Marbas::Fence* fence = factory->CreateFence();
 
+  auto onResize = [&](int width, int height) {
+    factory->WaitIdle();
+    factory->RecreateSwapchain(swapchain, width, height);
+    // recreate framebuffer
+    for (int i = 0; i < frameBuffers.size(); i++) {
+      pipelineContext->DestroyFrameBuffer(frameBuffers[i]);
+
+      Marbas::FrameBufferCreateInfo createInfo;
+      createInfo.height = height;
+      createInfo.width = width;
+      createInfo.layer = 1;
+      createInfo.pieline = pipeline;
+      createInfo.attachments = std::span(swapchain->imageViews.begin() + i, 1);
+      frameBuffers[i] = pipelineContext->CreateFrameBuffer(createInfo);
+    }
+
+    // viewport and scissor
+    viewportInfo.width = static_cast<float>(width);
+    viewportInfo.height = static_cast<float>(height);
+    scissorInfo.width = width;
+    scissorInfo.height = height;
+  };
+
   uint32_t frameIndex = 0;
   while (!glfwWindowShouldClose(glfwWindow)) {
     glfwPollEvents();
     factory->ResetFence(fence);
     auto nextImage = factory->AcquireNextImage(swapchain, aviableSemaphore[frameIndex]);
+    if (nextImage == -1) {
+      glfwGetFramebufferSize(glfwWindow, &width, &height);
+      onResize(width, height);
+    }
+
+    std::array<Marbas::ViewportInfo, 1> viewportInfos = {viewportInfo};
+    std::array<Marbas::ScissorInfo, 1> scissorInfos = {scissorInfo};
 
     commandBuffer->Begin();
     commandBuffer->BeginPipeline(pipeline, frameBuffers[nextImage], {1, 1, 1, 1});
+    commandBuffer->SetViewports(viewportInfos);
+    commandBuffer->SetScissors(scissorInfos);
     commandBuffer->Draw(3, 1, 0, 0);
     commandBuffer->EndPipeline(pipeline);
     commandBuffer->End();
@@ -112,19 +142,7 @@ main(void) {
 
     if (factory->Present(swapchain, {waitSemaphore.begin() + frameIndex, 1}, nextImage) == -1) {
       glfwGetFramebufferSize(glfwWindow, &width, &height);
-      factory->RecreateSwapchain(swapchain, width, height);
-      // recreate framebuffer
-      for (int i = 0; i < frameBuffers.size(); i++) {
-        pipelineContext->DestroyFrameBuffer(frameBuffers[i]);
-
-        Marbas::FrameBufferCreateInfo createInfo;
-        createInfo.height = height;
-        createInfo.width = width;
-        createInfo.layer = 1;
-        createInfo.pieline = pipeline;
-        createInfo.attachments = std::span(swapchain->imageViews.begin() + i, 1);
-        frameBuffers[i] = pipelineContext->CreateFrameBuffer(createInfo);
-      }
+      onResize(width, height);
     }
     factory->WaitForFence(fence);
     frameIndex = (frameIndex + 1) % imageCount;

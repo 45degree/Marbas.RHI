@@ -35,7 +35,7 @@ class VulkanRHIFactory final : public RHIFactory {
   Swapchain*
   RecreateSwapchain(Swapchain* oldSwapchain, uint32_t width, uint32_t height) override;
 
-  uint32_t
+  int
   AcquireNextImage(Swapchain* swapchain, const Semaphore* semaphore) override;
 
   int

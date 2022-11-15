@@ -140,6 +140,35 @@ VulkanCommandBuffer::EndPipeline(Pipeline* pipeline) {
 }
 
 void
+VulkanCommandBuffer::SetViewports(std::span<ViewportInfo> viewportInfos) {
+  std::vector<vk::Viewport> vkViewports;
+  std::transform(viewportInfos.begin(), viewportInfos.end(), std::back_inserter(vkViewports), [](auto& viewportInfo) {
+    vk::Viewport vkViewport;
+    vkViewport.setHeight(viewportInfo.height);
+    vkViewport.setWidth(viewportInfo.width);
+    vkViewport.setX(viewportInfo.x);
+    vkViewport.setY(viewportInfo.y);
+    vkViewport.setMinDepth(viewportInfo.minDepth);
+    vkViewport.setMaxDepth(viewportInfo.maxDepth);
+    return vkViewport;
+  });
+
+  m_commandBuffer.setViewport(0, vkViewports);
+}
+
+void
+VulkanCommandBuffer::SetScissors(std::span<ScissorInfo> scissorInfos) {
+  std::vector<vk::Rect2D> vkScissors;
+  std::transform(scissorInfos.begin(), scissorInfos.end(), std::back_inserter(vkScissors), [](auto& scissorInfo) {
+    vk::Rect2D scissor;
+    scissor.setOffset(vk::Offset2D(scissorInfo.x, scissorInfo.y));
+    scissor.setExtent(vk::Extent2D(scissorInfo.width, scissorInfo.height));
+    return scissor;
+  });
+  m_commandBuffer.setScissor(0, vkScissors);
+}
+
+void
 VulkanCommandBuffer::Submit(std::span<Semaphore*> waitSemaphore, std::span<Semaphore*> signalSemaphore, Fence* fence) {
   std::vector<vk::Semaphore> vkWaitSemaphore, vkSignalSemaphore;
   std::transform(waitSemaphore.begin(), waitSemaphore.end(), std::back_inserter(vkWaitSemaphore),

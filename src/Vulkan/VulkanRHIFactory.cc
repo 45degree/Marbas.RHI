@@ -293,7 +293,7 @@ VulkanRHIFactory::RecreateSwapchain(Swapchain* oldSwapchain, uint32_t width, uin
   return &m_swapChain;
 }
 
-uint32_t
+int
 VulkanRHIFactory::AcquireNextImage(Swapchain* swapchain, const Semaphore* semaphore) {
   auto* vulkanSwapchain = static_cast<VulkanSwapchain*>(swapchain);
   auto currentSemaphore = static_cast<const VulkanSemaphore*>(semaphore)->semaphore;

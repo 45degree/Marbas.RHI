@@ -45,6 +45,34 @@ class VulkanCommandBuffer final : public CommandBuffer {
   void
   BindIndexBuffer(Buffer& buffer) override {}
 
+  void
+  InsertBufferBarrier(const std::vector<BufferBarrier>& barrier) override;
+
+  void
+  InsertImageBarrier(const std::vector<ImageBarrier>& barriers) override;
+
+  void
+  TransformImageState(Image* image, ImageState srcState, ImageState dstState) override;
+
+ public:
+  void
+  Begin() override;
+
+  void
+  End() override;
+
+  void
+  BeginPipeline(Pipeline* pipeline, FrameBuffer* frameBuffer, const std::array<float, 4>& clearColor) override;
+
+  void
+  SetViewports(std::span<ViewportInfo> viewportInfos) override;
+
+  void
+  SetScissors(std::span<ScissorInfo> scissorInfos) override;
+
+  void
+  EndPipeline(Pipeline* pipeline) override;
+
   /**
    * @brief Draw primitives
    *
@@ -72,28 +100,6 @@ class VulkanCommandBuffer final : public CommandBuffer {
               uint32_t firstInstance) override {
     m_commandBuffer.drawIndexed(indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
   }
-
-  void
-  InsertBufferBarrier(const std::vector<BufferBarrier>& barrier) override;
-
-  void
-  InsertImageBarrier(const std::vector<ImageBarrier>& barriers) override;
-
-  void
-  TransformImageState(Image* image, ImageState srcState, ImageState dstState) override;
-
- public:
-  void
-  Begin() override;
-
-  void
-  End() override;
-
-  void
-  BeginPipeline(Pipeline* pipeline, FrameBuffer* frameBuffer, const std::array<float, 4>& clearColor) override;
-
-  void
-  EndPipeline(Pipeline* pipeline) override;
 
  public:
   void
