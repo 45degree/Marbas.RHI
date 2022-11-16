@@ -126,7 +126,9 @@ VulkanImguiContext::VulkanImguiContext(const VulkanImguiCreateInfo& createInfo)
       m_graphicsQueueFamilyIndex(createInfo.graphicsQueueFamilyIndex),
       m_graphicsQueue(createInfo.graphicsQueue),
       m_device(createInfo.device),
-      m_swapchain(createInfo.swapchain) {
+      m_swapchain(createInfo.swapchain),
+      m_width(createInfo.width),
+      m_height(createInfo.height) {
   auto surfaceFormat = m_swapchain->surfaceFormat;
   m_renderPass = CreateImguiRenderPass(m_device, surfaceFormat, true);
 

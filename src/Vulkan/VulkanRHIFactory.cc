@@ -217,6 +217,8 @@ VulkanRHIFactory::Init(GLFWwindow* window, uint32_t width, uint32_t height) {
       .graphicsQueue = m_graphicsQueue,
       .device = m_device,
       .swapchain = &m_swapChain,
+      .width = width,
+      .height = height,
   });
 }
 

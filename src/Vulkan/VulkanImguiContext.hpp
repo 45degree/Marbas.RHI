@@ -20,6 +20,8 @@ struct VulkanImguiCreateInfo {
   vk::Queue graphicsQueue;
   vk::Device device;
   VulkanSwapchain* swapchain = nullptr;
+  uint32_t width;
+  uint32_t height;
 };
 
 class VulkanImguiContext final : public ImguiContext {
