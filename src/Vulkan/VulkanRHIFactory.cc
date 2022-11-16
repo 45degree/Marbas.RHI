@@ -103,20 +103,24 @@ VulkanRHIFactory::Init(GLFWwindow* window, uint32_t width, uint32_t height) {
   auto families = m_physicalDevice.getQueueFamilyProperties();
   int index = 0;
   for (const auto& family : families) {
-    if (family.queueFlags & vk::QueueFlagBits::eGraphics && m_graphicsQueueFamilyIndex == -1) {
+    if (family.queueFlags & vk::QueueFlagBits::eGraphics && !m_graphicsQueueFamilyIndex) {
       m_graphicsQueueFamilyIndex = index;
     }
-    if (family.queueFlags & vk::QueueFlagBits::eTransfer && m_transferQueueFamilyIndex == -1) {
+    if (family.queueFlags & vk::QueueFlagBits::eTransfer && !m_transferQueueFamilyIndex) {
       m_transferQueueFamilyIndex = index;
     }
-    if (family.queueFlags & vk::QueueFlagBits::eCompute && m_computeQueueFamilyIndex == -1) {
+    if (family.queueFlags & vk::QueueFlagBits::eCompute && !m_computeQueueFamilyIndex) {
       m_computeQueueFamilyIndex = index;
     }
-    if (m_physicalDevice.getSurfaceSupportKHR(index, m_surface) && m_presentQueueFamilyIndex == -1) {
+    if (m_physicalDevice.getSurfaceSupportKHR(index, m_surface) && !m_presentQueueFamilyIndex) {
       m_presentQueueFamilyIndex = index;
     }
     index++;
   }
+  LOG_ASSERT(m_graphicsQueueFamilyIndex) << "can't find graphics queue family index";
+  LOG_ASSERT(m_computeQueueFamilyIndex) << "can't find compute queue family index";
+  LOG_ASSERT(m_transferQueueFamilyIndex) << "can't find transfer queue family index";
+  LOG_ASSERT(m_presentQueueFamilyIndex) << "can't find present queue family index";
 
   /**
    * create logical device and queue
@@ -136,26 +140,26 @@ VulkanRHIFactory::Init(GLFWwindow* window, uint32_t width, uint32_t height) {
 
   // create graphics queue create info
   vk::DeviceQueueCreateInfo queueCreateInfo;
-  queueCreateInfo.setQueueFamilyIndex(m_graphicsQueueFamilyIndex);
+  queueCreateInfo.setQueueFamilyIndex(*m_graphicsQueueFamilyIndex);
   queueCreateInfo.setQueuePriorities(priorities);
   queueCreateInfo.setQueueCount(1);
   queueCreateInfos.push_back(queueCreateInfo);
 
   if (m_presentQueueFamilyIndex != m_graphicsQueueFamilyIndex) {
-    queueCreateInfo.setQueueFamilyIndex(m_presentQueueFamilyIndex);
+    queueCreateInfo.setQueueFamilyIndex(*m_presentQueueFamilyIndex);
     queueCreateInfos.push_back(queueCreateInfo);
   }
 
   if (m_transferQueueFamilyIndex != m_graphicsQueueFamilyIndex &&
       m_transferQueueFamilyIndex != m_presentQueueFamilyIndex) {
-    queueCreateInfo.setQueueFamilyIndex(m_transferQueueFamilyIndex);
+    queueCreateInfo.setQueueFamilyIndex(*m_transferQueueFamilyIndex);
     queueCreateInfos.push_back(queueCreateInfo);
   }
 
   if (m_computeQueueFamilyIndex != m_graphicsQueueFamilyIndex &&
       m_computeQueueFamilyIndex != m_presentQueueFamilyIndex &&
       m_computeQueueFamilyIndex != m_transferQueueFamilyIndex) {
-    queueCreateInfo.setQueueFamilyIndex(m_computeQueueFamilyIndex);
+    queueCreateInfo.setQueueFamilyIndex(*m_computeQueueFamilyIndex);
     queueCreateInfos.push_back(queueCreateInfo);
   }
 
@@ -163,10 +167,10 @@ VulkanRHIFactory::Init(GLFWwindow* window, uint32_t width, uint32_t height) {
   deviceCreateInfo.setQueueCreateInfos(queueCreateInfos);
   m_device = m_physicalDevice.createDevice(deviceCreateInfo);
 
-  m_graphicsQueue = m_device.getQueue(m_graphicsQueueFamilyIndex, 0);
-  m_presentQueue = m_device.getQueue(m_presentQueueFamilyIndex, 0);
-  m_transferQueue = m_device.getQueue(m_transferQueueFamilyIndex, 0);
-  m_computeQueue = m_device.getQueue(m_computeQueueFamilyIndex, 0);
+  m_graphicsQueue = m_device.getQueue(*m_graphicsQueueFamilyIndex, 0);
+  m_presentQueue = m_device.getQueue(*m_presentQueueFamilyIndex, 0);
+  m_transferQueue = m_device.getQueue(*m_transferQueueFamilyIndex, 0);
+  m_computeQueue = m_device.getQueue(*m_computeQueueFamilyIndex, 0);
 
   // find surface format and capabilities
   m_capabilities = m_physicalDevice.getSurfaceCapabilitiesKHR(m_surface);
@@ -202,9 +206,9 @@ VulkanRHIFactory::Init(GLFWwindow* window, uint32_t width, uint32_t height) {
   m_bufferContext = std::make_unique<VulkanBufferContext>(VulkanBufferContextCreateInfo{
       .device = m_device,
       .physicalDevice = m_physicalDevice,
-      .graphicsQueueIndex = static_cast<uint32_t>(m_graphicsQueueFamilyIndex),
-      .computeQueueIndex = static_cast<uint32_t>(m_computeQueueFamilyIndex),
-      .transfermQueueIndex = static_cast<uint32_t>(m_transferQueueFamilyIndex),
+      .graphicsQueueIndex = *m_graphicsQueueFamilyIndex,
+      .computeQueueIndex = *m_computeQueueFamilyIndex,
+      .transfermQueueIndex = *m_transferQueueFamilyIndex,
       .graphicsQueue = m_graphicsQueue,
       .computeQueue = m_computeQueue,
       .transferQueue = m_transferQueue,
@@ -213,7 +217,7 @@ VulkanRHIFactory::Init(GLFWwindow* window, uint32_t width, uint32_t height) {
       .glfwWindow = window,
       .instance = m_instance,
       .physicalDevice = m_physicalDevice,
-      .graphicsQueueFamilyIndex = static_cast<uint32_t>(m_graphicsQueueFamilyIndex),
+      .graphicsQueueFamilyIndex = *m_graphicsQueueFamilyIndex,
       .graphicsQueue = m_graphicsQueue,
       .device = m_device,
       .swapchain = &m_swapChain,
@@ -244,12 +248,11 @@ VulkanRHIFactory::CreateSwapchain(uint32_t width, uint32_t height) {
   swapChainCreateInfo.setImageUsage(vk::ImageUsageFlagBits::eColorAttachment);
 
   if (m_graphicsQueueFamilyIndex == m_presentQueueFamilyIndex) {
-    auto graphicsQueueFamilyIndex = static_cast<uint32_t>(m_graphicsQueueFamilyIndex);
+    auto graphicsQueueFamilyIndex = *m_graphicsQueueFamilyIndex;
     swapChainCreateInfo.setQueueFamilyIndices(graphicsQueueFamilyIndex);
     swapChainCreateInfo.setImageSharingMode(vk::SharingMode::eExclusive);
   } else {
-    std::array<uint32_t, 2> queueFamilIndices = {static_cast<uint32_t>(m_graphicsQueueFamilyIndex),
-                                                 static_cast<uint32_t>(m_presentQueueFamilyIndex)};
+    std::array<uint32_t, 2> queueFamilIndices = {*m_graphicsQueueFamilyIndex, *m_presentQueueFamilyIndex};
     swapChainCreateInfo.setQueueFamilyIndices(queueFamilIndices);
     swapChainCreateInfo.setImageSharingMode(vk::SharingMode::eConcurrent);
   }

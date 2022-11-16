@@ -158,13 +158,29 @@ main(void) {
   };
 
   uint32_t frameIndex = 0;
+  bool needResize = false;
   while (!glfwWindowShouldClose(glfwWindow)) {
     glfwPollEvents();
     factory->ResetFence(fence);
+
+    if (needResize) {
+      glfwGetFramebufferSize(glfwWindow, &width, &height);
+      if (width > 0 && height > 0) {
+        onResize(width, height);
+        needResize = false;
+        continue;
+      }
+    }
+
+    int w, h;
+    glfwGetWindowSize(glfwWindow, &w, &h);
+    const bool is_minimized = (w <= 0 || h <= 0);
+    if (is_minimized) continue;
+
     auto nextImage = factory->AcquireNextImage(swapchain, aviableSemaphore[frameIndex]);
     if (nextImage == -1) {
-      glfwGetFramebufferSize(glfwWindow, &width, &height);
-      onResize(width, height);
+      needResize = true;
+      continue;
     }
 
     std::array<Marbas::ViewportInfo, 1> viewportInfos = {viewportInfo};
@@ -183,8 +199,8 @@ main(void) {
     commandBuffer->Submit({aviableSemaphore.begin() + frameIndex, 1}, {waitSemaphore.begin() + frameIndex, 1}, fence);
 
     if (factory->Present(swapchain, {waitSemaphore.begin() + frameIndex, 1}, nextImage) == -1) {
-      glfwGetFramebufferSize(glfwWindow, &width, &height);
-      onResize(width, height);
+      needResize = true;
+      continue;
     }
     factory->WaitForFence(fence);
     frameIndex = (frameIndex + 1) % imageCount;

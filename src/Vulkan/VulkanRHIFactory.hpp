@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <optional>
 #include <vulkan/vulkan.hpp>
 
 #include "RHIFactory.hpp"
@@ -86,10 +87,10 @@ class VulkanRHIFactory final : public RHIFactory {
   vk::Device m_device;
   vk::PhysicalDevice m_physicalDevice;
 
-  int m_graphicsQueueFamilyIndex = -1;
-  int m_presentQueueFamilyIndex = -1;
-  int m_transferQueueFamilyIndex = -1;
-  int m_computeQueueFamilyIndex = -1;
+  std::optional<uint32_t> m_graphicsQueueFamilyIndex = std::nullopt;
+  std::optional<uint32_t> m_presentQueueFamilyIndex = std::nullopt;
+  std::optional<uint32_t> m_transferQueueFamilyIndex = std::nullopt;
+  std::optional<uint32_t> m_computeQueueFamilyIndex = std::nullopt;
 
   vk::Queue m_graphicsQueue;
   vk::Queue m_presentQueue;
