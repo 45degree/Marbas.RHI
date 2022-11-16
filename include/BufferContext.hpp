@@ -25,6 +25,10 @@ namespace Marbas {
 
 class BufferContext {
  public:
+  BufferContext() = default;
+  virtual ~BufferContext() = default;
+
+ public:
   virtual Buffer*
   CreateBuffer(BufferType bufferType, const void* data, uint32_t size, bool isStatic) = 0;
 

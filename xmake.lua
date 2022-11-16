@@ -6,7 +6,6 @@ add_requires("glfw 3.3.6")
 add_requires("glog v0.5.0")
 add_requires("glm 0.9.9+8")
 add_requires("gtest 1.11.0")
-add_requires("shaderc")
 add_requires("stb 2021.09.10")
 add_requires("fmt 9.1.0")
 
@@ -16,6 +15,7 @@ option_end()
 
 if is_plat("linux") then
   add_requires("pkgconfig::vulkan")
+  add_requires("pkgconfig::shaderc")
   add_requires("spirv-cross 1.2.189+1");
 else
   option("Vulkan SDK Path")

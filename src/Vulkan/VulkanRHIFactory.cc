@@ -226,7 +226,7 @@ VulkanRHIFactory::CreateSwapchain(uint32_t width, uint32_t height) {
   m_swapChain.width = width;
   m_swapChain.height = height;
   m_swapChain.surfaceFormat = m_surfaceFormat;
-  m_swapChain.imageCount = 3;
+  m_swapChain.imageCount = imageCount;
 
   vk::SwapchainCreateInfoKHR swapChainCreateInfo;
   swapChainCreateInfo.setImageColorSpace(m_surfaceFormat.colorSpace);
@@ -317,6 +317,7 @@ void
 VulkanRHIFactory::Quit() {
   m_device.waitIdle();
   DestroySwapchain();
+  m_imguiContext = nullptr;
   m_device.destroy();
   m_instance.destroySurfaceKHR(m_surface);
   m_instance.destroy();

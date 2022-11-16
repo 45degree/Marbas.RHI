@@ -25,6 +25,10 @@ namespace Marbas {
 
 class PipelineContext {
  public:
+  PipelineContext() = default;
+  virtual ~PipelineContext() = default;
+
+ public:
   virtual Pipeline*
   CreatePipeline(GraphicsPipeLineCreateInfo& createInfo) = 0;
 

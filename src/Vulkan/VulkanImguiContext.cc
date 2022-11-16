@@ -139,6 +139,27 @@ VulkanImguiContext::VulkanImguiContext(const VulkanImguiCreateInfo& createInfo)
   CreateWindowCommandBuffer();
 }
 
+VulkanImguiContext::~VulkanImguiContext() {
+  std::for_each(m_framebuffers.begin(), m_framebuffers.end(), [&](const auto& frameBuffer) {
+    m_device.destroyFramebuffer(frameBuffer);
+    return;
+  });
+
+  std::for_each(m_commandBuffers.begin(), m_commandBuffers.end(), [&](const auto& commandBuffer) {
+    m_device.freeCommandBuffers(m_commandPool, commandBuffer);
+    return;
+  });
+  m_device.destroyCommandPool(m_commandPool);
+
+  std::for_each(m_fences.begin(), m_fences.end(), [&](const auto& fence) {
+    m_device.destroyFence(fence);
+    return;
+  });
+
+  vkDestroyRenderPass(m_device, m_renderPass, nullptr);
+  vkDestroyDescriptorPool(m_device, m_descriptorPool, nullptr);
+}
+
 void
 VulkanImguiContext::Resize(uint32_t width, uint32_t height) {
   m_width = width;
@@ -173,25 +194,6 @@ VulkanImguiContext::ClearUp() {
   ImGui_ImplVulkan_Shutdown();
   ImGui_ImplGlfw_Shutdown();
   ImGui::DestroyContext();
-
-  std::for_each(m_framebuffers.begin(), m_framebuffers.end(), [&](const auto& frameBuffer) {
-    m_device.destroyFramebuffer(frameBuffer);
-    return;
-  });
-
-  std::for_each(m_commandBuffers.begin(), m_commandBuffers.end(), [&](const auto& commandBuffer) {
-    m_device.freeCommandBuffers(m_commandPool, commandBuffer);
-    return;
-  });
-  m_device.destroyCommandPool(m_commandPool);
-
-  std::for_each(m_fences.begin(), m_fences.end(), [&](const auto& fence) {
-    m_device.destroyFence(fence);
-    return;
-  });
-
-  vkDestroyRenderPass(m_device, m_renderPass, nullptr);
-  vkDestroyDescriptorPool(m_device, m_descriptorPool, nullptr);
 }
 
 void

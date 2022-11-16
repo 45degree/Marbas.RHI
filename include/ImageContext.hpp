@@ -22,6 +22,10 @@ namespace Marbas {
 
 class ImageContext {
  public:
+  ImageContext() = default;
+  virtual ~ImageContext() = default;
+
+ public:
   virtual Image*
   CreateImage(const ImageCreateInfo& createInfo) = 0;
 

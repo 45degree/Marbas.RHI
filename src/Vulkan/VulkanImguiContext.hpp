@@ -25,7 +25,7 @@ struct VulkanImguiCreateInfo {
 class VulkanImguiContext final : public ImguiContext {
  public:
   explicit VulkanImguiContext(const VulkanImguiCreateInfo& createInfo);
-  virtual ~VulkanImguiContext() = default;
+  virtual ~VulkanImguiContext();
 
  public:
   void
