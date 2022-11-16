@@ -15,7 +15,7 @@ option_end()
 
 if is_plat("linux") then
   add_requires("pkgconfig::vulkan")
-  add_requires("pkgconfig::shaderc")
+  add_requires("pkgconfig::shaderc_static")
   add_requires("spirv-cross 1.2.189+1");
 else
   option("Vulkan SDK Path")

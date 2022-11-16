@@ -86,10 +86,10 @@ class VulkanRHIFactory final : public RHIFactory {
   vk::Device m_device;
   vk::PhysicalDevice m_physicalDevice;
 
-  uint32_t m_graphicsQueueFamilyIndex = 0;
-  uint32_t m_presentQueueFamilyIndex = 0;
-  uint32_t m_transferQueueFamilyIndex = 0;
-  uint32_t m_computeQueueFamilyIndex = 0;
+  int m_graphicsQueueFamilyIndex = -1;
+  int m_presentQueueFamilyIndex = -1;
+  int m_transferQueueFamilyIndex = -1;
+  int m_computeQueueFamilyIndex = -1;
 
   vk::Queue m_graphicsQueue;
   vk::Queue m_presentQueue;

@@ -56,8 +56,8 @@ main(int argc, char* argv[]) {
 
   factory->Init(glfwWindow, width, height);
 
-  auto imguiInterface = factory->GetImguiContext();
-  auto swapChain = factory->GetSwapchain();
+  auto* imguiInterface = factory->GetImguiContext();
+  auto* swapChain = factory->GetSwapchain();
 
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();

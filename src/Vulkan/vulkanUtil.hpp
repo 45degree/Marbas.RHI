@@ -17,17 +17,17 @@ FORCE_INLINE vk::Format
 ConvertToVulkanFormat(ImageFormat format) {
   switch (format) {
     case ImageFormat::RED:
-      return vk::Format::eR8Srgb;
+      return vk::Format::eR8Unorm;
     case ImageFormat::RG:
-      return vk::Format::eR8G8Srgb;
+      return vk::Format::eR8G8Unorm;
     case ImageFormat::RGB:
-      return vk::Format::eR8G8B8Srgb;
+      return vk::Format::eR8G8B8Unorm;
     case ImageFormat::BGR:
-      return vk::Format::eB8G8R8Srgb;
+      return vk::Format::eB8G8R8Unorm;
     case ImageFormat::RGBA:
-      return vk::Format::eR8G8B8A8Srgb;
+      return vk::Format::eR8G8B8A8Unorm;
     case ImageFormat::BGRA:
-      return vk::Format::eB8G8R8A8Srgb;
+      return vk::Format::eB8G8R8A8Unorm;
     case ImageFormat::R32F:
       return vk::Format::eR32Sfloat;
     case ImageFormat::RG16F:

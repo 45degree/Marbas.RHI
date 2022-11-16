@@ -52,7 +52,7 @@ VulkanRHIFactory::CreateInstance(GLFWwindow* glfwWindow) {
 
   // validation layers
 #ifndef NDEBUG
-  std::array<const char*, 1> layers = {"VK_LAYER_KHRONOS_validation"};
+  std::array layers = {"VK_LAYER_KHRONOS_validation"};
 #else
   std::array<const char*, 0> layers = {};
 #endif
@@ -101,18 +101,18 @@ VulkanRHIFactory::Init(GLFWwindow* window, uint32_t width, uint32_t height) {
 
   // fina queue family
   auto families = m_physicalDevice.getQueueFamilyProperties();
-  uint32_t index = 0;
+  int index = 0;
   for (const auto& family : families) {
-    if (family.queueFlags & vk::QueueFlagBits::eGraphics) {
+    if (family.queueFlags & vk::QueueFlagBits::eGraphics && m_graphicsQueueFamilyIndex == -1) {
       m_graphicsQueueFamilyIndex = index;
     }
-    if (family.queueFlags & vk::QueueFlagBits::eTransfer) {
+    if (family.queueFlags & vk::QueueFlagBits::eTransfer && m_transferQueueFamilyIndex == -1) {
       m_transferQueueFamilyIndex = index;
     }
-    if (family.queueFlags & vk::QueueFlagBits::eCompute) {
+    if (family.queueFlags & vk::QueueFlagBits::eCompute && m_computeQueueFamilyIndex == -1) {
       m_computeQueueFamilyIndex = index;
     }
-    if (m_physicalDevice.getSurfaceSupportKHR(index, m_surface)) {
+    if (m_physicalDevice.getSurfaceSupportKHR(index, m_surface) && m_presentQueueFamilyIndex == -1) {
       m_presentQueueFamilyIndex = index;
     }
     index++;
@@ -172,7 +172,7 @@ VulkanRHIFactory::Init(GLFWwindow* window, uint32_t width, uint32_t height) {
   m_capabilities = m_physicalDevice.getSurfaceCapabilitiesKHR(m_surface);
   auto surfaceFormats = m_physicalDevice.getSurfaceFormatsKHR(m_surface);
   auto formatResultIter = std::find_if(surfaceFormats.cbegin(), surfaceFormats.cend(), [](const auto& surfaceFormat) {
-    return surfaceFormat.format == vk::Format::eR8G8B8A8Srgb || surfaceFormat.format == vk::Format::eB8G8R8A8Srgb;
+    return surfaceFormat.format == vk::Format::eR8G8B8A8Unorm || surfaceFormat.format == vk::Format::eB8G8R8A8Unorm;
   });
   if (formatResultIter == surfaceFormats.cend()) {
     constexpr std::string_view errMes = "can't find surface support RGBA or BGRA";
@@ -202,9 +202,9 @@ VulkanRHIFactory::Init(GLFWwindow* window, uint32_t width, uint32_t height) {
   m_bufferContext = std::make_unique<VulkanBufferContext>(VulkanBufferContextCreateInfo{
       .device = m_device,
       .physicalDevice = m_physicalDevice,
-      .graphicsQueueIndex = m_graphicsQueueFamilyIndex,
-      .computeQueueIndex = m_computeQueueFamilyIndex,
-      .transfermQueueIndex = m_transferQueueFamilyIndex,
+      .graphicsQueueIndex = static_cast<uint32_t>(m_graphicsQueueFamilyIndex),
+      .computeQueueIndex = static_cast<uint32_t>(m_computeQueueFamilyIndex),
+      .transfermQueueIndex = static_cast<uint32_t>(m_transferQueueFamilyIndex),
       .graphicsQueue = m_graphicsQueue,
       .computeQueue = m_computeQueue,
       .transferQueue = m_transferQueue,
@@ -213,7 +213,7 @@ VulkanRHIFactory::Init(GLFWwindow* window, uint32_t width, uint32_t height) {
       .glfwWindow = window,
       .instance = m_instance,
       .physicalDevice = m_physicalDevice,
-      .graphicsQueueFamilyIndex = m_graphicsQueueFamilyIndex,
+      .graphicsQueueFamilyIndex = static_cast<uint32_t>(m_graphicsQueueFamilyIndex),
       .graphicsQueue = m_graphicsQueue,
       .device = m_device,
       .swapchain = &m_swapChain,
@@ -242,10 +242,12 @@ VulkanRHIFactory::CreateSwapchain(uint32_t width, uint32_t height) {
   swapChainCreateInfo.setImageUsage(vk::ImageUsageFlagBits::eColorAttachment);
 
   if (m_graphicsQueueFamilyIndex == m_presentQueueFamilyIndex) {
-    swapChainCreateInfo.setQueueFamilyIndices(m_graphicsQueueFamilyIndex);
+    auto graphicsQueueFamilyIndex = static_cast<uint32_t>(m_graphicsQueueFamilyIndex);
+    swapChainCreateInfo.setQueueFamilyIndices(graphicsQueueFamilyIndex);
     swapChainCreateInfo.setImageSharingMode(vk::SharingMode::eExclusive);
   } else {
-    std::array<uint32_t, 2> queueFamilIndices = {m_graphicsQueueFamilyIndex, m_presentQueueFamilyIndex};
+    std::array<uint32_t, 2> queueFamilIndices = {static_cast<uint32_t>(m_graphicsQueueFamilyIndex),
+                                                 static_cast<uint32_t>(m_presentQueueFamilyIndex)};
     swapChainCreateInfo.setQueueFamilyIndices(queueFamilIndices);
     swapChainCreateInfo.setImageSharingMode(vk::SharingMode::eConcurrent);
   }
@@ -266,10 +268,10 @@ VulkanRHIFactory::CreateSwapchain(uint32_t width, uint32_t height) {
     vulkanImage->arrayLayer = 1;
     vulkanImage->height = height;
     vulkanImage->width = width;
-    if (m_surfaceFormat.format == vk::Format::eB8G8R8A8Srgb) {
+    if (m_surfaceFormat.format == vk::Format::eB8G8R8A8Unorm) {
       vulkanImage->format = ImageFormat::BGRA;
       m_swapChain.imageFormat = ImageFormat::BGRA;
-    } else if (m_surfaceFormat.format == vk::Format::eR8G8B8A8Srgb) {
+    } else if (m_surfaceFormat.format == vk::Format::eR8G8B8A8Unorm) {
       vulkanImage->format = ImageFormat::RGBA;
       m_swapChain.imageFormat = ImageFormat::RGBA;
     }
