@@ -65,7 +65,7 @@ class VulkanPipelineContext final : public PipelineContext {
   BindImage(DescriptorSet* descriptorSet, uint16_t bindingPoint, ImageView* imageView, Sampler* sampler) override {}
 
   void
-  BindBuffer(DescriptorSet* descriptorSet, uint16_t bindingPoint, Buffer* buffer, uint32_t offset) override {}
+  BindBuffer(const BindBufferInfo& bindBufferInfo) override;
 
   DescriptorPool*
   CreateDescriptorPool(std::span<DescriptorPoolSize> descritorPoolSize, uint32_t maxSet) override;

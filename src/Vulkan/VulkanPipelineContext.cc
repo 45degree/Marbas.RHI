@@ -3,6 +3,7 @@
 #include <fstream>
 #include <optional>
 
+#include "VulkanBuffer.hpp"
 #include "VulkanImage.hpp"
 #include "VulkanPipeline.hpp"
 #include "VulkanShaderModule.hpp"
@@ -59,6 +60,7 @@ VulkanPipelineContext::CreateDescriptorPool(std::span<DescriptorPoolSize> descri
 
     poolSizes.push_back(poolSize);
   }
+  createInfo.setPoolSizes(poolSizes);
 
   auto vkDescriptorPool = m_device.createDescriptorPool(createInfo);
 
@@ -123,12 +125,6 @@ VulkanPipelineContext::CreateDescriptorSet(const DescriptorPool* pool, const Des
 void
 VulkanPipelineContext::DestroyDescriptorSet(const DescriptorPool* descriptorPool, DescriptorSet* descriptorSet) {
   auto* vulkanDescriptorSet = static_cast<VulkanDescriptorSet*>(descriptorSet);
-  const auto* vulkanDescriptorPool = static_cast<const VulkanDescriptorPool*>(descriptorPool);
-  auto vkPool = vulkanDescriptorPool->vkDescriptorPool;
-  auto vkSet = vulkanDescriptorSet->vkDescriptorSet;
-
-  m_device.freeDescriptorSets(vkPool, vkSet);
-
   delete vulkanDescriptorSet;
 }
 
@@ -462,6 +458,32 @@ VulkanPipelineContext::CreatePipelineLayout(const VulkanDescriptorSetLayout* des
   vkPipelineLayoutCreateInfo.setSetLayouts(vkLayout);
 
   return m_device.createPipelineLayout(vkPipelineLayoutCreateInfo);
+}
+
+void
+VulkanPipelineContext::BindBuffer(const BindBufferInfo& bindBufferInfo) {
+  auto* vulkanDescriptorSet = static_cast<VulkanDescriptorSet*>(bindBufferInfo.descriptorSet);
+  auto* vulkanBuffer = static_cast<VulkanBuffer*>(bindBufferInfo.buffer);
+  const auto& descriptorType = bindBufferInfo.descriptorType;
+
+  vk::DescriptorBufferInfo vkDescriptorBufferInfo;
+  vkDescriptorBufferInfo.setBuffer(vulkanBuffer->vkBuffer);
+  vkDescriptorBufferInfo.setOffset(bindBufferInfo.offset);
+  vkDescriptorBufferInfo.setRange(vulkanBuffer->size);
+
+  vk::WriteDescriptorSet vkWriteDescriptorSet;
+  vkWriteDescriptorSet.setDstSet(vulkanDescriptorSet->vkDescriptorSet);
+  vkWriteDescriptorSet.setDstBinding(bindBufferInfo.bindingPoint);
+  vkWriteDescriptorSet.setDescriptorCount(1);
+  vkWriteDescriptorSet.setBufferInfo(vkDescriptorBufferInfo);
+  vkWriteDescriptorSet.setDstArrayElement(bindBufferInfo.arrayElement);
+
+  if (descriptorType == DescriptorType::UNIFORM_BUFFER) {
+    vkWriteDescriptorSet.setDescriptorType(vk::DescriptorType::eUniformBuffer);
+  } else if (descriptorType == DescriptorType::DYNAMIC_UNIFORM_BUFFER) {
+    vkWriteDescriptorSet.setDescriptorType(vk::DescriptorType::eUniformBufferDynamic);
+  }
+  m_device.updateDescriptorSets(vkWriteDescriptorSet, nullptr);
 }
 
 }  // namespace Marbas

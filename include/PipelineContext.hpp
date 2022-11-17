@@ -23,6 +23,15 @@
 
 namespace Marbas {
 
+struct BindBufferInfo final {
+  DescriptorSet* descriptorSet;
+  DescriptorType descriptorType;
+  uint16_t bindingPoint;
+  Buffer* buffer;
+  uint32_t offset;
+  uint32_t arrayElement;
+};
+
 class PipelineContext {
  public:
   PipelineContext() = default;
@@ -66,7 +75,7 @@ class PipelineContext {
   BindImage(DescriptorSet* descriptorSet, uint16_t bindingPoint, ImageView* imageView, Sampler* sampler) = 0;
 
   virtual void
-  BindBuffer(DescriptorSet* descriptorSet, uint16_t bindingPoint, Buffer* buffer, uint32_t offset) = 0;
+  BindBuffer(const BindBufferInfo& bindBufferInfo) = 0;
 
   virtual DescriptorPool*
   CreateDescriptorPool(std::span<DescriptorPoolSize> descritorPoolSize, uint32_t maxSet) = 0;

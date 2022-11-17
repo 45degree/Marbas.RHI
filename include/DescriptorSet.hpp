@@ -55,7 +55,7 @@ struct DescriptorPoolSize {
   uint32_t size;
 };
 
-class DescriptorPool {};
-class DescriptorSet {};
+struct DescriptorPool {};
+struct DescriptorSet {};
 
 }  // namespace Marbas

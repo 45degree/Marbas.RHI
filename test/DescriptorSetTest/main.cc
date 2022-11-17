@@ -65,6 +65,14 @@ main(void) {
 
   // create descriptorSet
   auto* descriptorSet = pipelineContext->CreateDescriptorSet(descriptorPool, descriptorSetLayout);
+  pipelineContext->BindBuffer(Marbas::BindBufferInfo{
+      .descriptorSet = descriptorSet,
+      .descriptorType = Marbas::DescriptorType::UNIFORM_BUFFER,
+      .bindingPoint = 0,
+      .buffer = uniformbuffer,
+      .offset = 0,
+      .arrayElement = 0,
+  });
 
   // render target desc and blend
   Marbas::RenderTargetDesc renderTargetDesc{
@@ -249,8 +257,10 @@ main(void) {
     pipelineContext->DestroyFrameBuffer(framebuffer);
   }
   pipelineContext->DestroyPipeline(pipeline);
+  pipelineContext->DestroyDescriptorSetLayout(descriptorSetLayout);
   pipelineContext->DestroyDescriptorPool(descriptorPool);
 
+  bufferContext->DestroyBuffer(uniformbuffer);
   bufferContext->DestroyBuffer(vertexBuffer);
   bufferContext->DestroyBuffer(indexBuffer);
   bufferContext->DestroyCommandBuffer(commandPool, commandBuffer);
