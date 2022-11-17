@@ -50,8 +50,14 @@ class PipelineContext {
   DestroyShaderModule(ShaderModule* shaderModule) = 0;
 
  public:
+  virtual DescriptorSetLayout*
+  CreateDescriptorSetLayout(std::span<DescriptorSetLayoutBinding> layoutBinding) = 0;
+
+  virtual void
+  DestroyDescriptorSetLayout(DescriptorSetLayout* descriptorSetLayout) = 0;
+
   virtual DescriptorSet*
-  CreateDescriptorSet(const DescriptorPool* pool, const DescriptorSetLayout& layout) = 0;
+  CreateDescriptorSet(const DescriptorPool* pool, const DescriptorSetLayout* layout) = 0;
 
   virtual void
   DestroyDescriptorSet(const DescriptorPool* pool, DescriptorSet* descriptorSet) = 0;

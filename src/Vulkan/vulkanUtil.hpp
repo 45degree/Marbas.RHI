@@ -178,7 +178,7 @@ ConvertToVulkanDescriptorLayoutBinding(const DescriptorSetLayoutBinding& binding
   vk::DescriptorSetLayoutBinding vkBinding;
   vkBinding.setDescriptorType(ConvertToVulkanDescriptorType(binding.descriptorType));
   vkBinding.setDescriptorCount(binding.count);
-  vkBinding.setBinding(binding.count);
+  vkBinding.setBinding(binding.bindingPoint);
 
   // TODO:
   vkBinding.setStageFlags(vk::ShaderStageFlagBits::eAll);

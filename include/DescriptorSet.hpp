@@ -43,7 +43,8 @@ struct DescriptorSetLayoutBinding {
   uint32_t count = 1;
   DescriptorVisible visible = DescriptorVisible::ALL;
 };
-using DescriptorSetLayout = std::vector<DescriptorSetLayoutBinding>;
+
+struct DescriptorSetLayout {};
 
 /**
  * Descritor Pool

@@ -37,7 +37,7 @@ class VulkanCommandBuffer final : public CommandBuffer {
 
  public:
   void
-  BindDescriptorSet(const Pipeline& pipeline, int first, std::span<DescriptorSet> descriptors) override {}
+  BindDescriptorSet(const Pipeline* pipeline, int first, std::span<DescriptorSet*> descriptors) override;
 
   void
   BindVertexBuffer(Buffer* buffer) override;

@@ -28,6 +28,9 @@ struct VulkanDescriptorPool final : public DescriptorPool {
 
 struct VulkanDescriptorSet final : public DescriptorSet {
   vk::DescriptorSet vkDescriptorSet;
+};
+
+struct VulkanDescriptorSetLayout final : public DescriptorSetLayout {
   vk::DescriptorSetLayout vkLayout;
 };
 

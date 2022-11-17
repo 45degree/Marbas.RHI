@@ -19,6 +19,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include "PipelineContext.hpp"
+#include "VulkanDescriptor.hpp"
 
 namespace Marbas {
 
@@ -48,8 +49,14 @@ class VulkanPipelineContext final : public PipelineContext {
   DestroyShaderModule(ShaderModule* shaderModule) override;
 
  public:
+  DescriptorSetLayout*
+  CreateDescriptorSetLayout(std::span<DescriptorSetLayoutBinding> layoutBinding) override;
+
+  void
+  DestroyDescriptorSetLayout(DescriptorSetLayout* descriptorSetLayout) override;
+
   DescriptorSet*
-  CreateDescriptorSet(const DescriptorPool* pool, const DescriptorSetLayout& layout) override;
+  CreateDescriptorSet(const DescriptorPool* pool, const DescriptorSetLayout* layout) override;
 
   void
   DestroyDescriptorSet(const DescriptorPool* pool, DescriptorSet* descriptorSet) override;
@@ -71,7 +78,7 @@ class VulkanPipelineContext final : public PipelineContext {
   CreateRenderPass(const std::vector<RenderTargetDesc>& renderTargetDesc);
 
   vk::PipelineLayout
-  CreatePipelineLayout(const DescriptorSetLayout& descriptorSetLayout);
+  CreatePipelineLayout(const VulkanDescriptorSetLayout* descriptorSetLayout);
 
  public:
   FrameBuffer*

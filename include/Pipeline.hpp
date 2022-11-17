@@ -226,7 +226,7 @@ struct RenderTargetDesc {
 };
 
 struct GraphicsPipeLineCreateInfo {
-  DescriptorSetLayout descriptorSetLayout = {};
+  DescriptorSetLayout* descriptorSetLayout = nullptr;
   InputLayoutDesc vertexInputLayout = {};
   std::vector<ShaderStageCreateInfo> shaderStageCreateInfo = {};
   InputAssemblyStateCreateInfo inputAssemblyState = {};

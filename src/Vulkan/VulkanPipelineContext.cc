@@ -3,7 +3,6 @@
 #include <fstream>
 #include <optional>
 
-#include "VulkanDescriptor.hpp"
 #include "VulkanImage.hpp"
 #include "VulkanPipeline.hpp"
 #include "VulkanShaderModule.hpp"
@@ -78,24 +77,38 @@ VulkanPipelineContext::DestroyDescriptorPool(DescriptorPool* descriptorPool) {
   delete vulkanDescriptorPool;
 }
 
-DescriptorSet*
-VulkanPipelineContext::CreateDescriptorSet(const DescriptorPool* pool, const DescriptorSetLayout& layout) {
-  auto* vulkanDescriptorSet = new VulkanDescriptorSet();
-
-  // create descriptor set layout
+DescriptorSetLayout*
+VulkanPipelineContext::CreateDescriptorSetLayout(std::span<DescriptorSetLayoutBinding> layoutBinding) {
+  auto* vulkanDescriptorSetLayout = new VulkanDescriptorSetLayout();
   vk::DescriptorSetLayoutCreateInfo layoutCreatInfo;
   std::vector<vk::DescriptorSetLayoutBinding> vkLayoutBinding;
-  std::transform(layout.cbegin(), layout.cend(), std::back_inserter(vkLayoutBinding), [](auto&& binding) {
+  std::transform(layoutBinding.begin(), layoutBinding.end(), std::back_inserter(vkLayoutBinding), [](auto&& binding) {
     auto vkBinding = ConvertToVulkanDescriptorLayoutBinding(binding);
     return vkBinding;
   });
   layoutCreatInfo.setBindings(vkLayoutBinding);
 
   auto vkLayout = m_device.createDescriptorSetLayout(layoutCreatInfo);
-  vulkanDescriptorSet->vkLayout = vkLayout;
+  vulkanDescriptorSetLayout->vkLayout = vkLayout;
+
+  return vulkanDescriptorSetLayout;
+}
+
+void
+VulkanPipelineContext::DestroyDescriptorSetLayout(DescriptorSetLayout* descriptorSetLayout) {
+  auto* vulkanDescriptorSetLayout = static_cast<VulkanDescriptorSetLayout*>(descriptorSetLayout);
+  m_device.destroyDescriptorSetLayout(vulkanDescriptorSetLayout->vkLayout);
+
+  delete vulkanDescriptorSetLayout;
+}
+
+DescriptorSet*
+VulkanPipelineContext::CreateDescriptorSet(const DescriptorPool* pool, const DescriptorSetLayout* layout) {
+  auto* vulkanDescriptorSet = new VulkanDescriptorSet();
+  auto* vulkanDescriptorSetLayout = static_cast<const VulkanDescriptorSetLayout*>(layout);
 
   vk::DescriptorSetAllocateInfo allocateInfo;
-  allocateInfo.setSetLayouts(vkLayout);
+  allocateInfo.setSetLayouts(vulkanDescriptorSetLayout->vkLayout);
   allocateInfo.setDescriptorPool(static_cast<const VulkanDescriptorPool*>(pool)->vkDescriptorPool);
   allocateInfo.setDescriptorSetCount(1);
 
@@ -113,10 +126,8 @@ VulkanPipelineContext::DestroyDescriptorSet(const DescriptorPool* descriptorPool
   const auto* vulkanDescriptorPool = static_cast<const VulkanDescriptorPool*>(descriptorPool);
   auto vkPool = vulkanDescriptorPool->vkDescriptorPool;
   auto vkSet = vulkanDescriptorSet->vkDescriptorSet;
-  auto vkLayout = vulkanDescriptorSet->vkLayout;
 
   m_device.freeDescriptorSets(vkPool, vkSet);
-  m_device.destroyDescriptorSetLayout(vkLayout);
 
   delete vulkanDescriptorSet;
 }
@@ -326,7 +337,8 @@ VulkanPipelineContext::CreatePipeline(GraphicsPipeLineCreateInfo& createInfo) {
   vkCreateInfo.setPMultisampleState(&vkMultisampleStateCreateInfo);
 
   // layout
-  auto vkPipelineLayout = CreatePipelineLayout(createInfo.descriptorSetLayout);
+  auto* vulkanDescriptorSetLayout = static_cast<VulkanDescriptorSetLayout*>(createInfo.descriptorSetLayout);
+  auto vkPipelineLayout = CreatePipelineLayout(vulkanDescriptorSetLayout);
   vkCreateInfo.setLayout(vkPipelineLayout);
 
   auto result = m_device.createGraphicsPipeline(nullptr, vkCreateInfo);
@@ -444,9 +456,11 @@ VulkanPipelineContext::CreateRenderPass(const std::vector<RenderTargetDesc>& ren
 }
 
 vk::PipelineLayout
-VulkanPipelineContext::CreatePipelineLayout(const DescriptorSetLayout& descriptorSetLayout) {
-  // TODO:
+VulkanPipelineContext::CreatePipelineLayout(const VulkanDescriptorSetLayout* descriptorSetLayout) {
+  vk::DescriptorSetLayout vkLayout = descriptorSetLayout->vkLayout;
   vk::PipelineLayoutCreateInfo vkPipelineLayoutCreateInfo;
+  vkPipelineLayoutCreateInfo.setSetLayouts(vkLayout);
+
   return m_device.createPipelineLayout(vkPipelineLayoutCreateInfo);
 }
 

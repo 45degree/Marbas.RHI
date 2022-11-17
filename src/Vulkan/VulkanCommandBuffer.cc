@@ -4,6 +4,7 @@
 
 #include "Buffer.hpp"
 #include "VulkanBuffer.hpp"
+#include "VulkanDescriptor.hpp"
 #include "VulkanImage.hpp"
 #include "VulkanPipeline.hpp"
 #include "VulkanSynchronic.hpp"
@@ -91,6 +92,24 @@ VulkanCommandBuffer::TransformImageState(Image* image, ImageState srcState, Imag
 
   m_commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands, vk::PipelineStageFlagBits::eAllCommands,
                                   vk::DependencyFlagBits::eByRegion, nullptr, nullptr, imageMemoryBarrier);
+}
+
+void
+VulkanCommandBuffer::BindDescriptorSet(const Pipeline* pipeline, int first, std::span<DescriptorSet*> descriptors) {
+  const auto* vulkanPipeline = static_cast<const VulkanPipeline*>(pipeline);
+  vk::PipelineBindPoint vkPipelineBindPoint;
+  if (vulkanPipeline->pipelineType == PipelineType::GRAPHICS) {
+    vkPipelineBindPoint = vk::PipelineBindPoint::eGraphics;
+  } else if (vulkanPipeline->pipelineType == PipelineType::COMPUTE) {
+    vkPipelineBindPoint = vk::PipelineBindPoint::eCompute;
+  }
+
+  std::vector<vk::DescriptorSet> vkDescriptorSets;
+  std::transform(descriptors.begin(), descriptors.end(), std::back_inserter(vkDescriptorSets),
+                 [](auto* descriptor) { return static_cast<VulkanDescriptorSet*>(descriptor)->vkDescriptorSet; });
+
+  m_commandBuffer.bindDescriptorSets(vkPipelineBindPoint, vulkanPipeline->vkPipelineLayout, first, vkDescriptorSets,
+                                     nullptr);
 }
 
 void
