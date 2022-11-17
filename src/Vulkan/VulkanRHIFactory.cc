@@ -247,6 +247,11 @@ VulkanRHIFactory::CreateSwapchain(uint32_t width, uint32_t height) {
   swapChainCreateInfo.setImageArrayLayers(1);
   swapChainCreateInfo.setImageUsage(vk::ImageUsageFlagBits::eColorAttachment);
 
+  DLOG_ASSERT(m_graphicsQueueFamilyIndex);
+  DLOG_ASSERT(m_computeQueueFamilyIndex);
+  DLOG_ASSERT(m_transferQueueFamilyIndex);
+  DLOG_ASSERT(m_presentQueueFamilyIndex);
+
   if (m_graphicsQueueFamilyIndex == m_presentQueueFamilyIndex) {
     auto graphicsQueueFamilyIndex = *m_graphicsQueueFamilyIndex;
     swapChainCreateInfo.setQueueFamilyIndices(graphicsQueueFamilyIndex);
@@ -324,7 +329,11 @@ void
 VulkanRHIFactory::Quit() {
   m_device.waitIdle();
   DestroySwapchain();
+
   m_imguiContext = nullptr;
+  m_bufferContext = nullptr;
+  m_pipelineContext = nullptr;
+
   m_device.destroy();
   m_instance.destroySurfaceKHR(m_surface);
   m_instance.destroy();

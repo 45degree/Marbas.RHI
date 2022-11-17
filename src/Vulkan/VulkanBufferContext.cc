@@ -16,10 +16,30 @@
 
 #include "VulkanBufferContext.hpp"
 
+#include <glog/logging.h>
+
 #include "VulkanBuffer.hpp"
 #include "VulkanCommandBuffer.hpp"
 
 namespace Marbas {
+
+VulkanBufferContext::VulkanBufferContext(const VulkanBufferContextCreateInfo& createInfo)
+    : BufferContext(),
+      m_device(createInfo.device),
+      m_physicalDevice(createInfo.physicalDevice),
+      m_computeQueueIndex(createInfo.computeQueueIndex),
+      m_graphicsQueueIndex(createInfo.graphicsQueueIndex),
+      m_transfermQueueIndex(createInfo.transfermQueueIndex),
+      m_computeQueue(createInfo.computeQueue),
+      m_graphicsQueue(createInfo.graphicsQueue),
+      m_transferQueue(createInfo.transferQueue) {
+  vk::CommandPoolCreateInfo vkCommandPoolCreateInfo;
+  vkCommandPoolCreateInfo.setQueueFamilyIndex(m_transfermQueueIndex);
+  vkCommandPoolCreateInfo.setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
+  m_temporaryCommandPool = m_device.createCommandPool(vkCommandPoolCreateInfo);
+}
+
+VulkanBufferContext::~VulkanBufferContext() { m_device.destroyCommandPool(m_temporaryCommandPool); }
 
 Buffer*
 VulkanBufferContext::CreateBuffer(BufferType bufferType, const void* data, uint32_t size, bool isStatic) {
@@ -73,12 +93,13 @@ VulkanBufferContext::CreateBuffer(BufferType bufferType, const void* data, uint3
     memcpy(mapData, data, size);
     m_device.unmapMemory(vulkanBuffer->vkMemory);
   } else {
+    DLOG_ASSERT(vulkanBuffer->stageBuffer && vulkanBuffer->stageBufferMemory);
+
     void* mapData = m_device.mapMemory(*(vulkanBuffer->stageBufferMemory), 0, size);
     memcpy(mapData, data, size);
     m_device.unmapMemory(*(vulkanBuffer->stageBufferMemory));
+    CopyBuffer(*(vulkanBuffer->stageBuffer), vulkanBuffer->vkBuffer, vulkanBuffer->size);
   }
-
-  // TODO: add stage buffer for non static vertex buffer
 
   return vulkanBuffer;
 }
@@ -104,7 +125,15 @@ VulkanBufferContext::DestroyBuffer(Buffer* buffer) {
   m_device.destroyBuffer(vulkanBuffer->vkBuffer);
   m_device.freeMemory(vulkanBuffer->vkMemory);
 
-  // TODO: free stage buffer and memory
+  if (vulkanBuffer->stageBuffer) {
+    m_device.destroyBuffer(*(vulkanBuffer->stageBuffer));
+  }
+
+  if (vulkanBuffer->stageBufferMemory) {
+    m_device.freeMemory(*(vulkanBuffer->stageBufferMemory));
+  }
+
+  delete vulkanBuffer;
 }
 
 CommandPool*
@@ -192,14 +221,33 @@ VulkanBufferContext::CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usag
 }
 
 void
-VulkanBufferContext::copyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSize size) {
+VulkanBufferContext::CopyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSize size) {
   vk::CommandBufferAllocateInfo allocInfo{};
   allocInfo.level = vk::CommandBufferLevel::ePrimary;
   allocInfo.commandPool = m_temporaryCommandPool;
   allocInfo.commandBufferCount = 1;
 
-  VkCommandBuffer commandBuffer;
+  vk::CommandBuffer commandBuffer;
   auto result = m_device.allocateCommandBuffers(allocInfo);
+  commandBuffer = result[0];
+
+  vk::CommandBufferBeginInfo beginInfo;
+  beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+  commandBuffer.begin(beginInfo);
+
+  vk::BufferCopy copyRange;
+  copyRange.setSize(size);
+  copyRange.setSrcOffset(0);
+  copyRange.setDstOffset(0);
+  commandBuffer.copyBuffer(srcBuffer, dstBuffer, copyRange);
+  commandBuffer.end();
+
+  vk::SubmitInfo submitInfo;
+  submitInfo.setCommandBuffers(commandBuffer);
+  m_transferQueue.submit(submitInfo);
+  m_transferQueue.waitIdle();
+
+  m_device.freeCommandBuffers(m_temporaryCommandPool, commandBuffer);
 }
 
 }  // namespace Marbas

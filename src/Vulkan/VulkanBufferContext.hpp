@@ -25,9 +25,9 @@ namespace Marbas {
 struct VulkanBufferContextCreateInfo final {
   vk::Device device;
   vk::PhysicalDevice physicalDevice;
-  uint32_t graphicsQueueIndex;
-  uint32_t computeQueueIndex;
-  uint32_t transfermQueueIndex;
+  uint32_t graphicsQueueIndex = 0;
+  uint32_t computeQueueIndex = 0;
+  uint32_t transfermQueueIndex = 0;
   vk::Queue graphicsQueue;
   vk::Queue computeQueue;
   vk::Queue transferQueue;
@@ -35,16 +35,8 @@ struct VulkanBufferContextCreateInfo final {
 
 class VulkanBufferContext final : public BufferContext {
  public:
-  explicit VulkanBufferContext(const VulkanBufferContextCreateInfo& createInfo)
-      : BufferContext(),
-        m_device(createInfo.device),
-        m_physicalDevice(createInfo.physicalDevice),
-        m_computeQueueIndex(createInfo.computeQueueIndex),
-        m_graphicsQueueIndex(createInfo.graphicsQueueIndex),
-        m_transfermQueueIndex(createInfo.transfermQueueIndex),
-        m_computeQueue(createInfo.computeQueue),
-        m_graphicsQueue(createInfo.graphicsQueue),
-        m_transferQueue(createInfo.transferQueue) {}
+  explicit VulkanBufferContext(const VulkanBufferContextCreateInfo& createInfo);
+  ~VulkanBufferContext() override;
 
  public:
   Buffer*
@@ -77,7 +69,7 @@ class VulkanBufferContext final : public BufferContext {
   CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties);
 
   void
-  copyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSize size);
+  CopyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSize size);
 
  private:
   uint32_t m_graphicsQueueIndex;
@@ -90,7 +82,6 @@ class VulkanBufferContext final : public BufferContext {
   vk::Device m_device;
   vk::PhysicalDevice m_physicalDevice;
 
-  // TODO
   vk::CommandPool m_temporaryCommandPool;
 };
 
