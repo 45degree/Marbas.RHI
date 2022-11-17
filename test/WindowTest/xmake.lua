@@ -1,8 +1,11 @@
 ---@diagnostic disable: undefined-global
 
-target("HelloWindow")
+target("WindowTest")
   set_kind("binary")
   set_languages("c11", "cxx20")
+
+  local executedir = path.join("$(buildir)", "$(os)", "$(arch)", "$(mode)","test", "WindowTest")
+  set_targetdir(executedir)
 
   add_defines("USE_D3D12");
   add_defines("USE_VULKAN");

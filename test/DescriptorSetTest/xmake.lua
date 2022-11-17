@@ -1,9 +1,9 @@
 ---@diagnostic disable: undefined-global
-target("HelloTriangle")
+target("DescriptorSetTest")
   set_kind("binary")
   set_languages("c11", "cxx20")
 
-  local executedir = path.join("$(buildir)", "$(os)", "$(arch)", "$(mode)","sample", "HelloTriangle")
+  local executedir = path.join("$(buildir)", "$(os)", "$(arch)", "$(mode)","test", "DescriptorSetTest")
   set_targetdir(executedir)
 
   add_defines("USE_VULKAN");
@@ -13,6 +13,6 @@ target("HelloTriangle")
   add_files("shader.frag")
   add_files("shader.vert")
 
-  add_packages("glfw", "glog", "shaderc", "gtest", "stb", "fmt")
+  add_packages("glfw", "glog", "shaderc", "gtest", "stb", "fmt", "glm")
   add_deps("Marbas.RHI")
 target_end()

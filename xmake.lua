@@ -104,5 +104,5 @@ target("Marbas.RHI")
   add_packages("glfw", "glog", "shaderc", "gtest", "stb", "fmt")
 target_end()
 
-includes("sample")
+includes("test")
 includes("3rdParty")

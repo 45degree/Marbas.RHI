@@ -1,9 +1,9 @@
 ---@diagnostic disable: undefined-global
-target("ImguiIntegrade")
+target("ImguiTest")
   set_kind("binary")
   set_languages("c11", "cxx20")
 
-  local executedir = path.join("$(buildir)", "$(os)", "$(arch)", "$(mode)","sample", "ImguiIntegrade")
+  local executedir = path.join("$(buildir)", "$(os)", "$(arch)", "$(mode)","test", "ImguiTest")
   set_targetdir(executedir)
 
   add_defines("USE_VULKAN");
