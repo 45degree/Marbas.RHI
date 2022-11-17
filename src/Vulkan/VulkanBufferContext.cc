@@ -27,9 +27,20 @@ VulkanBufferContext::CreateBuffer(BufferType bufferType, const void* data, uint3
   vulkanBuffer->size = size;
   vulkanBuffer->bufferType = bufferType;
 
+  if (!isStatic) {
+    vk::MemoryPropertyFlags stagingMemPropertyFlag;
+    vk::BufferUsageFlags stagingBufUsage = vk::BufferUsageFlagBits::eTransferSrc;
+    stagingMemPropertyFlag |= vk::MemoryPropertyFlagBits::eHostVisible;
+    stagingMemPropertyFlag |= vk::MemoryPropertyFlagBits::eHostCoherent;
+    auto [stagingBuffer, stagingBufMemory] = CreateBuffer(size, stagingBufUsage, stagingMemPropertyFlag);
+    vulkanBuffer->stageBuffer = stagingBuffer;
+    vulkanBuffer->stageBufferMemory = stagingBufMemory;
+  }
+
   // create buffer
   vk::BufferCreateInfo createInfo;
   vk::BufferUsageFlags usage;
+  vk::MemoryPropertyFlags memPropertyFlag;
   switch (bufferType) {
     case BufferType::VERTEX_BUFFER:
       usage = vk::BufferUsageFlagBits::eVertexBuffer;
@@ -44,25 +55,28 @@ VulkanBufferContext::CreateBuffer(BufferType bufferType, const void* data, uint3
       usage = vk::BufferUsageFlagBits::eStorageBuffer;
       break;
   }
-  createInfo.setSharingMode(vk::SharingMode::eExclusive);
-  createInfo.setUsage(usage);
-  createInfo.setSize(size);
 
-  vulkanBuffer->vkBuffer = m_device.createBuffer(createInfo);
+  if (!isStatic) {
+    usage |= vk::BufferUsageFlagBits::eTransferDst;
+    memPropertyFlag |= vk::MemoryPropertyFlagBits::eDeviceLocal;
+  } else {
+    memPropertyFlag |= vk::MemoryPropertyFlagBits::eHostVisible;
+    memPropertyFlag |= vk::MemoryPropertyFlagBits::eHostCoherent;
+  }
 
-  auto memRequirement = m_device.getBufferMemoryRequirements(vulkanBuffer->vkBuffer);
-  vk::MemoryPropertyFlags memPropertyFlag;
-  memPropertyFlag |= vk::MemoryPropertyFlagBits::eHostVisible;
-  memPropertyFlag |= vk::MemoryPropertyFlagBits::eHostCoherent;
-  vk::MemoryAllocateInfo allocateInfo;
-  allocateInfo.setAllocationSize(memRequirement.size);
-  allocateInfo.setMemoryTypeIndex(FindMemoryType(memRequirement.memoryTypeBits, memPropertyFlag));
-  vulkanBuffer->vkMemory = m_device.allocateMemory(allocateInfo);
-  m_device.bindBufferMemory(vulkanBuffer->vkBuffer, vulkanBuffer->vkMemory, 0);
+  auto [buffer, bufferMemory] = CreateBuffer(size, usage, memPropertyFlag);
+  vulkanBuffer->vkBuffer = buffer;
+  vulkanBuffer->vkMemory = bufferMemory;
 
-  void* mapData = m_device.mapMemory(vulkanBuffer->vkMemory, 0, size);
-  memcpy(mapData, data, size);
-  m_device.unmapMemory(vulkanBuffer->vkMemory);
+  if (isStatic) {
+    void* mapData = m_device.mapMemory(vulkanBuffer->vkMemory, 0, size);
+    memcpy(mapData, data, size);
+    m_device.unmapMemory(vulkanBuffer->vkMemory);
+  } else {
+    void* mapData = m_device.mapMemory(*(vulkanBuffer->stageBufferMemory), 0, size);
+    memcpy(mapData, data, size);
+    m_device.unmapMemory(*(vulkanBuffer->stageBufferMemory));
+  }
 
   // TODO: add stage buffer for non static vertex buffer
 
@@ -154,6 +168,38 @@ VulkanBufferContext::DestroyCommandBuffer(CommandPool* commandPool, CommandBuffe
   m_device.freeCommandBuffers(vulkanCommandPool->vkCommandPool, vulkanCommandBuffer->m_commandBuffer);
 
   delete vulkanCommandBuffer;
+}
+
+std::tuple<vk::Buffer, vk::DeviceMemory>
+VulkanBufferContext::CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties) {
+  vk::BufferCreateInfo bufferInfo;
+  bufferInfo.setSize(size);
+  bufferInfo.setUsage(usage);
+  bufferInfo.setSharingMode(vk::SharingMode::eExclusive);
+
+  auto buffer = m_device.createBuffer(bufferInfo);
+
+  vk::MemoryRequirements memRequirements = m_device.getBufferMemoryRequirements(buffer);
+
+  vk::MemoryAllocateInfo allocInfo{};
+  allocInfo.allocationSize = memRequirements.size;
+  allocInfo.memoryTypeIndex = FindMemoryType(memRequirements.memoryTypeBits, properties);
+
+  auto bufferMemory = m_device.allocateMemory(allocInfo);
+  m_device.bindBufferMemory(buffer, bufferMemory, 0);
+
+  return {buffer, bufferMemory};
+}
+
+void
+VulkanBufferContext::copyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSize size) {
+  vk::CommandBufferAllocateInfo allocInfo{};
+  allocInfo.level = vk::CommandBufferLevel::ePrimary;
+  allocInfo.commandPool = m_temporaryCommandPool;
+  allocInfo.commandBufferCount = 1;
+
+  VkCommandBuffer commandBuffer;
+  auto result = m_device.allocateCommandBuffers(allocInfo);
 }
 
 }  // namespace Marbas

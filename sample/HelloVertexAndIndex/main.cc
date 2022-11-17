@@ -118,7 +118,7 @@ main(void) {
   // vertex buffer
   auto VBOSize = vertices.size() * sizeof(Vertex);
   auto EBOSize = indices.size() * sizeof(uint32_t);
-  auto* vertexBuffer = bufferContext->CreateBuffer(Marbas::BufferType::VERTEX_BUFFER, vertices.data(), VBOSize, true);
+  auto* vertexBuffer = bufferContext->CreateBuffer(Marbas::BufferType::VERTEX_BUFFER, vertices.data(), VBOSize, false);
   auto* indexBuffer = bufferContext->CreateBuffer(Marbas::BufferType::INDEX_BUFFER, indices.data(), EBOSize, true);
 
   // command buffer

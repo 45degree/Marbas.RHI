@@ -73,6 +73,12 @@ class VulkanBufferContext final : public BufferContext {
   uint32_t
   FindMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties);
 
+  std::tuple<vk::Buffer, vk::DeviceMemory>
+  CreateBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties);
+
+  void
+  copyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSize size);
+
  private:
   uint32_t m_graphicsQueueIndex;
   uint32_t m_computeQueueIndex;
@@ -83,6 +89,9 @@ class VulkanBufferContext final : public BufferContext {
 
   vk::Device m_device;
   vk::PhysicalDevice m_physicalDevice;
+
+  // TODO
+  vk::CommandPool m_temporaryCommandPool;
 };
 
 }  // namespace Marbas
