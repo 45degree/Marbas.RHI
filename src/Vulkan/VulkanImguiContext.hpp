@@ -7,7 +7,6 @@
 #include <vulkan/vulkan.hpp>
 
 #include "ImguiContext.hpp"
-#include "Vulkan/VulkanImageContext.hpp"
 #include "VulkanSwapChain.hpp"
 
 namespace Marbas {

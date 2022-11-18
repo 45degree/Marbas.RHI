@@ -18,8 +18,12 @@
 
 #include <glog/logging.h>
 
+#include <cstddef>
+
 #include "VulkanBuffer.hpp"
 #include "VulkanCommandBuffer.hpp"
+#include "VulkanImage.hpp"
+#include "vulkanUtil.hpp"
 
 namespace Marbas {
 
@@ -148,6 +152,151 @@ VulkanBufferContext::DestroyBuffer(Buffer* buffer) {
   delete vulkanBuffer;
 }
 
+Image*
+VulkanBufferContext::CreateImage(const ImageCreateInfo& imageCreateInfo) {
+  vk::ImageCreateInfo createInfo;
+  uint32_t width, height, channel;
+  width = imageCreateInfo.width;
+  height = imageCreateInfo.height;
+  channel = imageCreateInfo.channel;
+
+  auto imageSize = width * height * channel;
+
+  auto* vulkanImage = new VulkanImage();
+  vulkanImage->width = width;
+  vulkanImage->height = height;
+  vulkanImage->usage = imageCreateInfo.usage;
+  vulkanImage->currentLayout = vk::ImageLayout::eUndefined;
+  vulkanImage->mipMapLevel = createInfo.mipLevels;
+  vulkanImage->format = imageCreateInfo.format;
+
+  if (imageCreateInfo.usage & ImageUsageFlags::DEPTH) {
+    vulkanImage->aspect = vk::ImageAspectFlagBits::eDepth;
+  }
+  if (imageCreateInfo.usage & ImageUsageFlags::SHADER_READ || imageCreateInfo.usage & ImageUsageFlags::RENDER_TARGET ||
+      imageCreateInfo.usage & ImageUsageFlags::PRESENT) {
+    vulkanImage->aspect = vk::ImageAspectFlagBits::eColor;
+  }
+
+  createInfo.setFormat(ConvertToVulkanFormat(imageCreateInfo.format));
+  createInfo.setInitialLayout(vk::ImageLayout::eUndefined);
+  createInfo.setMipLevels(imageCreateInfo.mipMapLevel);
+
+  // TODO:
+  createInfo.setTiling(vk::ImageTiling::eLinear);
+  createInfo.setSamples(vk::SampleCountFlagBits::e1);
+
+  // clang-format off
+  std::visit([&](auto&& imageDesc) {
+    using T = std::decay_t<decltype(imageDesc)>;
+    if constexpr (std::is_same_v<T, Image2DDesc>) {
+      vulkanImage->depth = 1;
+      createInfo.setImageType(vk::ImageType::e2D);
+      createInfo.setExtent(vk::Extent3D(width, height, 1));
+      createInfo.setArrayLayers(1);
+      vulkanImage->arrayLayer = 1;
+    } else if constexpr (std::is_same_v<T, Image2DArrayDesc>) {
+      createInfo.setImageType(vk::ImageType::e2D);
+      createInfo.setArrayLayers(imageDesc.arraySize);
+      vulkanImage->arrayLayer = imageDesc.arraySize;
+    } else if constexpr (std::is_same_v<T, CubeMapImageDesc>) {
+      createInfo.setImageType(vk::ImageType::e2D);
+      createInfo.setArrayLayers(6);
+      createInfo.setFlags(vk::ImageCreateFlagBits::eCubeCompatible);
+      vulkanImage->arrayLayer = 6;
+    } else if constexpr (std::is_same_v<T, CubeMapArrayImageDesc>) {
+      createInfo.setImageType(vk::ImageType::e2D);
+      createInfo.setArrayLayers(6 * imageDesc.arraySize);
+      createInfo.setFlags(vk::ImageCreateFlagBits::eCubeCompatible);
+      vulkanImage->arrayLayer = 6 * imageDesc.arraySize;
+    }
+  },imageCreateInfo.imageDesc);
+  // clang-format on
+
+  createInfo.setUsage(ConvertToVulkanImageUsage(imageCreateInfo.usage));
+  createInfo.setSharingMode(vk::SharingMode::eExclusive);
+
+  vulkanImage->vkImage = m_device.createImage(createInfo);
+
+  /**
+   * alloca memory
+   */
+  auto requirements = m_device.getImageMemoryRequirements(vulkanImage->vkImage);
+  vk::MemoryAllocateInfo allocInfo;
+  allocInfo.setAllocationSize(requirements.size);
+  allocInfo.setMemoryTypeIndex(FindMemoryType(requirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eDeviceLocal));
+  vulkanImage->vkImageMemory = m_device.allocateMemory(allocInfo, nullptr);
+  m_device.bindImageMemory(vulkanImage->vkImage, vulkanImage->vkImageMemory, 0);
+
+  /**
+   * create staging buffer
+   */
+  vk::MemoryPropertyFlags memPropertyFlag;
+  memPropertyFlag |= vk::MemoryPropertyFlagBits::eHostVisible;
+  memPropertyFlag |= vk::MemoryPropertyFlagBits::eHostCoherent;
+  auto [StagingBuffer, StagingMemory] = CreateBuffer(imageSize, vk::BufferUsageFlagBits::eTransferSrc, memPropertyFlag);
+
+  vulkanImage->vkStagingBuffer = StagingBuffer;
+  vulkanImage->vkStagingBufferMemory = StagingMemory;
+
+  return vulkanImage;
+}
+
+void
+VulkanBufferContext::ConvertImageState(Image* image, ImageState srcState, ImageState dstState) {
+  auto* vulkanImage = static_cast<VulkanImage*>(image);
+  auto vkImage = vulkanImage->vkImage;
+
+  vk::CommandBufferAllocateInfo allocInfo{};
+  allocInfo.level = vk::CommandBufferLevel::ePrimary;
+  allocInfo.commandPool = m_temporaryCommandPool;
+  allocInfo.commandBufferCount = 1;
+
+  vk::CommandBuffer commandBuffer;
+  auto result = m_device.allocateCommandBuffers(allocInfo);
+  commandBuffer = result[0];
+
+  vk::CommandBufferBeginInfo beginInfo;
+  beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+  commandBuffer.begin(beginInfo);
+
+  vk::ImageMemoryBarrier barrier{};
+  vk::ImageSubresourceRange range;
+  range.setAspectMask(vulkanImage->aspect);
+  range.setBaseArrayLayer(0);
+  range.setLayerCount(vulkanImage->arrayLayer);
+  range.setBaseMipLevel(0);
+  range.setLayerCount(vulkanImage->mipMapLevel);
+
+  barrier.setOldLayout(ConvertToVulkanImageLayout(srcState));
+  barrier.setNewLayout(ConvertToVulkanImageLayout(dstState));
+  barrier.setImage(vkImage);
+  barrier.setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
+  barrier.setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
+  barrier.setSubresourceRange(range);
+
+  commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eNone, vk::PipelineStageFlagBits::eNone,
+                                vk::DependencyFlagBits::eByRegion, nullptr, nullptr, barrier);
+
+  commandBuffer.end();
+  vk::SubmitInfo submitInfo;
+  submitInfo.setCommandBuffers(commandBuffer);
+  m_transferQueue.submit(submitInfo);
+  m_transferQueue.waitIdle();
+  m_device.freeCommandBuffers(m_temporaryCommandPool, commandBuffer);
+}
+
+void
+VulkanBufferContext::DestroyImage(Image* image) {
+  auto* vulkanImage = static_cast<VulkanImage*>(image);
+  m_device.destroyImage(vulkanImage->vkImage);
+  m_device.destroyBuffer(vulkanImage->vkStagingBuffer);
+  m_device.freeMemory(vulkanImage->vkImageMemory);
+  m_device.freeMemory(vulkanImage->vkStagingBufferMemory);
+
+  delete image;
+}
+
 CommandPool*
 VulkanBufferContext::CreateCommandPool(CommandBufferUsage usage) {
   auto* vulkanCommandPool = new VulkanCommandPool();
@@ -252,6 +401,33 @@ VulkanBufferContext::CopyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::
   copyRange.setSrcOffset(0);
   copyRange.setDstOffset(0);
   commandBuffer.copyBuffer(srcBuffer, dstBuffer, copyRange);
+  commandBuffer.end();
+
+  vk::SubmitInfo submitInfo;
+  submitInfo.setCommandBuffers(commandBuffer);
+  m_transferQueue.submit(submitInfo);
+  m_transferQueue.waitIdle();
+
+  m_device.freeCommandBuffers(m_temporaryCommandPool, commandBuffer);
+}
+
+void
+VulkanBufferContext::CopyBufferToImage(vk::Buffer srcBuffer, vk::Image image, const vk::BufferImageCopy& copyRange) {
+  vk::CommandBufferAllocateInfo allocInfo{};
+  allocInfo.level = vk::CommandBufferLevel::ePrimary;
+  allocInfo.commandPool = m_temporaryCommandPool;
+  allocInfo.commandBufferCount = 1;
+
+  vk::CommandBuffer commandBuffer;
+  auto result = m_device.allocateCommandBuffers(allocInfo);
+  commandBuffer = result[0];
+
+  vk::CommandBufferBeginInfo beginInfo;
+  beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+  commandBuffer.begin(beginInfo);
+
+  commandBuffer.copyBufferToImage(srcBuffer, image, vk::ImageLayout::eTransferDstOptimal, copyRange);
+
   commandBuffer.end();
 
   vk::SubmitInfo submitInfo;

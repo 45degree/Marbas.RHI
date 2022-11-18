@@ -49,6 +49,19 @@ class VulkanBufferContext final : public BufferContext {
   DestroyBuffer(Buffer* buffer) override;
 
  public:
+  Image*
+  CreateImage(const ImageCreateInfo& createInfo) override;
+
+  void
+  UpdateImage(Image* image, void* data, size_t size) override {}
+
+  void
+  ConvertImageState(Image* image, ImageState srcState, ImageState dstState);
+
+  void
+  DestroyImage(Image* image) override;
+
+ public:
   CommandPool*
   CreateCommandPool(CommandBufferUsage usage) override;
 
@@ -70,6 +83,9 @@ class VulkanBufferContext final : public BufferContext {
 
   void
   CopyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSize size);
+
+  void
+  CopyBufferToImage(vk::Buffer srcBuffer, vk::Image image, const vk::BufferImageCopy& range);
 
  private:
   uint32_t m_graphicsQueueIndex;

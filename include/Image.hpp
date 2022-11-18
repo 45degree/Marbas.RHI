@@ -59,6 +59,7 @@ enum class ImageFormat {
   RGB16F,
   RGB32F,
   DEPTH,
+  RGBA_SRGB,
 };
 
 struct CubeMapImageDesc {};
@@ -73,7 +74,7 @@ struct Image2DArrayDesc {
 struct ImageCreateInfo {
   uint32_t width = 0;
   uint32_t height = 0;
-  uint32_t depth = 1;
+  uint32_t channel = 1;
   ImageFormat format = ImageFormat::RGBA;
   uint32_t mipMapLevel = 1;
   uint32_t usage = ImageUsageFlags::SHADER_READ | ImageUsageFlags::RENDER_TARGET;

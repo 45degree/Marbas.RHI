@@ -7,7 +7,12 @@
 namespace Marbas {
 
 struct VulkanImage final : public Image {
-  vk::Image image;
+  vk::Image vkImage;
+  vk::DeviceMemory vkImageMemory;
+
+  vk::Buffer vkStagingBuffer;
+  vk::DeviceMemory vkStagingBufferMemory;
+
   vk::ImageLayout currentLayout;  // WARNING: render pass or command will change it
   vk::ImageAspectFlags aspect;
 };

@@ -38,6 +38,17 @@ class BufferContext {
   virtual void
   DestroyBuffer(Buffer* buffer) = 0;
 
+ public:
+  virtual Image*
+  CreateImage(const ImageCreateInfo& createInfo) = 0;
+
+  virtual void
+  UpdateImage(Image* image, void* data, size_t size) = 0;
+
+  virtual void
+  DestroyImage(Image* image) = 0;
+
+ public:
   virtual CommandPool*
   CreateCommandPool(CommandBufferUsage usage) = 0;
 

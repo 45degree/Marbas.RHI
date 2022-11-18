@@ -40,6 +40,8 @@ ConvertToVulkanFormat(ImageFormat format) {
       return vk::Format::eR32G32B32Sfloat;
     case ImageFormat::DEPTH:
       return vk::Format::eD32Sfloat;
+    case ImageFormat::RGBA_SRGB:
+      return vk::Format::eR8G8B8A8Srgb;
   }
   return vk::Format::eR8G8B8A8Unorm;
 }
@@ -153,6 +155,9 @@ ConvertToVulkanImageUsage(uint32_t usage) {
   }
   if (usage & ImageUsageFlags::DEPTH) {
     flags |= vk::ImageUsageFlagBits::eDepthStencilAttachment;
+  }
+  if (usage & ImageUsageFlags::SHADER_READ) {
+    flags |= vk::ImageUsageFlagBits::eSampled;
   }
   if (usage & ImageUsageFlags::TRANSFER_SRC) {
     flags |= vk::ImageUsageFlagBits::eTransferSrc;

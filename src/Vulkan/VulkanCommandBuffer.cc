@@ -47,7 +47,7 @@ VulkanCommandBuffer::InsertImageBarrier(const std::vector<ImageBarrier>& barrier
     const auto* vulkanImage = static_cast<const VulkanImage*>(imageBarrier.image);
     const auto& srcUsage = imageBarrier.waitUsage;
     const auto& dstUsage = imageBarrier.dstUsage;
-    vulkanImageBarrier.setImage(vulkanImage->image);
+    vulkanImageBarrier.setImage(vulkanImage->vkImage);
     vulkanImageBarrier.setDstQueueFamilyIndex(m_queueFamily);
     vulkanImageBarrier.setSrcQueueFamilyIndex(m_queueFamily);
     vulkanImageBarrier.setSrcAccessMask(ConvertToVulkanImageAccess(srcUsage));
@@ -74,7 +74,7 @@ VulkanCommandBuffer::TransformImageState(Image* image, ImageState srcState, Imag
   vk::ImageMemoryBarrier imageMemoryBarrier;
   const auto* vulkanImage = static_cast<VulkanImage*>(image);
 
-  imageMemoryBarrier.setImage(vulkanImage->image);
+  imageMemoryBarrier.setImage(vulkanImage->vkImage);
   imageMemoryBarrier.setDstQueueFamilyIndex(m_queueFamily);
   imageMemoryBarrier.setSrcQueueFamilyIndex(m_queueFamily);
   imageMemoryBarrier.setSrcAccessMask(vk::AccessFlagBits::eMemoryWrite);
