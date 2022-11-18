@@ -1,3 +1,4 @@
+#include <chrono>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -22,6 +23,18 @@ struct UniformBufferObject {
 };
 
 static const std::array<uint32_t, 6> indices = {0, 1, 2, 2, 3, 0};
+
+void
+UpdateUniformBuffer(UniformBufferObject& ubo, uint32_t height, uint32_t width) {
+  static auto startTime = std::chrono::high_resolution_clock::now();
+
+  auto currentTime = std::chrono::high_resolution_clock::now();
+  float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+  ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+  ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+  ubo.proj = glm::perspective(glm::radians(45.0f), static_cast<float>(width) / static_cast<float>(height), 0.1f, 10.0f);
+}
 
 int
 main(void) {
@@ -227,6 +240,9 @@ main(void) {
 
     std::array<Marbas::ViewportInfo, 1> viewportInfos = {viewportInfo};
     std::array<Marbas::ScissorInfo, 1> scissorInfos = {scissorInfo};
+
+    UpdateUniformBuffer(ubo, height, width);
+    bufferContext->UpdateBuffer(uniformbuffer, &ubo, sizeof(ubo), 0);
 
     commandBuffer->Begin();
     commandBuffer->BeginPipeline(pipeline, frameBuffers[nextImage], {1, 1, 1, 1});

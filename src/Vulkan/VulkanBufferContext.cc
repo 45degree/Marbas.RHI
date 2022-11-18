@@ -117,7 +117,19 @@ VulkanBufferContext::FindMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags
 
 // TODO:
 void
-VulkanBufferContext::UpdateBuffer(Buffer* buffer, const void* data, uint32_t size, uintptr_t offset) {}
+VulkanBufferContext::UpdateBuffer(Buffer* buffer, const void* data, uint32_t size, uintptr_t offset) {
+  auto* vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
+  if (vulkanBuffer->stageBufferMemory && vulkanBuffer->stageBuffer) {
+    void* mapData = m_device.mapMemory(*vulkanBuffer->stageBufferMemory, offset, size);
+    memcpy(mapData, data, size);
+    m_device.unmapMemory(*vulkanBuffer->stageBufferMemory);
+    CopyBuffer(*(vulkanBuffer->stageBuffer), vulkanBuffer->vkBuffer, vulkanBuffer->size);
+  } else {
+    void* mapData = m_device.mapMemory(vulkanBuffer->vkMemory, 0, size);
+    memcpy(mapData, data, size);
+    m_device.unmapMemory(vulkanBuffer->vkMemory);
+  }
+}
 
 void
 VulkanBufferContext::DestroyBuffer(Buffer* buffer) {

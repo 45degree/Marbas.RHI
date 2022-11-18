@@ -1,9 +1,9 @@
 ---@diagnostic disable: undefined-global
-target("DescriptorSetTest")
+target("UniformBufferTest")
   set_kind("binary")
   set_languages("c11", "cxx20")
 
-  local executedir = path.join("$(buildir)", "$(os)", "$(arch)", "$(mode)","test", "DescriptorSetTest")
+  local executedir = path.join("$(buildir)", "$(os)", "$(arch)", "$(mode)","test", "UniformBufferTest")
   set_targetdir(executedir)
 
   add_defines("USE_VULKAN");
