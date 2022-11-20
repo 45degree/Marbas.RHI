@@ -42,6 +42,8 @@ ConvertToVulkanFormat(ImageFormat format) {
       return vk::Format::eD32Sfloat;
     case ImageFormat::RGBA_SRGB:
       return vk::Format::eR8G8B8A8Srgb;
+    case ImageFormat::RGB_SRGB:
+      return vk::Format::eR8G8B8Srgb;
   }
   return vk::Format::eR8G8B8A8Unorm;
 }
@@ -78,6 +80,12 @@ ConvertToVulkanImageLayout(const ImageState& state) {
       return vk::ImageLayout::ePresentSrcKHR;
     case ImageState::DEPTH:
       return vk::ImageLayout::eDepthAttachmentOptimal;
+    case ImageState::UNDEFINED:
+      return vk::ImageLayout::eUndefined;
+    case ImageState::TRANSFER_SRC:
+      return vk::ImageLayout::eTransferSrcOptimal;
+    case ImageState::TRANSFER_DST:
+      return vk::ImageLayout::eTransferDstOptimal;
   }
   return vk::ImageLayout::eColorAttachmentOptimal;
 }
@@ -161,6 +169,9 @@ ConvertToVulkanImageUsage(uint32_t usage) {
   }
   if (usage & ImageUsageFlags::TRANSFER_SRC) {
     flags |= vk::ImageUsageFlagBits::eTransferSrc;
+  }
+  if (usage & ImageUsageFlags::TRANSFER_DST) {
+    flags |= vk::ImageUsageFlagBits::eTransferDst;
   }
   return flags;
 }

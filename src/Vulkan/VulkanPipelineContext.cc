@@ -11,17 +11,214 @@
 
 namespace Marbas {
 
-Sampler*
-VulkanPipelineContext::CreateSampler() {
-  // TODO:
-  vk::SamplerCreateInfo createInfo;
-  auto sampler = m_device.createSampler(createInfo);
+/**
+ * @brief convert filter to vulkan used
+ *
+ * @param filter filter
+ * @return { minFilter, magFilter, mipmapMode }
+ */
+FORCE_INLINE static void
+SetFilterForSamplerCreateInfo(const Filter& filter, vk::SamplerCreateInfo& createInfo) {
+  switch (filter) {
+    case Filter::MIN_MAG_MIP_POINT:
+      createInfo.setMinFilter(vk::Filter::eNearest);
+      createInfo.setMagFilter(vk::Filter::eNearest);
+      createInfo.setMipmapMode(vk::SamplerMipmapMode::eNearest);
+      return;
+    case Filter::MIN_MAG_POINT_MIP_LINEAR:
+      createInfo.setMinFilter(vk::Filter::eNearest);
+      createInfo.setMagFilter(vk::Filter::eNearest);
+      createInfo.setMipmapMode(vk::SamplerMipmapMode::eLinear);
+      return;
+    case Filter::MIN_POINT_MAG_LINEAR_MIP_POINT:
+      createInfo.setMinFilter(vk::Filter::eNearest);
+      createInfo.setMagFilter(vk::Filter::eLinear);
+      createInfo.setMipmapMode(vk::SamplerMipmapMode::eNearest);
+      return;
+    case Filter::MIN_POINT_MAG_MIP_LINEAR:
+      createInfo.setMinFilter(vk::Filter::eNearest);
+      createInfo.setMagFilter(vk::Filter::eLinear);
+      createInfo.setMipmapMode(vk::SamplerMipmapMode::eLinear);
+      return;
+    case Filter::MIN_LINEAR_MAG_MIP_POINT:
+      createInfo.setMinFilter(vk::Filter::eLinear);
+      createInfo.setMagFilter(vk::Filter::eNearest);
+      createInfo.setMipmapMode(vk::SamplerMipmapMode::eNearest);
+      return;
+    case Filter::MIN_LINEAR_MAG_POINT_MIP_LINEAR:
+      createInfo.setMinFilter(vk::Filter::eLinear);
+      createInfo.setMagFilter(vk::Filter::eNearest);
+      createInfo.setMipmapMode(vk::SamplerMipmapMode::eLinear);
+      return;
+    case Filter::MIN_MAG_LINEAR_MIP_POINT:
+      createInfo.setMinFilter(vk::Filter::eLinear);
+      createInfo.setMagFilter(vk::Filter::eLinear);
+      createInfo.setMipmapMode(vk::SamplerMipmapMode::eNearest);
+      return;
+    case Filter::MIN_MAG_MIP_LINEAR:
+      createInfo.setMinFilter(vk::Filter::eLinear);
+      createInfo.setMagFilter(vk::Filter::eLinear);
+      createInfo.setMipmapMode(vk::SamplerMipmapMode::eLinear);
+      return;
+    case Filter::ANISOTROPIC:
+      // TODO:
+      createInfo.setMinFilter(vk::Filter::eLinear);
+      createInfo.setMagFilter(vk::Filter::eLinear);
+      createInfo.setMipmapMode(vk::SamplerMipmapMode::eLinear);
+      createInfo.setAnisotropyEnable(true);
+      return;
+    case Filter::COMPARISON_MIN_MAG_MIP_POINT:
+      createInfo.setMinFilter(vk::Filter::eNearest);
+      createInfo.setMagFilter(vk::Filter::eNearest);
+      createInfo.setMipmapMode(vk::SamplerMipmapMode::eNearest);
+      createInfo.setCompareEnable(true);
+      return;
+    case Filter::COMPARISON_MIN_MAG_POINT_MIP_LINEAR:
+      createInfo.setMinFilter(vk::Filter::eNearest);
+      createInfo.setMagFilter(vk::Filter::eNearest);
+      createInfo.setMipmapMode(vk::SamplerMipmapMode::eLinear);
+      createInfo.setCompareEnable(true);
+      return;
+    case Filter::COMPARISON_MIN_POINT_MAG_LINEAR_MIP_POINT:
+      createInfo.setMinFilter(vk::Filter::eNearest);
+      createInfo.setMagFilter(vk::Filter::eLinear);
+      createInfo.setMipmapMode(vk::SamplerMipmapMode::eNearest);
+      createInfo.setCompareEnable(true);
+      return;
+    case Filter::COMPARISON_MIN_POINT_MAG_MIP_LINEAR:
+      createInfo.setMinFilter(vk::Filter::eNearest);
+      createInfo.setMagFilter(vk::Filter::eLinear);
+      createInfo.setMipmapMode(vk::SamplerMipmapMode::eLinear);
+      createInfo.setCompareEnable(true);
+      return;
+    case Filter::COMPARISON_MIN_LINEAR_MAG_MIP_POINT:
+      createInfo.setMinFilter(vk::Filter::eLinear);
+      createInfo.setMagFilter(vk::Filter::eNearest);
+      createInfo.setMipmapMode(vk::SamplerMipmapMode::eNearest);
+      createInfo.setCompareEnable(true);
+      return;
+    case Filter::COMPARISON_MIN_LINEAR_MAG_POINT_MIP_LINEAR:
+      createInfo.setMinFilter(vk::Filter::eLinear);
+      createInfo.setMagFilter(vk::Filter::eNearest);
+      createInfo.setMipmapMode(vk::SamplerMipmapMode::eLinear);
+      createInfo.setCompareEnable(true);
+      return;
+    case Filter::COMPARISON_MIN_MAG_LINEAR_MIP_POINT:
+      createInfo.setMinFilter(vk::Filter::eLinear);
+      createInfo.setMagFilter(vk::Filter::eLinear);
+      createInfo.setMipmapMode(vk::SamplerMipmapMode::eNearest);
+      createInfo.setCompareEnable(true);
+      return;
+    case Filter::COMPARISON_MIN_MAG_MIP_LINEAR:
+      createInfo.setMinFilter(vk::Filter::eLinear);
+      createInfo.setMagFilter(vk::Filter::eLinear);
+      createInfo.setMipmapMode(vk::SamplerMipmapMode::eLinear);
+      createInfo.setCompareEnable(true);
+      return;
+    case Filter::COMPARISON_ANISOTROPIC:
+      // TODO:
+      createInfo.setMinFilter(vk::Filter::eLinear);
+      createInfo.setMagFilter(vk::Filter::eLinear);
+      createInfo.setMipmapMode(vk::SamplerMipmapMode::eNearest);
+      createInfo.setCompareEnable(true);
+      createInfo.setAnisotropyEnable(true);
+      return;
+  }
+}
 
-  return nullptr;
+FORCE_INLINE static vk::SamplerAddressMode
+ConvertToVulkanSamplerAddressMode(const SamplerAddressMode& samplerAddressMode) {
+  switch (samplerAddressMode) {
+    case SamplerAddressMode::WRAP:
+      return vk::SamplerAddressMode::eRepeat;
+    case SamplerAddressMode::MIRROR:
+      return vk::SamplerAddressMode::eMirroredRepeat;
+    case SamplerAddressMode::CLAMP:
+      return vk::SamplerAddressMode::eClampToEdge;
+    case SamplerAddressMode::BORDER:
+      return vk::SamplerAddressMode::eClampToBorder;
+    case SamplerAddressMode::MIRROR_ONCE:
+      return vk::SamplerAddressMode::eMirrorClampToEdge;
+  }
+}
+
+Sampler*
+VulkanPipelineContext::CreateSampler(const SamplerCreateInfo& createInfo) {
+  // TODO:
+  vk::SamplerCreateInfo vkCreateInfo;
+  SetFilterForSamplerCreateInfo(createInfo.filter, vkCreateInfo);
+  vkCreateInfo.setMaxAnisotropy(createInfo.maxAnisotropy);
+  vkCreateInfo.setMinLod(createInfo.minLod);
+  vkCreateInfo.setMaxLod(createInfo.maxLod);
+  vkCreateInfo.setMipLodBias(createInfo.mipLodBias);
+  vkCreateInfo.setUnnormalizedCoordinates(false);
+  vkCreateInfo.setAddressModeU(ConvertToVulkanSamplerAddressMode(createInfo.addressU));
+  vkCreateInfo.setAddressModeV(ConvertToVulkanSamplerAddressMode(createInfo.addressV));
+  vkCreateInfo.setAddressModeW(ConvertToVulkanSamplerAddressMode(createInfo.addressW));
+
+  switch (createInfo.borderColor) {
+    case BorderColor::FloatOpaqueBlack:
+      vkCreateInfo.setBorderColor(vk::BorderColor::eFloatOpaqueBlack);
+      break;
+    case BorderColor::FloatOpaqueWhite:
+      vkCreateInfo.setBorderColor(vk::BorderColor::eFloatOpaqueWhite);
+      break;
+    case BorderColor::FloatTransparentBlack:
+      vkCreateInfo.setBorderColor(vk::BorderColor::eFloatTransparentBlack);
+      break;
+    case BorderColor::IntOpaqueBlack:
+      vkCreateInfo.setBorderColor(vk::BorderColor::eIntOpaqueBlack);
+      break;
+    case BorderColor::IntOpaqueWhite:
+      vkCreateInfo.setBorderColor(vk::BorderColor::eIntOpaqueWhite);
+      break;
+    case BorderColor::IntTransparentBlack:
+      vkCreateInfo.setBorderColor(vk::BorderColor::eIntTransparentBlack);
+      break;
+  }
+
+  switch (createInfo.comparisonOp) {
+    case ComparisonOp::NEVER:
+      vkCreateInfo.setCompareOp(vk::CompareOp::eNever);
+      break;
+    case ComparisonOp::LESS:
+      vkCreateInfo.setCompareOp(vk::CompareOp::eLess);
+      break;
+    case ComparisonOp::EQUAL:
+      vkCreateInfo.setCompareOp(vk::CompareOp::eEqual);
+      break;
+    case ComparisonOp::LESS_EQUAL:
+      vkCreateInfo.setCompareOp(vk::CompareOp::eLessOrEqual);
+      break;
+    case ComparisonOp::GREATER:
+      vkCreateInfo.setCompareOp(vk::CompareOp::eGreater);
+      break;
+    case ComparisonOp::NOT_EQUAL:
+      vkCreateInfo.setCompareOp(vk::CompareOp::eNotEqual);
+      break;
+    case ComparisonOp::GREATER_EQUAL:
+      vkCreateInfo.setCompareOp(vk::CompareOp::eGreaterOrEqual);
+      break;
+    case ComparisonOp::ALWAYS:
+      vkCreateInfo.setCompareOp(vk::CompareOp::eAlways);
+      break;
+  }
+
+  auto sampler = m_device.createSampler(vkCreateInfo);
+
+  auto* vulkanSampler = new VulkanSampler();
+  vulkanSampler->vkSampler = sampler;
+
+  return vulkanSampler;
 }
 
 void
-VulkanPipelineContext::DestroySampler(Sampler* sampler) {}
+VulkanPipelineContext::DestroySampler(Sampler* sampler) {
+  auto* vulkanSampler = static_cast<VulkanSampler*>(sampler);
+  m_device.destroySampler(vulkanSampler->vkSampler);
+
+  delete vulkanSampler;
+}
 
 ShaderModule*
 VulkanPipelineContext::CreateShaderModule(const std::string& spirvPath) {
@@ -366,7 +563,7 @@ VulkanPipelineContext::CreateFrameBuffer(const FrameBufferCreateInfo& createInfo
   vk::FramebufferCreateInfo vkFramebufferCreateInfo;
   std::vector<vk::ImageView> vkAttachments;
   std::transform(createInfo.attachments.begin(), createInfo.attachments.end(), std::back_inserter(vkAttachments),
-                 [](auto&& attachment) { return static_cast<VulkanImageView*>(attachment)->imageView; });
+                 [](auto&& attachment) { return static_cast<VulkanImageView*>(attachment)->vkImageView; });
 
   vkFramebufferCreateInfo.setRenderPass(vkRenderPass);
   vkFramebufferCreateInfo.setAttachments(vkAttachments);
@@ -486,4 +683,28 @@ VulkanPipelineContext::BindBuffer(const BindBufferInfo& bindBufferInfo) {
   m_device.updateDescriptorSets(vkWriteDescriptorSet, nullptr);
 }
 
+void
+VulkanPipelineContext::BindImage(const BindImageInfo& bindImageInfo) {
+  auto* vulkanDescriptorSet = static_cast<VulkanDescriptorSet*>(bindImageInfo.descriptorSet);
+  auto* vulkanImageView = static_cast<VulkanImageView*>(bindImageInfo.imageView);
+  auto* vulkanSampler = static_cast<VulkanSampler*>(bindImageInfo.sampler);
+
+  const auto& vkImageView = vulkanImageView->vkImageView;
+  const auto& vkSampler = vulkanSampler->vkSampler;
+
+  vk::DescriptorImageInfo vkDescriptorImageInfo;
+  vkDescriptorImageInfo.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+  vkDescriptorImageInfo.setImageView(vkImageView);
+  vkDescriptorImageInfo.setSampler(vkSampler);
+
+  vk::WriteDescriptorSet vkWriteDescriptorSet;
+  vkWriteDescriptorSet.setDstSet(vulkanDescriptorSet->vkDescriptorSet);
+  vkWriteDescriptorSet.setDstBinding(bindImageInfo.bindingPoint);
+  vkWriteDescriptorSet.setDescriptorCount(1);
+  vkWriteDescriptorSet.setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
+  vkWriteDescriptorSet.setImageInfo(vkDescriptorImageInfo);
+  vkWriteDescriptorSet.setDstArrayElement(0);
+
+  m_device.updateDescriptorSets(vkWriteDescriptorSet, nullptr);
+}
 }  // namespace Marbas

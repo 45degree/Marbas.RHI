@@ -36,7 +36,7 @@ class VulkanPipelineContext final : public PipelineContext {
 
  public:
   Sampler*
-  CreateSampler() override;
+  CreateSampler(const SamplerCreateInfo& createInfo) override;
 
   void
   DestroySampler(Sampler* sampler) override;
@@ -62,7 +62,7 @@ class VulkanPipelineContext final : public PipelineContext {
   DestroyDescriptorSet(const DescriptorPool* pool, DescriptorSet* descriptorSet) override;
 
   void
-  BindImage(DescriptorSet* descriptorSet, uint16_t bindingPoint, ImageView* imageView, Sampler* sampler) override {}
+  BindImage(const BindImageInfo& bindImageInfo) override;
 
   void
   BindBuffer(const BindBufferInfo& bindBufferInfo) override;

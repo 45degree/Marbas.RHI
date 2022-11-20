@@ -10,13 +10,14 @@
 struct Vertex {
   glm::vec2 pos;
   glm::vec3 color;
+  glm::vec2 texCoord;
 };
 
 static const std::array<Vertex, 4> vertices = {
-    Vertex{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-    Vertex{{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-    Vertex{{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-    Vertex{{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}},
+    Vertex{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+    Vertex{{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+    Vertex{{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+    Vertex{{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
 };
 
 struct UniformBufferObject {
@@ -39,15 +40,16 @@ LoadImage(Marbas::BufferContext* bufferContext, const std::string& imagePath) {
   Marbas::Image2DDesc desc;
 
   Marbas::ImageCreateInfo imageCreateInfo;
-  imageCreateInfo.channel = texChannels;
+  imageCreateInfo.channel = 4;
   imageCreateInfo.width = texWidth;
   imageCreateInfo.height = texHeight;
   imageCreateInfo.mipMapLevel = 1;
-  imageCreateInfo.format = Marbas::ImageFormat::RGBA_SRGB;
+  imageCreateInfo.format = Marbas::ImageFormat::RGBA;
   imageCreateInfo.imageDesc = desc;
-  imageCreateInfo.usage = Marbas::ImageUsageFlags::SHADER_READ;
+  imageCreateInfo.usage = Marbas::ImageUsageFlags::SHADER_READ | Marbas::ImageUsageFlags::TRANSFER_DST;
 
   auto image = bufferContext->CreateImage(imageCreateInfo);
+  bufferContext->UpdateImage(image, pixels, texWidth * texHeight * 4);
   return image;
 }
 
@@ -81,6 +83,27 @@ main(void) {
   auto* fragShader = pipelineContext->CreateShaderModule("shader.frag.spv");
 
   auto* image = LoadImage(factory->GetBufferContext(), "texture.jpg");
+  auto* imageView = bufferContext->CreateImageView(Marbas::ImageViewCreateInfo{
+      .image = image,
+      .type = Marbas::ImageViewType::TEXTURE2D,
+      .aspectFlags = Marbas::ImageViewAspectFlags::COLOR,
+      .baseLevel = 0,
+      .levelCount = 1,
+      .baseArrayLayer = 0,
+      .layerCount = 1,
+  });
+
+  auto* sampler = pipelineContext->CreateSampler(Marbas::SamplerCreateInfo{
+      .filter = Marbas::Filter::MIN_MAG_MIP_LINEAR,
+      .addressU = Marbas::SamplerAddressMode::WRAP,
+      .addressV = Marbas::SamplerAddressMode::WRAP,
+      .addressW = Marbas::SamplerAddressMode::WRAP,
+      .comparisonOp = Marbas::ComparisonOp::ALWAYS,
+      .mipLodBias = 0,
+      .minLod = 0,
+      .maxLod = 0,
+      .borderColor = Marbas::BorderColor::IntOpaqueBlack,
+  });
 
   // create uniform buffer
   UniformBufferObject ubo;
@@ -92,18 +115,31 @@ main(void) {
       bufferContext->CreateBuffer(Marbas::BufferType::UNIFORM_BUFFER, &ubo, sizeof(UniformBufferObject), true);
 
   // create descriptor pool
-  Marbas::DescriptorSetLayoutBinding layoutBinding = {
-      .bindingPoint = 0,
-      .descriptorType = Marbas::DescriptorType::UNIFORM_BUFFER,
-      .count = 1,
-      .visible = Marbas::DescriptorVisible::ALL,
+  std::vector<Marbas::DescriptorSetLayoutBinding> layoutBindings{
+      {
+          .bindingPoint = 0,
+          .descriptorType = Marbas::DescriptorType::UNIFORM_BUFFER,
+          .count = 1,
+          .visible = Marbas::DescriptorVisible::ALL,
+      },
+      {
+          .bindingPoint = 1,
+          .descriptorType = Marbas::DescriptorType::IMAGE,
+          .count = 1,
+          .visible = Marbas::DescriptorVisible::ALL,
+      }};
+  std::array descriptorPoolSizes = {
+      Marbas::DescriptorPoolSize{
+          .type = Marbas::DescriptorType::UNIFORM_BUFFER,
+          .size = 1,
+      },
+      Marbas::DescriptorPoolSize{
+          .type = Marbas::DescriptorType::IMAGE,
+          .size = 1,
+      },
   };
-  std::array descriptorPoolSizes = {Marbas::DescriptorPoolSize{
-      .type = Marbas::DescriptorType::UNIFORM_BUFFER,
-      .size = 1,
-  }};
   auto* descriptorPool = pipelineContext->CreateDescriptorPool(descriptorPoolSizes, 1);
-  auto* descriptorSetLayout = pipelineContext->CreateDescriptorSetLayout(std::span(&layoutBinding, 1));
+  auto* descriptorSetLayout = pipelineContext->CreateDescriptorSetLayout(layoutBindings);
 
   // create descriptorSet
   auto* descriptorSet = pipelineContext->CreateDescriptorSet(descriptorPool, descriptorSetLayout);
@@ -114,6 +150,12 @@ main(void) {
       .buffer = uniformbuffer,
       .offset = 0,
       .arrayElement = 0,
+  });
+  pipelineContext->BindImage(Marbas::BindImageInfo{
+      .descriptorSet = descriptorSet,
+      .bindingPoint = 1,
+      .imageView = imageView,
+      .sampler = sampler,
   });
 
   // render target desc and blend
@@ -154,7 +196,7 @@ main(void) {
   scissorInfo.height = height;
 
   // vertex input layout
-  Marbas::InputElementDesc posAttribute, colorAttribute;
+  Marbas::InputElementDesc posAttribute, colorAttribute, texCoordAttribute;
   Marbas::InputElementView elementView;
   posAttribute.binding = 0;
   posAttribute.attribute = 0;
@@ -167,12 +209,17 @@ main(void) {
   colorAttribute.format = Marbas::ElementType::R32G32B32_SFLOAT;
   colorAttribute.offset = offsetof(Vertex, color);
 
+  texCoordAttribute.binding = 0;
+  texCoordAttribute.attribute = 2;
+  texCoordAttribute.format = Marbas::ElementType::R32G32_SFLOAT;
+  texCoordAttribute.offset = offsetof(Vertex, texCoord);
+
   elementView.binding = 0;
   elementView.inputClass = Marbas::VertexInputClass::VERTEX;
   elementView.stride = sizeof(Vertex);
 
   Marbas::GraphicsPipeLineCreateInfo pipelineCreateInfo;
-  pipelineCreateInfo.vertexInputLayout.elementDesc = {posAttribute, colorAttribute};
+  pipelineCreateInfo.vertexInputLayout.elementDesc = {posAttribute, colorAttribute, texCoordAttribute};
   pipelineCreateInfo.vertexInputLayout.viewDesc = {elementView};
   pipelineCreateInfo.outputRenderTarget.push_back(renderTargetDesc);
   pipelineCreateInfo.shaderStageCreateInfo = shaderStageCreateInfos;
@@ -304,6 +351,7 @@ main(void) {
   pipelineContext->DestroyPipeline(pipeline);
   pipelineContext->DestroyDescriptorSetLayout(descriptorSetLayout);
   pipelineContext->DestroyDescriptorPool(descriptorPool);
+  pipelineContext->DestroySampler(sampler);
 
   bufferContext->DestroyBuffer(uniformbuffer);
   bufferContext->DestroyBuffer(vertexBuffer);
@@ -311,6 +359,7 @@ main(void) {
   bufferContext->DestroyCommandBuffer(commandPool, commandBuffer);
   bufferContext->DestroyCommandPool(commandPool);
   bufferContext->DestroyImage(image);
+  bufferContext->DestroyImageView(imageView);
 
   factory->DestroyFence(fence);
   for (auto* semaphore : waitSemaphore) {

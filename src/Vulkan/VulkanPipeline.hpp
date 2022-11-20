@@ -19,8 +19,13 @@
 #include <vulkan/vulkan.hpp>
 
 #include "Pipeline.hpp"
+#include "Sampler.hpp"
 
 namespace Marbas {
+
+struct VulkanSampler final : public Sampler {
+  vk::Sampler vkSampler;
+};
 
 struct VulkanPipeline final : public Pipeline {
   vk::DescriptorSetLayout vkDescriptorSetLayout;

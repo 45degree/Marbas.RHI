@@ -53,13 +53,19 @@ class VulkanBufferContext final : public BufferContext {
   CreateImage(const ImageCreateInfo& createInfo) override;
 
   void
-  UpdateImage(Image* image, void* data, size_t size) override {}
+  UpdateImage(Image* image, void* data, size_t size) override;
 
   void
   ConvertImageState(Image* image, ImageState srcState, ImageState dstState);
 
   void
   DestroyImage(Image* image) override;
+
+  ImageView*
+  CreateImageView(const ImageViewCreateInfo& createInfo) override;
+
+  void
+  DestroyImageView(ImageView* imageView) override;
 
  public:
   CommandPool*

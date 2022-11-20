@@ -48,6 +48,12 @@ class BufferContext {
   virtual void
   DestroyImage(Image* image) = 0;
 
+  virtual ImageView*
+  CreateImageView(const ImageViewCreateInfo& createInfo) = 0;
+
+  virtual void
+  DestroyImageView(ImageView* imageView) = 0;
+
  public:
   virtual CommandPool*
   CreateCommandPool(CommandBufferUsage usage) = 0;

@@ -33,6 +33,9 @@ struct ImageUsageFlags {
 };
 
 enum class ImageState {
+  UNDEFINED,
+  TRANSFER_SRC,
+  TRANSFER_DST,
   SHADER_READ,
   RENDER_TARGET,
   PRESENT,
@@ -60,6 +63,7 @@ enum class ImageFormat {
   RGB32F,
   DEPTH,
   RGBA_SRGB,
+  RGB_SRGB,
 };
 
 struct CubeMapImageDesc {};
@@ -89,6 +93,21 @@ struct Image {
   uint32_t mipMapLevel = 1;
   uint32_t usage = ImageUsageFlags::SHADER_READ | ImageUsageFlags::RENDER_TARGET;
   uint32_t arrayLayer = 1;
+};
+
+enum class ImageViewAspectFlags {
+  DEPTH,
+  COLOR,
+};
+
+struct ImageViewCreateInfo {
+  Image* image;
+  ImageViewType type;
+  ImageViewAspectFlags aspectFlags;
+  uint32_t baseLevel;
+  uint32_t levelCount;
+  uint32_t baseArrayLayer;
+  uint32_t layerCount;
 };
 
 struct ImageView {};

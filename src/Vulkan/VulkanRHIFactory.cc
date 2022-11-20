@@ -308,7 +308,7 @@ VulkanRHIFactory::CreateSwapchain(uint32_t width, uint32_t height) {
     range.setLevelCount(1);
     imageViewCreateInfo.setSubresourceRange(range);
 
-    vulkanImageView->imageView = m_device.createImageView(imageViewCreateInfo);
+    vulkanImageView->vkImageView = m_device.createImageView(imageViewCreateInfo);
 
     m_swapChain.imageViews.push_back(vulkanImageView);
   }
@@ -318,7 +318,7 @@ void
 VulkanRHIFactory::DestroySwapchain() {
   for (auto* imageView : m_swapChain.imageViews) {
     auto* vulkanImageView = static_cast<VulkanImageView*>(imageView);
-    m_device.destroyImageView(vulkanImageView->imageView);
+    m_device.destroyImageView(vulkanImageView->vkImageView);
 
     delete vulkanImageView;
   }

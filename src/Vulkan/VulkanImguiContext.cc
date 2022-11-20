@@ -75,7 +75,7 @@ VulkanImguiContext::SetUpVulkanWindowData(bool clearEnable) {
   m_descriptorPool = m_device.createDescriptorPool(descriptorPoolCreateInfo);
 
   for (int i = 0; i < m_swapchain->imageCount; i++) {
-    auto imageView = static_cast<VulkanImageView*>(m_swapchain->imageViews[i])->imageView;
+    auto imageView = static_cast<VulkanImageView*>(m_swapchain->imageViews[i])->vkImageView;
 
     // create frame buffer
     vk::FramebufferCreateInfo frameCreateInfo;
@@ -182,7 +182,7 @@ VulkanImguiContext::Resize(uint32_t width, uint32_t height) {
     info.setLayers(1);
 
     for (uint32_t i = 0; i < imageCount; i++) {
-      vk::ImageView imageView = static_cast<VulkanImageView*>(m_swapchain->imageViews[i])->imageView;
+      vk::ImageView imageView = static_cast<VulkanImageView*>(m_swapchain->imageViews[i])->vkImageView;
       info.setAttachments(imageView);
       m_framebuffers[i] = m_device.createFramebuffer(info);
     }

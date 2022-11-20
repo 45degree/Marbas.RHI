@@ -119,7 +119,6 @@ VulkanBufferContext::FindMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags
   throw std::runtime_error("failed to find suitable memory type!");
 }
 
-// TODO:
 void
 VulkanBufferContext::UpdateBuffer(Buffer* buffer, const void* data, uint32_t size, uintptr_t offset) {
   auto* vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
@@ -152,6 +151,7 @@ VulkanBufferContext::DestroyBuffer(Buffer* buffer) {
   delete vulkanBuffer;
 }
 
+// TODO: improve
 Image*
 VulkanBufferContext::CreateImage(const ImageCreateInfo& imageCreateInfo) {
   vk::ImageCreateInfo createInfo;
@@ -242,6 +242,34 @@ VulkanBufferContext::CreateImage(const ImageCreateInfo& imageCreateInfo) {
   return vulkanImage;
 }
 
+// TODO: improve
+void
+VulkanBufferContext::UpdateImage(Image* image, void* data, size_t size) {
+  auto* vulkanImage = static_cast<VulkanImage*>(image);
+  void* mapData = m_device.mapMemory(vulkanImage->vkStagingBufferMemory, 0, size);
+  memcpy(mapData, data, size);
+  m_device.unmapMemory(vulkanImage->vkStagingBufferMemory);
+
+  ConvertImageState(image, ImageState::UNDEFINED, ImageState::TRANSFER_DST);
+
+  vk::BufferImageCopy range;
+  range.setBufferImageHeight(0);
+  range.setBufferRowLength(0);
+  range.setBufferOffset(0);
+
+  range.imageSubresource.setAspectMask(vk::ImageAspectFlagBits::eColor);
+  range.imageSubresource.setBaseArrayLayer(0);
+  range.imageSubresource.setMipLevel(vulkanImage->mipMapLevel);
+  range.imageSubresource.setLayerCount(vulkanImage->arrayLayer);
+
+  range.imageOffset = vk::Offset3D(0, 0, 0);
+  range.imageExtent = vk::Extent3D(vulkanImage->width, vulkanImage->height, vulkanImage->arrayLayer);
+
+  CopyBufferToImage(vulkanImage->vkStagingBuffer, vulkanImage->vkImage, range);
+  ConvertImageState(image, ImageState::TRANSFER_DST, ImageState::SHADER_READ);
+}
+
+// TODO: improve
 void
 VulkanBufferContext::ConvertImageState(Image* image, ImageState srcState, ImageState dstState) {
   auto* vulkanImage = static_cast<VulkanImage*>(image);
@@ -266,7 +294,7 @@ VulkanBufferContext::ConvertImageState(Image* image, ImageState srcState, ImageS
   range.setBaseArrayLayer(0);
   range.setLayerCount(vulkanImage->arrayLayer);
   range.setBaseMipLevel(0);
-  range.setLayerCount(vulkanImage->mipMapLevel);
+  range.setLevelCount(1);
 
   barrier.setOldLayout(ConvertToVulkanImageLayout(srcState));
   barrier.setNewLayout(ConvertToVulkanImageLayout(dstState));
@@ -275,7 +303,7 @@ VulkanBufferContext::ConvertImageState(Image* image, ImageState srcState, ImageS
   barrier.setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
   barrier.setSubresourceRange(range);
 
-  commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eNone, vk::PipelineStageFlagBits::eNone,
+  commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands, vk::PipelineStageFlagBits::eAllCommands,
                                 vk::DependencyFlagBits::eByRegion, nullptr, nullptr, barrier);
 
   commandBuffer.end();
@@ -295,6 +323,61 @@ VulkanBufferContext::DestroyImage(Image* image) {
   m_device.freeMemory(vulkanImage->vkStagingBufferMemory);
 
   delete image;
+}
+
+ImageView*
+VulkanBufferContext::CreateImageView(const ImageViewCreateInfo& createInfo) {
+  auto* imageView = new VulkanImageView();
+  auto* vulkanImage = static_cast<VulkanImage*>(createInfo.image);
+  const auto& vkImage = vulkanImage->vkImage;
+
+  vk::ImageViewCreateInfo vkImageViewCreateInfo;
+  vkImageViewCreateInfo.setImage(vkImage);
+
+  vkImageViewCreateInfo.setFormat(ConvertToVulkanFormat(vulkanImage->format));
+
+  switch (createInfo.type) {
+    case ImageViewType::TEXTURE2D:
+      vkImageViewCreateInfo.setViewType(vk::ImageViewType::e2D);
+      break;
+    case ImageViewType::CUBEMAP:
+      vkImageViewCreateInfo.setViewType(vk::ImageViewType::eCube);
+      break;
+    case ImageViewType::TEXTURE2D_ARRAY:
+      vkImageViewCreateInfo.setViewType(vk::ImageViewType::e2DArray);
+      break;
+    case ImageViewType::CUBEMAP_ARRAY:
+      vkImageViewCreateInfo.setViewType(vk::ImageViewType::eCubeArray);
+      break;
+  }
+
+  vk::ImageSubresourceRange range;
+  switch (createInfo.aspectFlags) {
+    case ImageViewAspectFlags::DEPTH:
+      range.setAspectMask(vk::ImageAspectFlagBits::eDepth);
+      break;
+    case ImageViewAspectFlags::COLOR:
+      range.setAspectMask(vk::ImageAspectFlagBits::eColor);
+      break;
+  }
+  range.setBaseArrayLayer(createInfo.baseArrayLayer);
+  range.setBaseMipLevel(createInfo.baseLevel);
+  range.setLayerCount(createInfo.layerCount);
+  range.setLevelCount(createInfo.levelCount);
+  vkImageViewCreateInfo.setSubresourceRange(range);
+
+  auto vkImageView = m_device.createImageView(vkImageViewCreateInfo);
+  imageView->vkImageView = vkImageView;
+
+  return imageView;
+}
+
+void
+VulkanBufferContext::DestroyImageView(ImageView* imageView) {
+  auto* vulkanImageView = static_cast<VulkanImageView*>(imageView);
+  m_device.destroyImageView(vulkanImageView->vkImageView);
+
+  delete vulkanImageView;
 }
 
 CommandPool*

@@ -32,6 +32,13 @@ struct BindBufferInfo final {
   uint32_t arrayElement;
 };
 
+struct BindImageInfo final {
+  DescriptorSet* descriptorSet;
+  uint16_t bindingPoint;
+  ImageView* imageView;
+  Sampler* sampler;
+};
+
 class PipelineContext {
  public:
   PipelineContext() = default;
@@ -46,7 +53,7 @@ class PipelineContext {
 
  public:
   virtual Sampler*
-  CreateSampler() = 0;
+  CreateSampler(const SamplerCreateInfo& createInfo) = 0;
 
   virtual void
   DestroySampler(Sampler* sampler) = 0;
@@ -72,7 +79,7 @@ class PipelineContext {
   DestroyDescriptorSet(const DescriptorPool* pool, DescriptorSet* descriptorSet) = 0;
 
   virtual void
-  BindImage(DescriptorSet* descriptorSet, uint16_t bindingPoint, ImageView* imageView, Sampler* sampler) = 0;
+  BindImage(const BindImageInfo& bindImageInfo) = 0;
 
   virtual void
   BindBuffer(const BindBufferInfo& bindBufferInfo) = 0;
