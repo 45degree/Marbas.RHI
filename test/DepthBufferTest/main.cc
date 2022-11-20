@@ -310,16 +310,33 @@ main(void) {
   auto onResize = [&](int width, int height) {
     factory->WaitIdle();
     factory->RecreateSwapchain(swapchain, width, height);
+
+    // destroy depthBuffer and recreate
+    bufferContext->DestroyImage(depthBuffer);
+    bufferContext->DestroyImageView(depthBufferView);
+
+    depthBuffer = CreateDepthBuffer(bufferContext, width, height);
+    depthBufferView = bufferContext->CreateImageView(Marbas::ImageViewCreateInfo{
+        .image = depthBuffer,
+        .type = Marbas::ImageViewType::TEXTURE2D,
+        .aspectFlags = Marbas::ImageViewAspectFlags::DEPTH,
+        .baseLevel = 0,
+        .levelCount = 1,
+        .baseArrayLayer = 0,
+        .layerCount = 1,
+    });
+
     // recreate framebuffer
     for (int i = 0; i < frameBuffers.size(); i++) {
       pipelineContext->DestroyFrameBuffer(frameBuffers[i]);
 
+      std::array<Marbas::ImageView*, 2> attachments = {swapchain->imageViews[i], depthBufferView};
       Marbas::FrameBufferCreateInfo createInfo;
       createInfo.height = height;
       createInfo.width = width;
       createInfo.layer = 1;
       createInfo.pieline = pipeline;
-      createInfo.attachments = std::span(swapchain->imageViews.begin() + i, 1);
+      createInfo.attachments = attachments;
       frameBuffers[i] = pipelineContext->CreateFrameBuffer(createInfo);
     }
 
