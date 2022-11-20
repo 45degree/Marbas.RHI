@@ -606,9 +606,9 @@ VulkanPipelineContext::CreateRenderPass(const std::vector<RenderTargetDesc>& ren
       reference.setLayout(vk::ImageLayout::eColorAttachmentOptimal);
       colorAttachmentReferences.push_back(reference);
     } else {
-      description.setInitialLayout(vk::ImageLayout::eGeneral);
-      description.setFinalLayout(vk::ImageLayout::eDepthAttachmentOptimal);
-      reference.setLayout(vk::ImageLayout::eDepthAttachmentOptimal);
+      description.setInitialLayout(vk::ImageLayout::eUndefined);
+      description.setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
+      reference.setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
       depthAttachmentReference = reference;
     }
     description.setFormat(ConvertToVulkanFormat(renderTargetDesc.format));

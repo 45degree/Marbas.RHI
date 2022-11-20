@@ -34,6 +34,23 @@ struct CommandPool {
   CommandBufferUsage usage = CommandBufferUsage::GRAPHICS;
 };
 
+struct ClearValue {
+  explicit ClearValue(const std::array<float, 4>& colorValue) { clearValue = colorValue; }
+  explicit ClearValue(const std::array<float, 2>& depthStencilValue) { clearValue = depthStencilValue; }
+
+  void
+  SetClearColor(const std::array<float, 4>& colorValue) {
+    clearValue = colorValue;
+  }
+
+  void
+  SetDepthStencilValue(const std::array<float, 2>& depthStencilValue) {
+    clearValue = depthStencilValue;
+  }
+
+  std::variant<std::array<float, 4>, std::array<float, 2>> clearValue;
+};
+
 class CommandBuffer {
  public:
   virtual void
@@ -53,7 +70,7 @@ class CommandBuffer {
   End() = 0;
 
   virtual void
-  BeginPipeline(Pipeline* pipeline, FrameBuffer* frameBuffer, const std::array<float, 4>& clearColor) = 0;
+  BeginPipeline(Pipeline* pipeline, FrameBuffer* frameBuffer, const std::vector<ClearValue>& clearColor) = 0;
 
   virtual void
   SetViewports(std::span<ViewportInfo> viewportInfos) = 0;

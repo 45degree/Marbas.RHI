@@ -140,7 +140,7 @@ VulkanCommandBuffer::End() {
 
 void
 VulkanCommandBuffer::BeginPipeline(Pipeline* pipeline, FrameBuffer* frameBuffer,
-                                   const std::array<float, 4>& clearColor) {
+                                   const std::vector<ClearValue>& clearValues) {
   auto* vulkanPipeline = static_cast<VulkanPipeline*>(pipeline);
   auto* vulkanFrameBuffer = static_cast<VulkanFrameBuffer*>(frameBuffer);
   auto vkRenderPass = vulkanPipeline->vkRenderPass;
@@ -150,13 +150,25 @@ VulkanCommandBuffer::BeginPipeline(Pipeline* pipeline, FrameBuffer* frameBuffer,
   const auto& width = frameBuffer->width;
 
   vk::RenderPassBeginInfo vkRenderPassBeginInfo;
-  vk::ClearColorValue clearColorValue(clearColor);
-  vk::ClearValue clearValue(clearColorValue);
+  std::vector<vk::ClearValue> vkClearValues;
+
+  for (const auto& clearValue : clearValues) {
+    // clang-format off
+    std::visit([&](auto&& value) {
+      using T = std::decay_t<decltype(value)>;
+      if constexpr (std::is_same_v<T, std::array<float, 4>>) {
+        vkClearValues.emplace_back(vk::ClearColorValue(value));
+      } else if constexpr (std::is_same_v<T, std::array<float, 2>>) {
+        vkClearValues.emplace_back(vk::ClearDepthStencilValue(value[0], value[1]));
+      }
+    },clearValue.clearValue);
+    // lcnag-format on
+  }
 
   vkRenderPassBeginInfo.setRenderPass(vkRenderPass);
   vkRenderPassBeginInfo.setFramebuffer(vkFramebuffer);
   vkRenderPassBeginInfo.setRenderArea(vk::Rect2D(vk::Offset2D(0, 0), vk::Extent2D(width, height)));
-  vkRenderPassBeginInfo.setClearValues(clearValue);
+  vkRenderPassBeginInfo.setClearValues(vkClearValues);
 
   m_commandBuffer.beginRenderPass(vkRenderPassBeginInfo, vk::SubpassContents::eInline);
 

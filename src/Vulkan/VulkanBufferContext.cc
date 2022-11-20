@@ -27,6 +27,30 @@
 
 namespace Marbas {
 
+static uint32_t
+GetChannelFromFormat(const ImageFormat& format) {
+  switch (format) {
+    case ImageFormat::RED:
+    case ImageFormat::R32F:
+    case ImageFormat::DEPTH:
+      return 1;
+    case ImageFormat::RG:
+    case ImageFormat::RG16F:
+    case ImageFormat::RG32F:
+    case ImageFormat::RGB16F:
+    case ImageFormat::RGB32F:
+    case ImageFormat::RGB_SRGB:
+      return 2;
+    case ImageFormat::RGB:
+    case ImageFormat::BGR:
+      return 3;
+    case ImageFormat::RGBA:
+    case ImageFormat::BGRA:
+    case ImageFormat::RGBA_SRGB:
+      return 4;
+  }
+}
+
 VulkanBufferContext::VulkanBufferContext(const VulkanBufferContextCreateInfo& createInfo)
     : BufferContext(),
       m_device(createInfo.device),
@@ -154,11 +178,11 @@ VulkanBufferContext::DestroyBuffer(Buffer* buffer) {
 // TODO: improve
 Image*
 VulkanBufferContext::CreateImage(const ImageCreateInfo& imageCreateInfo) {
-  vk::ImageCreateInfo createInfo;
+  vk::ImageCreateInfo vkCreateInfo;
   uint32_t width, height, channel;
   width = imageCreateInfo.width;
   height = imageCreateInfo.height;
-  channel = imageCreateInfo.channel;
+  channel = GetChannelFromFormat(imageCreateInfo.format);
 
   auto imageSize = width * height * channel;
 
@@ -167,7 +191,7 @@ VulkanBufferContext::CreateImage(const ImageCreateInfo& imageCreateInfo) {
   vulkanImage->height = height;
   vulkanImage->usage = imageCreateInfo.usage;
   vulkanImage->currentLayout = vk::ImageLayout::eUndefined;
-  vulkanImage->mipMapLevel = createInfo.mipLevels;
+  vulkanImage->mipMapLevel = vkCreateInfo.mipLevels;
   vulkanImage->format = imageCreateInfo.format;
 
   if (imageCreateInfo.usage & ImageUsageFlags::DEPTH) {
@@ -178,45 +202,45 @@ VulkanBufferContext::CreateImage(const ImageCreateInfo& imageCreateInfo) {
     vulkanImage->aspect = vk::ImageAspectFlagBits::eColor;
   }
 
-  createInfo.setFormat(ConvertToVulkanFormat(imageCreateInfo.format));
-  createInfo.setInitialLayout(vk::ImageLayout::eUndefined);
-  createInfo.setMipLevels(imageCreateInfo.mipMapLevel);
+  vkCreateInfo.setFormat(ConvertToVulkanFormat(imageCreateInfo.format));
+  vkCreateInfo.setInitialLayout(vk::ImageLayout::eUndefined);
+  vkCreateInfo.setMipLevels(imageCreateInfo.mipMapLevel);
 
   // TODO:
-  createInfo.setTiling(vk::ImageTiling::eLinear);
-  createInfo.setSamples(vk::SampleCountFlagBits::e1);
+  vkCreateInfo.setTiling(vk::ImageTiling::eOptimal);
+  vkCreateInfo.setSamples(vk::SampleCountFlagBits::e1);
 
   // clang-format off
   std::visit([&](auto&& imageDesc) {
     using T = std::decay_t<decltype(imageDesc)>;
     if constexpr (std::is_same_v<T, Image2DDesc>) {
       vulkanImage->depth = 1;
-      createInfo.setImageType(vk::ImageType::e2D);
-      createInfo.setExtent(vk::Extent3D(width, height, 1));
-      createInfo.setArrayLayers(1);
+      vkCreateInfo.setImageType(vk::ImageType::e2D);
+      vkCreateInfo.setExtent(vk::Extent3D(width, height, 1));
+      vkCreateInfo.setArrayLayers(1);
       vulkanImage->arrayLayer = 1;
     } else if constexpr (std::is_same_v<T, Image2DArrayDesc>) {
-      createInfo.setImageType(vk::ImageType::e2D);
-      createInfo.setArrayLayers(imageDesc.arraySize);
+      vkCreateInfo.setImageType(vk::ImageType::e2D);
+      vkCreateInfo.setArrayLayers(imageDesc.arraySize);
       vulkanImage->arrayLayer = imageDesc.arraySize;
     } else if constexpr (std::is_same_v<T, CubeMapImageDesc>) {
-      createInfo.setImageType(vk::ImageType::e2D);
-      createInfo.setArrayLayers(6);
-      createInfo.setFlags(vk::ImageCreateFlagBits::eCubeCompatible);
+      vkCreateInfo.setImageType(vk::ImageType::e2D);
+      vkCreateInfo.setArrayLayers(6);
+      vkCreateInfo.setFlags(vk::ImageCreateFlagBits::eCubeCompatible);
       vulkanImage->arrayLayer = 6;
     } else if constexpr (std::is_same_v<T, CubeMapArrayImageDesc>) {
-      createInfo.setImageType(vk::ImageType::e2D);
-      createInfo.setArrayLayers(6 * imageDesc.arraySize);
-      createInfo.setFlags(vk::ImageCreateFlagBits::eCubeCompatible);
+      vkCreateInfo.setImageType(vk::ImageType::e2D);
+      vkCreateInfo.setArrayLayers(6 * imageDesc.arraySize);
+      vkCreateInfo.setFlags(vk::ImageCreateFlagBits::eCubeCompatible);
       vulkanImage->arrayLayer = 6 * imageDesc.arraySize;
     }
   },imageCreateInfo.imageDesc);
   // clang-format on
 
-  createInfo.setUsage(ConvertToVulkanImageUsage(imageCreateInfo.usage));
-  createInfo.setSharingMode(vk::SharingMode::eExclusive);
+  vkCreateInfo.setUsage(ConvertToVulkanImageUsage(imageCreateInfo.usage));
+  vkCreateInfo.setSharingMode(vk::SharingMode::eExclusive);
 
-  vulkanImage->vkImage = m_device.createImage(createInfo);
+  vulkanImage->vkImage = m_device.createImage(vkCreateInfo);
 
   /**
    * alloca memory
@@ -519,6 +543,22 @@ VulkanBufferContext::CopyBufferToImage(vk::Buffer srcBuffer, vk::Image image, co
   m_transferQueue.waitIdle();
 
   m_device.freeCommandBuffers(m_temporaryCommandPool, commandBuffer);
+}
+
+vk::Format
+VulkanBufferContext::FindSupportFormat(const std::vector<vk::Format>& candidates, vk::ImageTiling tiling,
+                                       vk::FormatFeatureFlags features) {
+  for (vk::Format format : candidates) {
+    auto props = m_physicalDevice.getFormatProperties(format);
+
+    if (tiling == vk::ImageTiling::eLinear && (props.linearTilingFeatures & features) == features) {
+      return format;
+    } else if (tiling == vk::ImageTiling::eOptimal && (props.optimalTilingFeatures & features) == features) {
+      return format;
+    }
+  }
+
+  throw std::runtime_error("failed to find supported format!");
 }
 
 }  // namespace Marbas

@@ -93,6 +93,9 @@ class VulkanBufferContext final : public BufferContext {
   void
   CopyBufferToImage(vk::Buffer srcBuffer, vk::Image image, const vk::BufferImageCopy& range);
 
+  vk::Format
+  FindSupportFormat(const std::vector<vk::Format>& candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features);
+
  private:
   uint32_t m_graphicsQueueIndex;
   uint32_t m_computeQueueIndex;

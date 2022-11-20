@@ -62,7 +62,7 @@ class VulkanCommandBuffer final : public CommandBuffer {
   End() override;
 
   void
-  BeginPipeline(Pipeline* pipeline, FrameBuffer* frameBuffer, const std::array<float, 4>& clearColor) override;
+  BeginPipeline(Pipeline* pipeline, FrameBuffer* frameBuffer, const std::vector<ClearValue>& clearColors) override;
 
   void
   SetViewports(std::span<ViewportInfo> viewportInfos) override;

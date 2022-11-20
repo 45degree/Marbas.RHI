@@ -40,7 +40,6 @@ LoadImage(Marbas::BufferContext* bufferContext, const std::string& imagePath) {
   Marbas::Image2DDesc desc;
 
   Marbas::ImageCreateInfo imageCreateInfo;
-  imageCreateInfo.channel = 4;
   imageCreateInfo.width = texWidth;
   imageCreateInfo.height = texHeight;
   imageCreateInfo.mipMapLevel = 1;
@@ -321,7 +320,7 @@ main(void) {
     bufferContext->UpdateBuffer(uniformbuffer, &ubo, sizeof(ubo), 0);
 
     commandBuffer->Begin();
-    commandBuffer->BeginPipeline(pipeline, frameBuffers[nextImage], {1, 1, 1, 1});
+    commandBuffer->BeginPipeline(pipeline, frameBuffers[nextImage], {Marbas::ClearValue({1, 1, 1, 1})});
     commandBuffer->SetViewports(viewportInfos);
     commandBuffer->SetScissors(scissorInfos);
     commandBuffer->BindVertexBuffer(vertexBuffer);

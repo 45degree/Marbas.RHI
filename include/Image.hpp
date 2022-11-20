@@ -78,7 +78,6 @@ struct Image2DArrayDesc {
 struct ImageCreateInfo {
   uint32_t width = 0;
   uint32_t height = 0;
-  uint32_t channel = 1;
   ImageFormat format = ImageFormat::RGBA;
   uint32_t mipMapLevel = 1;
   uint32_t usage = ImageUsageFlags::SHADER_READ | ImageUsageFlags::RENDER_TARGET;
