@@ -293,6 +293,35 @@ VulkanBufferContext::UpdateImage(Image* image, void* data, size_t size) {
   ConvertImageState(image, ImageState::TRANSFER_DST, ImageState::SHADER_READ);
 }
 
+void
+VulkanBufferContext::GenerateMipmap(Image* image, uint32_t mipmapLevel) {
+  auto* vulkanImage = static_cast<VulkanImage*>(image);
+  const auto& vkImage = vulkanImage->vkImage;
+
+  vk::CommandBufferAllocateInfo allocInfo{};
+  allocInfo.level = vk::CommandBufferLevel::ePrimary;
+  allocInfo.commandPool = m_temporaryCommandPool;
+  allocInfo.commandBufferCount = 1;
+
+  vk::CommandBuffer commandBuffer;
+  auto result = m_device.allocateCommandBuffers(allocInfo);
+  commandBuffer = result[0];
+
+  // TODO:
+  vk::ImageMemoryBarrier barrier;
+  barrier.setImage(vkImage);
+  barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;  // TODO: depth?
+
+  commandBuffer.end();
+
+  vk::SubmitInfo submitInfo;
+  submitInfo.setCommandBuffers(commandBuffer);
+  m_transferQueue.submit(submitInfo);
+  m_transferQueue.waitIdle();
+
+  m_device.freeCommandBuffers(m_temporaryCommandPool, commandBuffer);
+}
+
 // TODO: improve
 void
 VulkanBufferContext::ConvertImageState(Image* image, ImageState srcState, ImageState dstState) {
