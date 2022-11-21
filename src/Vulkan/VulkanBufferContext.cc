@@ -37,12 +37,12 @@ GetChannelFromFormat(const ImageFormat& format) {
     case ImageFormat::RG:
     case ImageFormat::RG16F:
     case ImageFormat::RG32F:
-    case ImageFormat::RGB16F:
-    case ImageFormat::RGB32F:
-    case ImageFormat::RGB_SRGB:
       return 2;
     case ImageFormat::RGB:
     case ImageFormat::BGR:
+    case ImageFormat::RGB16F:
+    case ImageFormat::RGB32F:
+    case ImageFormat::RGB_SRGB:
       return 3;
     case ImageFormat::RGBA:
     case ImageFormat::BGRA:
@@ -191,7 +191,7 @@ VulkanBufferContext::CreateImage(const ImageCreateInfo& imageCreateInfo) {
   vulkanImage->height = height;
   vulkanImage->usage = imageCreateInfo.usage;
   vulkanImage->currentLayout = vk::ImageLayout::eUndefined;
-  vulkanImage->mipMapLevel = vkCreateInfo.mipLevels;
+  vulkanImage->mipMapLevel = imageCreateInfo.mipMapLevel;
   vulkanImage->format = imageCreateInfo.format;
 
   if (imageCreateInfo.usage & ImageUsageFlags::DEPTH) {
@@ -283,11 +283,11 @@ VulkanBufferContext::UpdateImage(Image* image, void* data, size_t size) {
 
   range.imageSubresource.setAspectMask(vk::ImageAspectFlagBits::eColor);
   range.imageSubresource.setBaseArrayLayer(0);
-  range.imageSubresource.setMipLevel(vulkanImage->mipMapLevel);
+  range.imageSubresource.setMipLevel(0);
   range.imageSubresource.setLayerCount(vulkanImage->arrayLayer);
 
   range.imageOffset = vk::Offset3D(0, 0, 0);
-  range.imageExtent = vk::Extent3D(vulkanImage->width, vulkanImage->height, vulkanImage->arrayLayer);
+  range.imageExtent = vk::Extent3D(vulkanImage->width, vulkanImage->height, vulkanImage->depth);
 
   CopyBufferToImage(vulkanImage->vkStagingBuffer, vulkanImage->vkImage, range);
   ConvertImageState(image, ImageState::TRANSFER_DST, ImageState::SHADER_READ);
@@ -307,10 +307,67 @@ VulkanBufferContext::GenerateMipmap(Image* image, uint32_t mipmapLevel) {
   auto result = m_device.allocateCommandBuffers(allocInfo);
   commandBuffer = result[0];
 
-  // TODO:
+  vk::CommandBufferBeginInfo beginInfo;
+  beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+  commandBuffer.begin(beginInfo);
+
   vk::ImageMemoryBarrier barrier;
   barrier.setImage(vkImage);
+  barrier.setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
+  barrier.setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
   barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;  // TODO: depth?
+  barrier.subresourceRange.baseArrayLayer = 0;
+  barrier.subresourceRange.layerCount = vulkanImage->arrayLayer;
+  barrier.subresourceRange.setLevelCount(1);
+
+  // TODO:
+  int32_t mipWidth = vulkanImage->width;
+  int32_t mipHeight = vulkanImage->height;
+
+  for (uint32_t i = 1; i < mipmapLevel; i++) {
+    barrier.subresourceRange.setBaseMipLevel(i - 1);
+    barrier.setOldLayout(vk::ImageLayout::eTransferDstOptimal);
+    barrier.setNewLayout(vk::ImageLayout::eTransferSrcOptimal);
+    barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
+    barrier.dstAccessMask = vk::AccessFlagBits::eTransferRead;
+
+    commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eTransfer,
+                                  vk::DependencyFlagBits::eByRegion, nullptr, nullptr, barrier);
+
+    vk::ImageBlit blit;
+    blit.srcOffsets[0] = vk::Offset3D(0, 0, 0);
+    blit.srcOffsets[1] = vk::Offset3D(mipWidth, mipHeight, 1);
+    blit.srcSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+    blit.srcSubresource.mipLevel = i - 1;
+    blit.srcSubresource.baseArrayLayer = 0;
+    blit.srcSubresource.layerCount = vulkanImage->arrayLayer;
+
+    blit.dstOffsets[0] = vk::Offset3D(0, 0, 0);
+    blit.dstOffsets[1] = vk::Offset3D(mipWidth > 1 ? mipWidth / 2 : 1, mipHeight > 1 ? mipHeight / 2 : 1, 1);
+    blit.dstSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+    blit.dstSubresource.mipLevel = i;
+    blit.dstSubresource.baseArrayLayer = 0;
+    blit.dstSubresource.layerCount = vulkanImage->arrayLayer;
+
+    commandBuffer.blitImage(vkImage, vk::ImageLayout::eTransferSrcOptimal, vkImage,
+                            vk::ImageLayout::eTransferDstOptimal, blit, vk::Filter::eLinear);
+
+    barrier.setOldLayout(vk::ImageLayout::eTransferSrcOptimal);
+    barrier.setNewLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+    barrier.srcAccessMask = vk::AccessFlagBits::eTransferRead;
+    barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+    commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eFragmentShader,
+                                  vk::DependencyFlagBits::eByRegion, nullptr, nullptr, barrier);
+    if (mipWidth > 1) mipWidth /= 2;
+    if (mipHeight > 1) mipHeight /= 2;
+  }
+  barrier.subresourceRange.baseMipLevel = mipmapLevel - 1;
+  barrier.setOldLayout(vk::ImageLayout::eTransferDstOptimal);
+  barrier.setNewLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+  barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
+  barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+  commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eFragmentShader,
+                                vk::DependencyFlagBits::eByRegion, nullptr, nullptr, barrier);
 
   commandBuffer.end();
 
@@ -347,7 +404,7 @@ VulkanBufferContext::ConvertImageState(Image* image, ImageState srcState, ImageS
   range.setBaseArrayLayer(0);
   range.setLayerCount(vulkanImage->arrayLayer);
   range.setBaseMipLevel(0);
-  range.setLevelCount(1);
+  range.setLevelCount(image->mipMapLevel);
 
   barrier.setOldLayout(ConvertToVulkanImageLayout(srcState));
   barrier.setNewLayout(ConvertToVulkanImageLayout(dstState));
@@ -580,10 +637,12 @@ VulkanBufferContext::FindSupportFormat(const std::vector<vk::Format>& candidates
   for (vk::Format format : candidates) {
     auto props = m_physicalDevice.getFormatProperties(format);
 
-    if (tiling == vk::ImageTiling::eLinear && (props.linearTilingFeatures & features) == features) {
-      return format;
-    } else if (tiling == vk::ImageTiling::eOptimal && (props.optimalTilingFeatures & features) == features) {
-      return format;
+    if ((props.linearTilingFeatures & features) == features) {
+      if (tiling == vk::ImageTiling::eLinear) {
+        return format;
+      } else if (tiling == vk::ImageTiling::eOptimal) {
+        return format;
+      }
     }
   }
 

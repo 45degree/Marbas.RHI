@@ -46,6 +46,9 @@ class BufferContext {
   UpdateImage(Image* image, void* data, size_t size) = 0;
 
   virtual void
+  ConvertImageState(Image* image, ImageState srcState, ImageState dstState) = 0;
+
+  virtual void
   GenerateMipmap(Image* image, uint32_t mipmapLevel) = 0;
 
   virtual void

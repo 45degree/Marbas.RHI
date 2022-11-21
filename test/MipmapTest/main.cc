@@ -48,10 +48,11 @@ LoadImage(Marbas::BufferContext* bufferContext, const std::string& imagePath) {
   Marbas::ImageCreateInfo imageCreateInfo;
   imageCreateInfo.width = texWidth;
   imageCreateInfo.height = texHeight;
-  imageCreateInfo.mipMapLevel = 1;
+  imageCreateInfo.mipMapLevel = 2;
   imageCreateInfo.format = Marbas::ImageFormat::RGBA;
   imageCreateInfo.imageDesc = desc;
-  imageCreateInfo.usage = Marbas::ImageUsageFlags::SHADER_READ | Marbas::ImageUsageFlags::TRANSFER_DST;
+  imageCreateInfo.usage = Marbas::ImageUsageFlags::SHADER_READ | Marbas::ImageUsageFlags::TRANSFER_DST |
+                          Marbas::ImageUsageFlags::TRANSFER_SRC;
 
   auto image = bufferContext->CreateImage(imageCreateInfo);
   bufferContext->UpdateImage(image, pixels, texWidth * texHeight * 4);
@@ -113,6 +114,8 @@ main(void) {
       .baseArrayLayer = 0,
       .layerCount = 1,
   });
+  bufferContext->ConvertImageState(image, Marbas::ImageState::UNDEFINED, Marbas::ImageState::TRANSFER_DST);
+  bufferContext->GenerateMipmap(image, 2);
   auto* depthBuffer = CreateDepthBuffer(bufferContext, width, height);
   auto* depthBufferView = bufferContext->CreateImageView(Marbas::ImageViewCreateInfo{
       .image = depthBuffer,

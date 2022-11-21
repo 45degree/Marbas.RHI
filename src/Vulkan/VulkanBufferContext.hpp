@@ -59,7 +59,7 @@ class VulkanBufferContext final : public BufferContext {
   GenerateMipmap(Image* image, uint32_t mipmapLevel) override;
 
   void
-  ConvertImageState(Image* image, ImageState srcState, ImageState dstState);
+  ConvertImageState(Image* image, ImageState srcState, ImageState dstState) override;
 
   void
   DestroyImage(Image* image) override;
