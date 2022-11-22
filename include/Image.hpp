@@ -24,7 +24,7 @@ namespace Marbas {
 struct ImageUsageFlags {
   enum value : uint32_t {
     SHADER_READ = 1,
-    RENDER_TARGET = 1 << 1,
+    COLOR_RENDER_TARGET = 1 << 1,
     TRANSFER_SRC = 1 << 2,
     TRANSFER_DST = 1 << 3,
     PRESENT = 1 << 4,
@@ -81,7 +81,7 @@ struct ImageCreateInfo {
   uint32_t height = 0;
   ImageFormat format = ImageFormat::RGBA;
   uint32_t mipMapLevel = 1;
-  uint32_t usage = ImageUsageFlags::SHADER_READ | ImageUsageFlags::RENDER_TARGET;
+  uint32_t usage = ImageUsageFlags::SHADER_READ | ImageUsageFlags::COLOR_RENDER_TARGET;
   std::variant<CubeMapImageDesc, CubeMapArrayImageDesc, Image2DDesc, Image2DArrayDesc> imageDesc;
 };
 
@@ -91,19 +91,19 @@ struct Image {
   uint32_t depth = 1;
   ImageFormat format = ImageFormat::RGBA;
   uint32_t mipMapLevel = 1;
-  uint32_t usage = ImageUsageFlags::SHADER_READ | ImageUsageFlags::RENDER_TARGET;
+  uint32_t usage = ImageUsageFlags::SHADER_READ | ImageUsageFlags::COLOR_RENDER_TARGET;
   uint32_t arrayLayer = 1;
 };
 
-enum class ImageViewAspectFlags {
-  DEPTH,
-  COLOR,
-};
+// enum class ImageAspect {
+//   DEPTH,
+//   COLOR,
+// };
 
 struct ImageViewCreateInfo {
   Image* image;
   ImageViewType type;
-  ImageViewAspectFlags aspectFlags;
+  // ImageAspect aspectFlags;
   uint32_t baseLevel;
   uint32_t levelCount;
   uint32_t baseArrayLayer;

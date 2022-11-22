@@ -194,11 +194,12 @@ VulkanBufferContext::CreateImage(const ImageCreateInfo& imageCreateInfo) {
   vulkanImage->format = imageCreateInfo.format;
 
   if (imageCreateInfo.usage & ImageUsageFlags::DEPTH) {
-    vulkanImage->aspect = vk::ImageAspectFlagBits::eDepth;
-  }
-  if (imageCreateInfo.usage & ImageUsageFlags::SHADER_READ || imageCreateInfo.usage & ImageUsageFlags::RENDER_TARGET ||
-      imageCreateInfo.usage & ImageUsageFlags::PRESENT) {
-    vulkanImage->aspect = vk::ImageAspectFlagBits::eColor;
+    // when image be used as a depth image, it can't be used as a color render target
+    DLOG_ASSERT(!(imageCreateInfo.usage & ImageUsageFlags::COLOR_RENDER_TARGET));
+    DLOG_ASSERT(!(imageCreateInfo.usage & ImageUsageFlags::PRESENT));
+    vulkanImage->vkAspect = vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil;
+  } else {
+    vulkanImage->vkAspect = vk::ImageAspectFlagBits::eColor;
   }
 
   vkCreateInfo.setFormat(ConvertToVulkanFormat(imageCreateInfo.format));
@@ -269,8 +270,8 @@ VulkanBufferContext::CreateImage(const ImageCreateInfo& imageCreateInfo) {
 void
 VulkanBufferContext::UpdateImage(const UpdateImageInfo& updateInfo) {
   auto* vulkanImage = static_cast<VulkanImage*>(updateInfo.image);
-  void* mapData = m_device.mapMemory(vulkanImage->vkStagingBufferMemory, 0, updateInfo.size);
-  memcpy(mapData, updateInfo.data, updateInfo.size);
+  void* mapData = m_device.mapMemory(vulkanImage->vkStagingBufferMemory, 0, updateInfo.dataSize);
+  memcpy(mapData, updateInfo.data, updateInfo.dataSize);
   m_device.unmapMemory(vulkanImage->vkStagingBufferMemory);
 
   ConvertImageState(updateInfo.image, ImageState::UNDEFINED, ImageState::TRANSFER_DST);
@@ -294,6 +295,7 @@ VulkanBufferContext::UpdateImage(const UpdateImageInfo& updateInfo) {
 
 void
 VulkanBufferContext::GenerateMipmap(Image* image, uint32_t mipmapLevel) {
+  ConvertImageState(image, Marbas::ImageState::UNDEFINED, Marbas::ImageState::TRANSFER_DST);
   auto* vulkanImage = static_cast<VulkanImage*>(image);
   const auto& vkImage = vulkanImage->vkImage;
 
@@ -399,7 +401,7 @@ VulkanBufferContext::ConvertImageState(Image* image, ImageState srcState, ImageS
 
   vk::ImageMemoryBarrier barrier{};
   vk::ImageSubresourceRange range;
-  range.setAspectMask(vulkanImage->aspect);
+  range.setAspectMask(vulkanImage->vkAspect);
   range.setBaseArrayLayer(0);
   range.setLayerCount(vulkanImage->arrayLayer);
   range.setBaseMipLevel(0);
@@ -461,14 +463,7 @@ VulkanBufferContext::CreateImageView(const ImageViewCreateInfo& createInfo) {
   }
 
   vk::ImageSubresourceRange range;
-  switch (createInfo.aspectFlags) {
-    case ImageViewAspectFlags::DEPTH:
-      range.setAspectMask(vk::ImageAspectFlagBits::eDepth);
-      break;
-    case ImageViewAspectFlags::COLOR:
-      range.setAspectMask(vk::ImageAspectFlagBits::eColor);
-      break;
-  }
+  range.setAspectMask(vulkanImage->vkAspect);
   range.setBaseArrayLayer(createInfo.baseArrayLayer);
   range.setBaseMipLevel(createInfo.baseLevel);
   range.setLayerCount(createInfo.layerCount);

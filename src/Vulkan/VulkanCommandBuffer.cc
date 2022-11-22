@@ -56,7 +56,7 @@ VulkanCommandBuffer::InsertImageBarrier(const std::vector<ImageBarrier>& barrier
     vulkanImageBarrier.setNewLayout(vk::ImageLayout::eGeneral);
 
     vk::ImageSubresourceRange range;
-    range.setAspectMask(vulkanImage->aspect);
+    range.setAspectMask(vulkanImage->vkAspect);
     range.setBaseArrayLayer(0);
     range.setBaseMipLevel(0);
     range.setLayerCount(vulkanImage->arrayLayer);
@@ -79,11 +79,11 @@ VulkanCommandBuffer::TransformImageState(Image* image, ImageState srcState, Imag
   imageMemoryBarrier.setSrcQueueFamilyIndex(m_queueFamily);
   imageMemoryBarrier.setSrcAccessMask(vk::AccessFlagBits::eMemoryWrite);
   imageMemoryBarrier.setDstAccessMask(vk::AccessFlagBits::eMemoryWrite);
-  imageMemoryBarrier.setOldLayout(vulkanImage->currentLayout);
+  imageMemoryBarrier.setOldLayout(ConvertToVulkanImageLayout(srcState));
   imageMemoryBarrier.setNewLayout(ConvertToVulkanImageLayout(dstState));
 
   vk::ImageSubresourceRange range;
-  range.setAspectMask(vulkanImage->aspect);
+  range.setAspectMask(vulkanImage->vkAspect);
   range.setBaseArrayLayer(0);
   range.setBaseMipLevel(0);
   range.setLayerCount(vulkanImage->arrayLayer);

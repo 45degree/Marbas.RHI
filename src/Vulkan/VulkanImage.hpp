@@ -12,8 +12,7 @@ struct VulkanImage final : public Image {
 
   vk::Buffer vkStagingBuffer;
   vk::DeviceMemory vkStagingBufferMemory;
-
-  vk::ImageAspectFlags aspect;
+  vk::ImageAspectFlags vkAspect;
 };
 
 struct VulkanImageView final : public ImageView {

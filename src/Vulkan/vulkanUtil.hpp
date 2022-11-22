@@ -39,7 +39,7 @@ ConvertToVulkanFormat(ImageFormat format) {
     case ImageFormat::RGB32F:
       return vk::Format::eR32G32B32Sfloat;
     case ImageFormat::DEPTH:
-      return vk::Format::eD32Sfloat;
+      return vk::Format::eD32SfloatS8Uint;
     case ImageFormat::RGBA_SRGB:
       return vk::Format::eR8G8B8A8Srgb;
     case ImageFormat::RGB_SRGB:
@@ -79,7 +79,7 @@ ConvertToVulkanImageLayout(const ImageState& state) {
     case ImageState::PRESENT:
       return vk::ImageLayout::ePresentSrcKHR;
     case ImageState::DEPTH:
-      return vk::ImageLayout::eDepthAttachmentOptimal;
+      return vk::ImageLayout::eDepthStencilAttachmentOptimal;
     case ImageState::UNDEFINED:
       return vk::ImageLayout::eUndefined;
     case ImageState::TRANSFER_SRC:
@@ -107,7 +107,7 @@ ConvertToVulkanImageAccess(uint32_t usage) {
   if (usage & ImageUsageFlags::DEPTH) {
     flags |= vk::AccessFlagBits::eDepthStencilAttachmentWrite;
   }
-  if (usage & ImageUsageFlags::RENDER_TARGET) {
+  if (usage & ImageUsageFlags::COLOR_RENDER_TARGET) {
     flags |= vk::AccessFlagBits::eColorAttachmentWrite;
   }
 
@@ -160,7 +160,7 @@ ConvertToVulkanBufferAccess(uint32_t usage, const Buffer& buffer) {
 FORCE_INLINE vk::ImageUsageFlags
 ConvertToVulkanImageUsage(uint32_t usage) {
   vk::ImageUsageFlags flags;
-  if (usage & ImageUsageFlags::RENDER_TARGET) {
+  if (usage & ImageUsageFlags::COLOR_RENDER_TARGET) {
     flags |= vk::ImageUsageFlagBits::eColorAttachment;
   }
   if (usage & ImageUsageFlags::DEPTH) {

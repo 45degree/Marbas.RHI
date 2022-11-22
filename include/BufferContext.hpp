@@ -35,7 +35,7 @@ struct UpdateImageInfo {
   int32_t height;
   int32_t depth;
   void* data;
-  size_t size;
+  uint32_t dataSize;
 };
 
 class BufferContext {

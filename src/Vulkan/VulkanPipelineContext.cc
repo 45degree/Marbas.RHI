@@ -606,7 +606,7 @@ VulkanPipelineContext::CreateRenderPass(const std::vector<RenderTargetDesc>& ren
       reference.setLayout(vk::ImageLayout::eColorAttachmentOptimal);
       colorAttachmentReferences.push_back(reference);
     } else {
-      description.setInitialLayout(vk::ImageLayout::eUndefined);
+      description.setInitialLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
       description.setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
       reference.setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
       depthAttachmentReference = reference;
@@ -650,10 +650,13 @@ VulkanPipelineContext::CreateRenderPass(const std::vector<RenderTargetDesc>& ren
 
 vk::PipelineLayout
 VulkanPipelineContext::CreatePipelineLayout(const VulkanDescriptorSetLayout* descriptorSetLayout) {
-  vk::DescriptorSetLayout vkLayout = descriptorSetLayout->vkLayout;
   vk::PipelineLayoutCreateInfo vkPipelineLayoutCreateInfo;
-  vkPipelineLayoutCreateInfo.setSetLayouts(vkLayout);
+  if (descriptorSetLayout == nullptr) {
+    return m_device.createPipelineLayout(vkPipelineLayoutCreateInfo);
+  }
 
+  vk::DescriptorSetLayout vkLayout = descriptorSetLayout->vkLayout;
+  vkPipelineLayoutCreateInfo.setSetLayouts(vkLayout);
   return m_device.createPipelineLayout(vkPipelineLayoutCreateInfo);
 }
 

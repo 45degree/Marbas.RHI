@@ -272,8 +272,8 @@ VulkanRHIFactory::CreateSwapchain(uint32_t width, uint32_t height) {
     auto* vulkanImageView = new VulkanImageView();
 
     vulkanImage->vkImage = image;
-    vulkanImage->usage = ImageUsageFlags::PRESENT | ImageUsageFlags::RENDER_TARGET;
-    vulkanImage->aspect = vk::ImageAspectFlagBits::eColor;
+    vulkanImage->usage = ImageUsageFlags::PRESENT | ImageUsageFlags::COLOR_RENDER_TARGET;
+    vulkanImage->vkAspect = vk::ImageAspectFlagBits::eColor;
     vulkanImage->mipMapLevel = 1;
     vulkanImage->arrayLayer = 1;
     vulkanImage->height = height;

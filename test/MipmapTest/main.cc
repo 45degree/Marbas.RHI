@@ -55,7 +55,20 @@ LoadImage(Marbas::BufferContext* bufferContext, const std::string& imagePath) {
                           Marbas::ImageUsageFlags::TRANSFER_SRC;
 
   auto image = bufferContext->CreateImage(imageCreateInfo);
-  bufferContext->UpdateImage(image, pixels, texWidth * texHeight * 4);
+  bufferContext->UpdateImage(Marbas::UpdateImageInfo{
+      .image = image,
+      .srcImageState = Marbas::ImageState::UNDEFINED,
+      .dstImageState = Marbas::ImageState::SHADER_READ,
+      .level = 0,
+      .xOffset = 0,
+      .yOffset = 0,
+      .zOffset = 0,
+      .width = texWidth,
+      .height = texHeight,
+      .depth = 1,
+      .data = pixels,
+      .dataSize = static_cast<uint32_t>(texWidth * texHeight * 4),
+  });
   return image;
 }
 
@@ -70,6 +83,7 @@ CreateDepthBuffer(Marbas::BufferContext* bufferContext, uint32_t width, uint32_t
   imageCreateInfo.format = Marbas::ImageFormat::DEPTH;
 
   auto* image = bufferContext->CreateImage(imageCreateInfo);
+  bufferContext->ConvertImageState(image, Marbas::ImageState::UNDEFINED, Marbas::ImageState::DEPTH);
 
   return image;
 }
@@ -108,19 +122,16 @@ main(void) {
   auto* imageView = bufferContext->CreateImageView(Marbas::ImageViewCreateInfo{
       .image = image,
       .type = Marbas::ImageViewType::TEXTURE2D,
-      .aspectFlags = Marbas::ImageViewAspectFlags::COLOR,
       .baseLevel = 0,
       .levelCount = 1,
       .baseArrayLayer = 0,
       .layerCount = 1,
   });
-  bufferContext->ConvertImageState(image, Marbas::ImageState::UNDEFINED, Marbas::ImageState::TRANSFER_DST);
   bufferContext->GenerateMipmap(image, 2);
   auto* depthBuffer = CreateDepthBuffer(bufferContext, width, height);
   auto* depthBufferView = bufferContext->CreateImageView(Marbas::ImageViewCreateInfo{
       .image = depthBuffer,
       .type = Marbas::ImageViewType::TEXTURE2D,
-      .aspectFlags = Marbas::ImageViewAspectFlags::DEPTH,
       .baseLevel = 0,
       .levelCount = 1,
       .baseArrayLayer = 0,
@@ -322,7 +333,6 @@ main(void) {
     depthBufferView = bufferContext->CreateImageView(Marbas::ImageViewCreateInfo{
         .image = depthBuffer,
         .type = Marbas::ImageViewType::TEXTURE2D,
-        .aspectFlags = Marbas::ImageViewAspectFlags::DEPTH,
         .baseLevel = 0,
         .levelCount = 1,
         .baseArrayLayer = 0,

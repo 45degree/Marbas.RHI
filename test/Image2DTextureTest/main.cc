@@ -48,7 +48,20 @@ LoadImage(Marbas::BufferContext* bufferContext, const std::string& imagePath) {
   imageCreateInfo.usage = Marbas::ImageUsageFlags::SHADER_READ | Marbas::ImageUsageFlags::TRANSFER_DST;
 
   auto image = bufferContext->CreateImage(imageCreateInfo);
-  bufferContext->UpdateImage(image, pixels, texWidth * texHeight * 4);
+  bufferContext->UpdateImage(Marbas::UpdateImageInfo{
+      .image = image,
+      .srcImageState = Marbas::ImageState::UNDEFINED,
+      .dstImageState = Marbas::ImageState::SHADER_READ,
+      .level = 0,
+      .xOffset = 0,
+      .yOffset = 0,
+      .zOffset = 0,
+      .width = texWidth,
+      .height = texHeight,
+      .depth = 1,
+      .data = pixels,
+      .dataSize = static_cast<uint32_t>(texWidth * texHeight * 4),
+  });
   return image;
 }
 
@@ -85,7 +98,6 @@ main(void) {
   auto* imageView = bufferContext->CreateImageView(Marbas::ImageViewCreateInfo{
       .image = image,
       .type = Marbas::ImageViewType::TEXTURE2D,
-      .aspectFlags = Marbas::ImageViewAspectFlags::COLOR,
       .baseLevel = 0,
       .levelCount = 1,
       .baseArrayLayer = 0,
