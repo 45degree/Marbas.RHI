@@ -86,6 +86,8 @@ ConvertToVulkanImageLayout(const ImageState& state) {
       return vk::ImageLayout::eTransferSrcOptimal;
     case ImageState::TRANSFER_DST:
       return vk::ImageLayout::eTransferDstOptimal;
+    case ImageState::GENERAL:
+      return vk::ImageLayout::eGeneral;
   }
   return vk::ImageLayout::eColorAttachmentOptimal;
 }

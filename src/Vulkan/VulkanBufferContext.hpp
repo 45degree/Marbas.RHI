@@ -53,7 +53,7 @@ class VulkanBufferContext final : public BufferContext {
   CreateImage(const ImageCreateInfo& createInfo) override;
 
   void
-  UpdateImage(Image* image, void* data, size_t size) override;
+  UpdateImage(const UpdateImageInfo& updateInfo) override;
 
   void
   GenerateMipmap(Image* image, uint32_t mipmapLevel) override;

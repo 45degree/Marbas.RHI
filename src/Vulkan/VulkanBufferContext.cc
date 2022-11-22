@@ -190,7 +190,6 @@ VulkanBufferContext::CreateImage(const ImageCreateInfo& imageCreateInfo) {
   vulkanImage->width = width;
   vulkanImage->height = height;
   vulkanImage->usage = imageCreateInfo.usage;
-  vulkanImage->currentLayout = vk::ImageLayout::eUndefined;
   vulkanImage->mipMapLevel = imageCreateInfo.mipMapLevel;
   vulkanImage->format = imageCreateInfo.format;
 
@@ -268,13 +267,13 @@ VulkanBufferContext::CreateImage(const ImageCreateInfo& imageCreateInfo) {
 
 // TODO: improve
 void
-VulkanBufferContext::UpdateImage(Image* image, void* data, size_t size) {
-  auto* vulkanImage = static_cast<VulkanImage*>(image);
-  void* mapData = m_device.mapMemory(vulkanImage->vkStagingBufferMemory, 0, size);
-  memcpy(mapData, data, size);
+VulkanBufferContext::UpdateImage(const UpdateImageInfo& updateInfo) {
+  auto* vulkanImage = static_cast<VulkanImage*>(updateInfo.image);
+  void* mapData = m_device.mapMemory(vulkanImage->vkStagingBufferMemory, 0, updateInfo.size);
+  memcpy(mapData, updateInfo.data, updateInfo.size);
   m_device.unmapMemory(vulkanImage->vkStagingBufferMemory);
 
-  ConvertImageState(image, ImageState::UNDEFINED, ImageState::TRANSFER_DST);
+  ConvertImageState(updateInfo.image, ImageState::UNDEFINED, ImageState::TRANSFER_DST);
 
   vk::BufferImageCopy range;
   range.setBufferImageHeight(0);
@@ -283,14 +282,14 @@ VulkanBufferContext::UpdateImage(Image* image, void* data, size_t size) {
 
   range.imageSubresource.setAspectMask(vk::ImageAspectFlagBits::eColor);
   range.imageSubresource.setBaseArrayLayer(0);
-  range.imageSubresource.setMipLevel(0);
+  range.imageSubresource.setMipLevel(updateInfo.level);
   range.imageSubresource.setLayerCount(vulkanImage->arrayLayer);
 
-  range.imageOffset = vk::Offset3D(0, 0, 0);
-  range.imageExtent = vk::Extent3D(vulkanImage->width, vulkanImage->height, vulkanImage->depth);
+  range.imageOffset = vk::Offset3D(updateInfo.xOffset, updateInfo.yOffset, updateInfo.zOffset);
+  range.imageExtent = vk::Extent3D(updateInfo.width, updateInfo.height, updateInfo.depth);
 
   CopyBufferToImage(vulkanImage->vkStagingBuffer, vulkanImage->vkImage, range);
-  ConvertImageState(image, ImageState::TRANSFER_DST, ImageState::SHADER_READ);
+  ConvertImageState(updateInfo.image, ImageState::TRANSFER_DST, ImageState::SHADER_READ);
 }
 
 void

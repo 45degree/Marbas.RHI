@@ -34,6 +34,7 @@ struct ImageUsageFlags {
 
 enum class ImageState {
   UNDEFINED,
+  GENERAL,
   TRANSFER_SRC,
   TRANSFER_DST,
   SHADER_READ,

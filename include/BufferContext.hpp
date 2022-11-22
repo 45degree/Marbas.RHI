@@ -23,6 +23,21 @@
 
 namespace Marbas {
 
+struct UpdateImageInfo {
+  Image* image;
+  ImageState srcImageState = ImageState::UNDEFINED;
+  ImageState dstImageState;
+  uint32_t level;
+  int32_t xOffset;
+  int32_t yOffset;
+  int32_t zOffset;
+  int32_t width;
+  int32_t height;
+  int32_t depth;
+  void* data;
+  size_t size;
+};
+
 class BufferContext {
  public:
   BufferContext() = default;
@@ -43,7 +58,7 @@ class BufferContext {
   CreateImage(const ImageCreateInfo& createInfo) = 0;
 
   virtual void
-  UpdateImage(Image* image, void* data, size_t size) = 0;
+  UpdateImage(const UpdateImageInfo& updateInfo) = 0;
 
   virtual void
   ConvertImageState(Image* image, ImageState srcState, ImageState dstState) = 0;
