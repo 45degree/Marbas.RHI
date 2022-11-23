@@ -18,6 +18,7 @@
 
 #include <array>
 #include <cstdint>
+#include <optional>
 #include <span>
 #include <string>
 #include <vector>
@@ -217,12 +218,25 @@ struct MultisampleCreateInfo {
  * graphics pipeline create info struct
  */
 
-struct RenderTarget {};
-struct RenderTargetDesc {
-  bool isClear = true;
-  bool isDepth = false;
-  bool isPresent = false;
+struct DepthTargetDesc {
+  bool isClear;
+};
+
+struct ColorTargetDesc {
+  bool isClear;
+  bool isPresent;
   ImageFormat format = ImageFormat::RGBA;
+};
+
+struct ResolveTargetDesc {
+  bool isPresent;
+  ImageFormat format = ImageFormat::RGBA;
+};
+
+struct RenderTargetDesc {
+  std::vector<ColorTargetDesc> colorAttachments;
+  std::optional<DepthTargetDesc> depthAttachments = std::nullopt;
+  std::vector<ResolveTargetDesc> resolveAttachments;
 };
 
 struct GraphicsPipeLineCreateInfo {
@@ -234,7 +248,7 @@ struct GraphicsPipeLineCreateInfo {
   DepthStencilCreateInfo depthStencilInfo = {};
   MultisampleCreateInfo multisampleCreateInfo = {};
   ColorBlendCreateInfo blendInfo = {};
-  std::vector<RenderTargetDesc> outputRenderTarget = {};
+  RenderTargetDesc outputRenderTarget = {};
 };
 
 struct RasterizationDesc {
@@ -257,7 +271,11 @@ struct FrameBufferCreateInfo {
   uint32_t width = 600;
   uint32_t layer = 1;
   Pipeline* pieline = nullptr;
-  std::span<ImageView*> attachments;
+  struct Attachment {
+    std::span<ImageView*> colorAttachments;
+    ImageView* depthAttachment = nullptr;
+    std::span<ImageView*> resolveAttachments;
+  } attachments;
 };
 struct FrameBuffer {
   uint32_t height = 800;

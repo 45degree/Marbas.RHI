@@ -19,10 +19,11 @@ main(void) {
 
   // render target desc and blend
   Marbas::RenderTargetDesc renderTargetDesc{
-      .isClear = true,
-      .isDepth = false,
-      .isPresent = true,
-      .format = swapchain->imageFormat,
+      .colorAttachments = {Marbas::ColorTargetDesc{
+          .isClear = true,
+          .isPresent = true,
+          .format = swapchain->imageFormat,
+      }},
   };
 
   Marbas::BlendAttachment renderTargetBlendAttachment;
@@ -57,7 +58,7 @@ main(void) {
   // multi sample
 
   Marbas::GraphicsPipeLineCreateInfo pipelineCreateInfo;
-  pipelineCreateInfo.outputRenderTarget.push_back(renderTargetDesc);
+  pipelineCreateInfo.outputRenderTarget = renderTargetDesc;
   pipelineCreateInfo.shaderStageCreateInfo = shaderStageCreateInfos;
   pipelineCreateInfo.multisampleCreateInfo.rasterizationSamples = Marbas::SampleCount::BIT1;
   pipelineCreateInfo.depthStencilInfo.depthTestEnable = false;
@@ -77,7 +78,7 @@ main(void) {
     createInfo.width = width;
     createInfo.layer = 1;
     createInfo.pieline = pipeline;
-    createInfo.attachments = std::span(swapchain->imageViews.begin() + i, 1);
+    createInfo.attachments.colorAttachments = std::span(swapchain->imageViews.begin() + i, 1);
     frameBuffers.push_back(pipelineContext->CreateFrameBuffer(createInfo));
   }
 
@@ -106,7 +107,7 @@ main(void) {
       createInfo.width = width;
       createInfo.layer = 1;
       createInfo.pieline = pipeline;
-      createInfo.attachments = std::span(swapchain->imageViews.begin() + i, 1);
+      createInfo.attachments.colorAttachments = std::span(swapchain->imageViews.begin() + i, 1);
       frameBuffers[i] = pipelineContext->CreateFrameBuffer(createInfo);
     }
 
@@ -156,11 +157,12 @@ main(void) {
 
     commandBuffer->Submit({aviableSemaphore.begin() + frameIndex, 1}, {waitSemaphore.begin() + frameIndex, 1}, fence);
 
-    if (factory->Present(swapchain, {waitSemaphore.begin() + frameIndex, 1}, nextImage) == -1) {
+    auto presentResult = factory->Present(swapchain, {waitSemaphore.begin() + frameIndex, 1}, nextImage);
+    factory->WaitForFence(fence);
+    if (presentResult == -1) {
       needResize = true;
       continue;
     }
-    factory->WaitForFence(fence);
     frameIndex = (frameIndex + 1) % imageCount;
   }
 
