@@ -26,6 +26,10 @@ class RHIFactory {
   Quit() = 0;
 
  public:
+  virtual std::vector<SampleCount>
+  FindSupportSampleCount() = 0;
+
+ public:
   virtual Swapchain*
   GetSwapchain() = 0;
 

@@ -19,6 +19,8 @@
 #include <cstdint>
 #include <variant>
 
+#include "Sampler.hpp"
+
 namespace Marbas {
 
 struct ImageUsageFlags {
@@ -93,17 +95,12 @@ struct Image {
   uint32_t mipMapLevel = 1;
   uint32_t usage = ImageUsageFlags::SHADER_READ | ImageUsageFlags::COLOR_RENDER_TARGET;
   uint32_t arrayLayer = 1;
+  SampleCount sampleCount = SampleCount::BIT1;
 };
-
-// enum class ImageAspect {
-//   DEPTH,
-//   COLOR,
-// };
 
 struct ImageViewCreateInfo {
   Image* image;
   ImageViewType type;
-  // ImageAspect aspectFlags;
   uint32_t baseLevel;
   uint32_t levelCount;
   uint32_t baseArrayLayer;
