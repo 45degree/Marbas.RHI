@@ -82,6 +82,7 @@ struct ImageCreateInfo {
   uint32_t width = 0;
   uint32_t height = 0;
   ImageFormat format = ImageFormat::RGBA;
+  SampleCount sampleCount = SampleCount::BIT1;
   uint32_t mipMapLevel = 1;
   uint32_t usage = ImageUsageFlags::SHADER_READ | ImageUsageFlags::COLOR_RENDER_TARGET;
   std::variant<CubeMapImageDesc, CubeMapArrayImageDesc, Image2DDesc, Image2DArrayDesc> imageDesc;

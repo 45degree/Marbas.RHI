@@ -220,16 +220,19 @@ struct MultisampleCreateInfo {
 
 struct DepthTargetDesc {
   bool isClear;
+  SampleCount sampleCount = SampleCount::BIT1;
 };
 
 struct ColorTargetDesc {
   bool isClear;
   bool isPresent;
+  SampleCount sampleCount = SampleCount::BIT1;
   ImageFormat format = ImageFormat::RGBA;
 };
 
 struct ResolveTargetDesc {
   bool isPresent;
+  SampleCount sampleCount = SampleCount::BIT1;
   ImageFormat format = ImageFormat::RGBA;
 };
 

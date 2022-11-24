@@ -208,7 +208,7 @@ VulkanBufferContext::CreateImage(const ImageCreateInfo& imageCreateInfo) {
 
   // TODO:
   vkCreateInfo.setTiling(vk::ImageTiling::eOptimal);
-  vkCreateInfo.setSamples(vk::SampleCountFlagBits::e1);
+  vkCreateInfo.setSamples(ConvertToVulkanSampleCount(imageCreateInfo.sampleCount));
 
   // clang-format off
   std::visit([&](auto&& imageDesc) {

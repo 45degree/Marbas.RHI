@@ -36,10 +36,16 @@ class DirectX12RHIFactory final : public RHIFactory {
   Quit() override {}
 
  public:
+  std::vector<SampleCount>
+  FindSupportSampleCount() override {
+    return {};
+  }
+
+ public:
   Swapchain*
   GetSwapchain() override;
 
-  uint32_t
+  int
   AcquireNextImage(Swapchain* swapchain, const Semaphore* semaphore) override;
 
   int

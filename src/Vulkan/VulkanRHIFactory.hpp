@@ -30,6 +30,12 @@ class VulkanRHIFactory final : public RHIFactory {
   virtual ~VulkanRHIFactory();
 
  public:
+  std::vector<SampleCount>
+  FindSupportSampleCount() override {
+    return {};
+  }
+
+ public:
   Swapchain*
   GetSwapchain() override;
 

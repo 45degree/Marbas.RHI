@@ -604,7 +604,7 @@ VulkanPipelineContext::CreateRenderPass(const RenderTargetDesc& renderTargetDesc
   std::optional<vk::AttachmentReference> depthAttachmentReference;
   std::vector<vk::AttachmentReference> resolveAttachmentReference;
 
-  for (auto renderTargetDesc : renderTargetDescs.colorAttachments) {
+  for (auto colorTargetDesc : renderTargetDescs.colorAttachments) {
     vk::AttachmentDescription description;
     vk::AttachmentReference reference;
     reference.setAttachment(attachmentDescriptions.size());
@@ -612,19 +612,17 @@ VulkanPipelineContext::CreateRenderPass(const RenderTargetDesc& renderTargetDesc
     colorAttachmentReferences.push_back(reference);
 
     description.setInitialLayout(vk::ImageLayout::eUndefined);
-    description.setFormat(ConvertToVulkanFormat(renderTargetDesc.format));
+    description.setFormat(ConvertToVulkanFormat(colorTargetDesc.format));
+    description.setSamples(ConvertToVulkanSampleCount(colorTargetDesc.sampleCount));
 
-    // TODO:
-    description.setSamples(vk::SampleCountFlagBits::e1);
-
-    if (renderTargetDesc.isClear) {
+    if (colorTargetDesc.isClear) {
       description.setLoadOp(vk::AttachmentLoadOp::eClear);
     } else {
       description.setLoadOp(vk::AttachmentLoadOp::eDontCare);
     }
     description.setStoreOp(vk::AttachmentStoreOp::eStore);
 
-    if (renderTargetDesc.isPresent) {
+    if (colorTargetDesc.isPresent) {
       description.setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
     } else {
       description.setFinalLayout(vk::ImageLayout::eColorAttachmentOptimal);
@@ -644,7 +642,7 @@ VulkanPipelineContext::CreateRenderPass(const RenderTargetDesc& renderTargetDesc
     description.setInitialLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
     description.setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
     description.setFormat(ConvertToVulkanFormat(ImageFormat::DEPTH));
-    description.setSamples(vk::SampleCountFlagBits::e1);
+    description.setSamples(ConvertToVulkanSampleCount(depthAttachment.sampleCount));
 
     if (depthAttachment.isClear) {
       description.setLoadOp(vk::AttachmentLoadOp::eClear);
@@ -665,10 +663,7 @@ VulkanPipelineContext::CreateRenderPass(const RenderTargetDesc& renderTargetDesc
 
     description.setFormat(ConvertToVulkanFormat(resolveAttachment.format));
     description.setInitialLayout(vk::ImageLayout::eUndefined);
-
-    // TODO:
-    description.setSamples(vk::SampleCountFlagBits::e1);
-
+    description.setSamples(ConvertToVulkanSampleCount(resolveAttachment.sampleCount));
     description.setLoadOp(vk::AttachmentLoadOp::eDontCare);
     description.setStoreOp(vk::AttachmentStoreOp::eStore);
     description.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare);
@@ -683,12 +678,14 @@ VulkanPipelineContext::CreateRenderPass(const RenderTargetDesc& renderTargetDesc
   }
 
   vk::SubpassDescription vkSubpassDescription;
-  vkSubpassDescription.setColorAttachments(colorAttachmentReferences);
+  vkSubpassDescription.setPipelineBindPoint(pipelineType);
+
+  if (!colorAttachmentReferences.empty()) {
+    vkSubpassDescription.setColorAttachments(colorAttachmentReferences);
+  }
   if (!resolveAttachmentReference.empty()) {
     vkSubpassDescription.setResolveAttachments(resolveAttachmentReference);
   }
-  vkSubpassDescription.setPipelineBindPoint(pipelineType);
-
   if (depthAttachmentReference.has_value()) {
     vkSubpassDescription.setPDepthStencilAttachment(&depthAttachmentReference.value());
   }
