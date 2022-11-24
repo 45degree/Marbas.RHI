@@ -104,7 +104,7 @@ main(void) {
       .image = image,
       .type = Marbas::ImageViewType::TEXTURE2D,
       .baseLevel = 0,
-      .levelCount = 1,
+      .levelCount = lod,
       .baseArrayLayer = 0,
       .layerCount = 1,
   });
