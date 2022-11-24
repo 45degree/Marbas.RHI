@@ -136,6 +136,7 @@ VulkanRHIFactory::Init(GLFWwindow* window, uint32_t width, uint32_t height) {
   features.setDepthClamp(true);
   features.setGeometryShader(true);
   features.setDepthBiasClamp(true);
+  features.setSampleRateShading(true);
   deviceCreateInfo.setPEnabledFeatures(&features);
 
   // create graphics queue create info

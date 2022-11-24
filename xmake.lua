@@ -13,6 +13,14 @@ option("use vulkan")
   set_default(true)
 option_end()
 
+option("build test")
+  set_default(false)
+option_end()
+
+if has_config("build test") then
+  add_requires("tinyobjloader")
+end
+
 if is_plat("linux") then
   add_requires("pkgconfig::vulkan")
   add_requires("pkgconfig::shaderc_static")

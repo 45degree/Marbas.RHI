@@ -524,7 +524,8 @@ VulkanPipelineContext::CreatePipeline(GraphicsPipeLineCreateInfo& createInfo) {
   // sample
   vk::PipelineMultisampleStateCreateInfo vkMultisampleStateCreateInfo;
   const auto& sampleCount = createInfo.multisampleCreateInfo.rasterizationSamples;
-  vkMultisampleStateCreateInfo.setSampleShadingEnable(false);
+  vkMultisampleStateCreateInfo.setSampleShadingEnable(true);
+  vkMultisampleStateCreateInfo.setMinSampleShading(0.2);
   vkMultisampleStateCreateInfo.setRasterizationSamples(ConvertToVulkanSampleCount(sampleCount));
   vkCreateInfo.setPMultisampleState(&vkMultisampleStateCreateInfo);
 

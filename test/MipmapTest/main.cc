@@ -1,30 +1,10 @@
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
 #include <chrono>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 
+#include "Model.hpp"
 #include "RHIFactory.hpp"
-
-struct Vertex {
-  glm::vec3 pos;
-  glm::vec3 color;
-  glm::vec2 texCoord;
-};
-
-static const std::array vertices = {
-    Vertex{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-    Vertex{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-    Vertex{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-    Vertex{{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-    Vertex{{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-    Vertex{{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-    Vertex{{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-    Vertex{{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-};
 
 struct UniformBufferObject {
   glm::mat4 model;
@@ -32,23 +12,22 @@ struct UniformBufferObject {
   glm::mat4 proj;
 };
 
-static const std::array<uint32_t, 12> indices = {0, 1, 2, 2, 3, 0, 4, 5, 6, 6, 7, 4};
-
-Marbas::Image*
+std::tuple<Marbas::Image*, uint32_t>
 LoadImage(Marbas::BufferContext* bufferContext, const std::string& imagePath) {
   int texWidth, texHeight, texChannels;
-  void* pixels = stbi_load("texture.jpg", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+  void* pixels = stbi_load(imagePath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 
   if (!pixels) {
     throw std::runtime_error("failed to load texture image!");
   }
+  auto mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
 
   Marbas::Image2DDesc desc;
 
   Marbas::ImageCreateInfo imageCreateInfo;
   imageCreateInfo.width = texWidth;
   imageCreateInfo.height = texHeight;
-  imageCreateInfo.mipMapLevel = 2;
+  imageCreateInfo.mipMapLevel = mipLevels;
   imageCreateInfo.format = Marbas::ImageFormat::RGBA;
   imageCreateInfo.imageDesc = desc;
   imageCreateInfo.usage = Marbas::ImageUsageFlags::SHADER_READ | Marbas::ImageUsageFlags::TRANSFER_DST |
@@ -69,7 +48,9 @@ LoadImage(Marbas::BufferContext* bufferContext, const std::string& imagePath) {
       .data = pixels,
       .dataSize = static_cast<uint32_t>(texWidth * texHeight * 4),
   });
-  return image;
+  stbi_image_free(pixels);
+
+  return {image, mipLevels};
 }
 
 Marbas::Image*
@@ -118,7 +99,7 @@ main(void) {
   auto* vertexShader = pipelineContext->CreateShaderModule("shader.vert.spv");
   auto* fragShader = pipelineContext->CreateShaderModule("shader.frag.spv");
 
-  auto* image = LoadImage(factory->GetBufferContext(), "texture.jpg");
+  auto [image, lod] = LoadImage(factory->GetBufferContext(), "viking_room.png");
   auto* imageView = bufferContext->CreateImageView(Marbas::ImageViewCreateInfo{
       .image = image,
       .type = Marbas::ImageViewType::TEXTURE2D,
@@ -127,7 +108,7 @@ main(void) {
       .baseArrayLayer = 0,
       .layerCount = 1,
   });
-  bufferContext->GenerateMipmap(image, 2);
+  bufferContext->GenerateMipmap(image, lod);
   auto* depthBuffer = CreateDepthBuffer(bufferContext, width, height);
   auto* depthBufferView = bufferContext->CreateImageView(Marbas::ImageViewCreateInfo{
       .image = depthBuffer,
@@ -145,8 +126,8 @@ main(void) {
       .addressW = Marbas::SamplerAddressMode::WRAP,
       .comparisonOp = Marbas::ComparisonOp::ALWAYS,
       .mipLodBias = 0,
-      .minLod = 0,
-      .maxLod = 0,
+      .minLod = static_cast<float>(lod) / 2,
+      .maxLod = static_cast<float>(lod),
       .borderColor = Marbas::BorderColor::IntOpaqueBlack,
   });
 
@@ -246,30 +227,13 @@ main(void) {
   scissorInfo.height = height;
 
   // vertex input layout
-  Marbas::InputElementDesc posAttribute, colorAttribute, texCoordAttribute;
   Marbas::InputElementView elementView;
-  posAttribute.binding = 0;
-  posAttribute.attribute = 0;
-  posAttribute.format = Marbas::ElementType::R32G32B32_SFLOAT;
-  posAttribute.offset = offsetof(Vertex, pos);
-  posAttribute.instanceStepRate = 0;
-
-  colorAttribute.binding = 0;
-  colorAttribute.attribute = 1;
-  colorAttribute.format = Marbas::ElementType::R32G32B32_SFLOAT;
-  colorAttribute.offset = offsetof(Vertex, color);
-
-  texCoordAttribute.binding = 0;
-  texCoordAttribute.attribute = 2;
-  texCoordAttribute.format = Marbas::ElementType::R32G32_SFLOAT;
-  texCoordAttribute.offset = offsetof(Vertex, texCoord);
-
   elementView.binding = 0;
   elementView.inputClass = Marbas::VertexInputClass::VERTEX;
-  elementView.stride = sizeof(Vertex);
+  elementView.stride = sizeof(Marbas::Vertex);
 
   Marbas::GraphicsPipeLineCreateInfo pipelineCreateInfo;
-  pipelineCreateInfo.vertexInputLayout.elementDesc = {posAttribute, colorAttribute, texCoordAttribute};
+  pipelineCreateInfo.vertexInputLayout.elementDesc = Marbas::Vertex::GetInputElementDesc();
   pipelineCreateInfo.vertexInputLayout.viewDesc = {elementView};
   pipelineCreateInfo.outputRenderTarget = renderTargetDesc;
   pipelineCreateInfo.shaderStageCreateInfo = shaderStageCreateInfos;
@@ -300,7 +264,10 @@ main(void) {
   }
 
   // vertex buffer
-  auto VBOSize = vertices.size() * sizeof(Vertex);
+  Marbas::Model model("viking_room.obj");
+  const auto& vertices = model.m_vertices;
+  const auto& indices = model.m_indices;
+  auto VBOSize = vertices.size() * sizeof(Marbas::Vertex);
   auto EBOSize = indices.size() * sizeof(uint32_t);
   auto* vertexBuffer = bufferContext->CreateBuffer(Marbas::BufferType::VERTEX_BUFFER, vertices.data(), VBOSize, false);
   auto* indexBuffer = bufferContext->CreateBuffer(Marbas::BufferType::INDEX_BUFFER, indices.data(), EBOSize, true);

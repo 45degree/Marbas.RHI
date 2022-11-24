@@ -11,6 +11,8 @@ target("MipmapTest")
 
   after_build(function ()
     os.cp('$(scriptdir)/texture.jpg', executedir)
+    os.cp('$(scriptdir)/viking_room.obj', executedir)
+    os.cp('$(scriptdir)/viking_room.png', executedir)
   end)
 
   add_files("main.cc")
@@ -18,5 +20,5 @@ target("MipmapTest")
   add_files("shader.vert")
 
   add_packages("glfw", "glog", "shaderc", "gtest", "stb", "fmt", "glm")
-  add_deps("Marbas.RHI")
+  add_deps("Marbas.RHI", "TestBase")
 target_end()

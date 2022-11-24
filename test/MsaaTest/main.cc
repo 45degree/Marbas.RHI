@@ -81,7 +81,7 @@ CreateDepthBuffer(Marbas::BufferContext* bufferContext, uint32_t width, uint32_t
   imageCreateInfo.usage = Marbas::ImageUsageFlags::DEPTH;
   imageCreateInfo.mipMapLevel = 1;
   imageCreateInfo.format = Marbas::ImageFormat::DEPTH;
-  imageCreateInfo.sampleCount = Marbas::SampleCount::BIT4;
+  imageCreateInfo.sampleCount = Marbas::SampleCount::BIT8;
 
   auto* image = bufferContext->CreateImage(imageCreateInfo);
   bufferContext->ConvertImageState(image, Marbas::ImageState::UNDEFINED, Marbas::ImageState::DEPTH);
@@ -142,7 +142,7 @@ main(void) {
       .width = static_cast<uint32_t>(width),
       .height = static_cast<uint32_t>(height),
       .format = swapchain->imageFormat,
-      .sampleCount = Marbas::SampleCount::BIT4,
+      .sampleCount = Marbas::SampleCount::BIT8,
       .mipMapLevel = 1,
       .usage = Marbas::ImageUsageFlags::COLOR_RENDER_TARGET,
       .imageDesc = Marbas::Image2DDesc{},
@@ -226,11 +226,13 @@ main(void) {
       .colorAttachments = {Marbas::ColorTargetDesc{
           .isClear = true,
           .isPresent = true,
+          .sampleCount = Marbas::SampleCount::BIT8,
           .format = swapchain->imageFormat,
       }},
       .depthAttachments =
           Marbas::DepthTargetDesc{
               .isClear = true,
+              .sampleCount = Marbas::SampleCount::BIT8,
           },
       .resolveAttachments = {Marbas::ResolveTargetDesc{
           .isPresent = true,
@@ -297,7 +299,7 @@ main(void) {
   pipelineCreateInfo.shaderStageCreateInfo = shaderStageCreateInfos;
   pipelineCreateInfo.rasterizationInfo.frontFace = Marbas::FrontFace::CCW;
   pipelineCreateInfo.rasterizationInfo.cullMode = Marbas::CullMode::BACK;
-  pipelineCreateInfo.multisampleCreateInfo.rasterizationSamples = Marbas::SampleCount::BIT1;
+  pipelineCreateInfo.multisampleCreateInfo.rasterizationSamples = Marbas::SampleCount::BIT8;
   pipelineCreateInfo.descriptorSetLayout = descriptorSetLayout;
   pipelineCreateInfo.depthStencilInfo.depthTestEnable = true;
   pipelineCreateInfo.depthStencilInfo.stencilTestEnable = false;
@@ -348,10 +350,30 @@ main(void) {
     // destroy depthBuffer and recreate
     bufferContext->DestroyImage(depthBuffer);
     bufferContext->DestroyImageView(depthBufferView);
+    bufferContext->DestroyImage(colorAttachImage);
+    bufferContext->DestroyImageView(colorAttachmentView);
 
     depthBuffer = CreateDepthBuffer(bufferContext, width, height);
     depthBufferView = bufferContext->CreateImageView(Marbas::ImageViewCreateInfo{
         .image = depthBuffer,
+        .type = Marbas::ImageViewType::TEXTURE2D,
+        .baseLevel = 0,
+        .levelCount = 1,
+        .baseArrayLayer = 0,
+        .layerCount = 1,
+    });
+
+    colorAttachImage = bufferContext->CreateImage(Marbas::ImageCreateInfo{
+        .width = static_cast<uint32_t>(width),
+        .height = static_cast<uint32_t>(height),
+        .format = swapchain->imageFormat,
+        .sampleCount = Marbas::SampleCount::BIT8,
+        .mipMapLevel = 1,
+        .usage = Marbas::ImageUsageFlags::COLOR_RENDER_TARGET,
+        .imageDesc = Marbas::Image2DDesc{},
+    });
+    colorAttachmentView = bufferContext->CreateImageView(Marbas::ImageViewCreateInfo{
+        .image = colorAttachImage,
         .type = Marbas::ImageViewType::TEXTURE2D,
         .baseLevel = 0,
         .levelCount = 1,
@@ -368,8 +390,10 @@ main(void) {
       createInfo.width = width;
       createInfo.layer = 1;
       createInfo.pieline = pipeline;
-      createInfo.attachments.colorAttachments = std::span(swapchain->imageViews.begin() + i, 1);
+
+      createInfo.attachments.colorAttachments = std::span(&colorAttachmentView, 1);
       createInfo.attachments.depthAttachment = depthBufferView;
+      createInfo.attachments.resolveAttachments = std::span(swapchain->imageViews.begin() + i, 1);
       frameBuffers[i] = pipelineContext->CreateFrameBuffer(createInfo);
     }
 
@@ -460,6 +484,7 @@ main(void) {
   bufferContext->DestroyImage(colorAttachImage);
   bufferContext->DestroyImageView(imageView);
   bufferContext->DestroyImageView(depthBufferView);
+  bufferContext->DestroyImageView(colorAttachmentView);
 
   factory->DestroyFence(fence);
   for (auto* semaphore : waitSemaphore) {
