@@ -12,18 +12,32 @@
 struct Vertex {
   glm::vec3 pos;
   glm::vec3 color;
-  glm::vec2 texCoord;
 };
 
 static const std::array vertices = {
-    Vertex{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-    Vertex{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-    Vertex{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-    Vertex{{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-    Vertex{{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-    Vertex{{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-    Vertex{{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-    Vertex{{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+    Vertex{{-0.5f, -0.5f, -0.5f}, {0, 1, 0}}, Vertex{{0.5f, -0.5f, -0.5f}, {0, 1, 0}},
+    Vertex{{0.5f, 0.5f, -0.5f}, {0, 1, 0}},   Vertex{{0.5f, 0.5f, -0.5f}, {0, 1, 0}},
+    Vertex{{-0.5f, 0.5f, -0.5f}, {0, 1, 0}},  Vertex{{-0.5f, -0.5f, -0.5f}, {0, 1, 0}},
+
+    Vertex{{-0.5f, -0.5f, 0.5f}, {0, 1, 0}},  Vertex{{0.5f, -0.5f, 0.5f}, {0, 1, 0}},
+    Vertex{{0.5f, 0.5f, 0.5f}, {0, 1, 0}},    Vertex{{0.5f, 0.5f, 0.5f}, {0, 1, 0}},
+    Vertex{{-0.5f, 0.5f, 0.5f}, {0, 1, 0}},   Vertex{{-0.5f, -0.5f, 0.5f}, {0, 1, 0}},
+
+    Vertex{{-0.5f, 0.5f, 0.5f}, {0, 1, 0}},   Vertex{{-0.5f, 0.5f, -0.5f}, {0, 1, 0}},
+    Vertex{{-0.5f, -0.5f, -0.5f}, {0, 1, 0}}, Vertex{{-0.5f, -0.5f, -0.5f}, {0, 1, 0}},
+    Vertex{{-0.5f, -0.5f, 0.5f}, {0, 1, 0}},  Vertex{{-0.5f, 0.5f, 0.5f}, {0, 1, 0}},
+
+    Vertex{{0.5f, 0.5f, 0.5f}, {0, 1, 0}},    Vertex{{0.5f, 0.5f, -0.5f}, {0, 1, 0}},
+    Vertex{{0.5f, -0.5f, -0.5f}, {0, 1, 0}},  Vertex{{0.5f, -0.5f, -0.5f}, {0, 1, 0}},
+    Vertex{{0.5f, -0.5f, 0.5f}, {0, 1, 0}},   Vertex{{0.5f, 0.5f, 0.5f}, {0, 1, 0}},
+
+    Vertex{{-0.5f, -0.5f, -0.5f}, {0, 1, 0}}, Vertex{{0.5f, -0.5f, -0.5f}, {0, 1, 0}},
+    Vertex{{0.5f, -0.5f, 0.5f}, {0, 1, 0}},   Vertex{{0.5f, -0.5f, 0.5f}, {0, 1, 0}},
+    Vertex{{-0.5f, -0.5f, 0.5f}, {0, 1, 0}},  Vertex{{-0.5f, -0.5f, -0.5f}, {0, 1, 0}},
+
+    Vertex{{-0.5f, 0.5f, -0.5f}, {0, 1, 0}},  Vertex{{0.5f, 0.5f, -0.5f}, {0, 1, 0}},
+    Vertex{{0.5f, 0.5f, 0.5f}, {0, 1, 0}},    Vertex{{0.5f, 0.5f, 0.5f}, {0, 1, 0}},
+    Vertex{{-0.5f, 0.5f, 0.5f}, {0, 1, 0}},   Vertex{{-0.5f, 0.5f, -0.5}, {0, 1, 0}},
 };
 
 struct UniformBufferObject {
@@ -31,8 +45,6 @@ struct UniformBufferObject {
   glm::mat4 view;
   glm::mat4 proj;
 };
-
-static const std::array<uint32_t, 12> indices = {0, 1, 2, 2, 3, 0, 4, 5, 6, 6, 7, 4};
 
 Marbas::Image*
 LoadImage(Marbas::BufferContext* bufferContext, const std::string& imagePath) {
@@ -96,16 +108,16 @@ UpdateUniformBuffer(UniformBufferObject& ubo, uint32_t height, uint32_t width) {
   auto currentTime = std::chrono::high_resolution_clock::now();
   float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
-  ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-  ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+  ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+  ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
   ubo.proj = glm::perspective(glm::radians(45.0f), static_cast<float>(width) / static_cast<float>(height), 0.1f, 10.0f);
   ubo.proj[1][1] *= -1;
 }
 
 int
 main(void) {
-  int width = 800;
-  int height = 600;
+  int width = 400;
+  int height = 300;
 
   glfwInit();
   auto factory = Marbas::RHIFactory::CreateInstance(Marbas::RendererType::VULKAN);
@@ -119,16 +131,6 @@ main(void) {
   auto* vertexShader = pipelineContext->CreateShaderModule("shader.vert.spv");
   auto* fragShader = pipelineContext->CreateShaderModule("shader.frag.spv");
 
-  auto* image = LoadImage(factory->GetBufferContext(), "texture.jpg");
-  auto* imageView = bufferContext->CreateImageView(Marbas::ImageViewCreateInfo{
-      .image = image,
-      .type = Marbas::ImageViewType::TEXTURE2D,
-      .baseLevel = 0,
-      .levelCount = 1,
-      .baseArrayLayer = 0,
-      .layerCount = 1,
-  });
-  bufferContext->GenerateMipmap(image, 2);
   auto* depthBuffer = CreateDepthBuffer(bufferContext, width, height);
   auto* depthBufferView = bufferContext->CreateImageView(Marbas::ImageViewCreateInfo{
       .image = depthBuffer,
@@ -185,19 +187,10 @@ main(void) {
           .count = 1,
           .visible = Marbas::DescriptorVisible::ALL,
       },
-      {
-          .bindingPoint = 1,
-          .descriptorType = Marbas::DescriptorType::IMAGE,
-          .count = 1,
-          .visible = Marbas::DescriptorVisible::ALL,
-      }};
+  };
   std::array descriptorPoolSizes = {
       Marbas::DescriptorPoolSize{
           .type = Marbas::DescriptorType::UNIFORM_BUFFER,
-          .size = 1,
-      },
-      Marbas::DescriptorPoolSize{
-          .type = Marbas::DescriptorType::IMAGE,
           .size = 1,
       },
   };
@@ -213,12 +206,6 @@ main(void) {
       .buffer = uniformbuffer,
       .offset = 0,
       .arrayElement = 0,
-  });
-  pipelineContext->BindImage(Marbas::BindImageInfo{
-      .descriptorSet = descriptorSet,
-      .bindingPoint = 1,
-      .imageView = imageView,
-      .sampler = sampler,
   });
 
   // render target desc and blend
@@ -270,7 +257,7 @@ main(void) {
   scissorInfo.height = height;
 
   // vertex input layout
-  Marbas::InputElementDesc posAttribute, colorAttribute, texCoordAttribute;
+  Marbas::InputElementDesc posAttribute, colorAttribute;
   Marbas::InputElementView elementView;
   posAttribute.binding = 0;
   posAttribute.attribute = 0;
@@ -283,22 +270,16 @@ main(void) {
   colorAttribute.format = Marbas::ElementType::R32G32B32_SFLOAT;
   colorAttribute.offset = offsetof(Vertex, color);
 
-  texCoordAttribute.binding = 0;
-  texCoordAttribute.attribute = 2;
-  texCoordAttribute.format = Marbas::ElementType::R32G32_SFLOAT;
-  texCoordAttribute.offset = offsetof(Vertex, texCoord);
-
   elementView.binding = 0;
   elementView.inputClass = Marbas::VertexInputClass::VERTEX;
   elementView.stride = sizeof(Vertex);
 
   Marbas::GraphicsPipeLineCreateInfo pipelineCreateInfo;
-  pipelineCreateInfo.vertexInputLayout.elementDesc = {posAttribute, colorAttribute, texCoordAttribute};
+  pipelineCreateInfo.vertexInputLayout.elementDesc = {posAttribute, colorAttribute};
   pipelineCreateInfo.vertexInputLayout.viewDesc = {elementView};
   pipelineCreateInfo.outputRenderTarget = renderTargetDesc;
   pipelineCreateInfo.shaderStageCreateInfo = shaderStageCreateInfos;
   pipelineCreateInfo.rasterizationInfo.frontFace = Marbas::FrontFace::CCW;
-  pipelineCreateInfo.rasterizationInfo.cullMode = Marbas::CullMode::BACK;
   pipelineCreateInfo.multisampleCreateInfo.rasterizationSamples = Marbas::SampleCount::BIT8;
   pipelineCreateInfo.descriptorSetLayout = descriptorSetLayout;
   pipelineCreateInfo.depthStencilInfo.depthTestEnable = true;
@@ -326,9 +307,7 @@ main(void) {
 
   // vertex buffer
   auto VBOSize = vertices.size() * sizeof(Vertex);
-  auto EBOSize = indices.size() * sizeof(uint32_t);
   auto* vertexBuffer = bufferContext->CreateBuffer(Marbas::BufferType::VERTEX_BUFFER, vertices.data(), VBOSize, false);
-  auto* indexBuffer = bufferContext->CreateBuffer(Marbas::BufferType::INDEX_BUFFER, indices.data(), EBOSize, true);
 
   // command buffer
   auto imageCount = swapchain->imageViews.size();
@@ -446,8 +425,7 @@ main(void) {
     commandBuffer->SetScissors(scissorInfos);
     commandBuffer->BindVertexBuffer(vertexBuffer);
     commandBuffer->BindDescriptorSet(pipeline, 0, std::span(&descriptorSet, 1));
-    commandBuffer->BindIndexBuffer(indexBuffer);
-    commandBuffer->DrawIndexed(indices.size(), 1, 0, 0, 0);
+    commandBuffer->Draw(vertices.size(), 1, 0, 0);
     commandBuffer->EndPipeline(pipeline);
     commandBuffer->End();
 
@@ -476,13 +454,10 @@ main(void) {
 
   bufferContext->DestroyBuffer(uniformbuffer);
   bufferContext->DestroyBuffer(vertexBuffer);
-  bufferContext->DestroyBuffer(indexBuffer);
   bufferContext->DestroyCommandBuffer(commandPool, commandBuffer);
   bufferContext->DestroyCommandPool(commandPool);
-  bufferContext->DestroyImage(image);
   bufferContext->DestroyImage(depthBuffer);
   bufferContext->DestroyImage(colorAttachImage);
-  bufferContext->DestroyImageView(imageView);
   bufferContext->DestroyImageView(depthBufferView);
   bufferContext->DestroyImageView(colorAttachmentView);
 

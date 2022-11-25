@@ -59,7 +59,7 @@ enum class FrontFace {
 
 struct RasterizationCreateInfo {
   PolygonMode polygonMode = PolygonMode::FILL;
-  CullMode cullMode = CullMode::BACK;
+  CullMode cullMode = CullMode::NONE;
   FrontFace frontFace = FrontFace::CCW;
   int depthBias = 0;
   float depthBiasClamp = 0;
