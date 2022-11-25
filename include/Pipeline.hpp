@@ -187,7 +187,7 @@ enum class PrimitiveTopology {
  * @brief Structure specifying parameters of a newly created pipeline input assembly state
  */
 struct InputAssemblyStateCreateInfo {
-  PrimitiveTopology topology = PrimitiveTopology::LINE;
+  PrimitiveTopology topology = PrimitiveTopology::TRIANGLE;
 };
 
 /**
