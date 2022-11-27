@@ -37,6 +37,8 @@ struct CommandPool {
 struct ClearValue {
   explicit ClearValue(const std::array<float, 4>& colorValue) { clearValue = colorValue; }
   explicit ClearValue(const std::array<float, 2>& depthStencilValue) { clearValue = depthStencilValue; }
+  ClearValue(float r, float g, float b, float a) { clearValue = std::array<float, 4>{r, g, b, a}; }
+  ClearValue(float depth, float stencil) { clearValue = std::array<float, 2>{depth, stencil}; }
 
   void
   SetClearColor(const std::array<float, 4>& colorValue) {

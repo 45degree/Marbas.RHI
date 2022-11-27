@@ -64,7 +64,7 @@ struct RasterizationCreateInfo {
   int depthBias = 0;
   float depthBiasClamp = 0;
   float slopeScaledDepthBias = 0;
-  bool depthCilpEnable = true;
+  bool depthCilpEnable = false;
 };
 
 /**
@@ -86,8 +86,8 @@ struct DepthStencilCreateInfo {
   bool depthTestEnable = true;
   bool depthWriteEnable = true;
   DepthCompareOp depthCompareOp = DepthCompareOp::LESS;
-  bool depthBoundsTestEnable = true;
-  bool stencilTestEnable = true;
+  bool depthBoundsTestEnable = false;
+  bool stencilTestEnable = false;
 };
 
 /**

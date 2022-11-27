@@ -9,10 +9,16 @@ target("MultiPassTest")
   add_defines("USE_VULKAN");
   add_rules("utils.glsl2spv", {outputdir = executedir})
 
-  add_files("main.cc")
-  add_files("shader.frag")
-  add_files("shader.vert")
+  add_files("*.cc")
+  add_files("showBox.frag.glsl")
+  add_files("showBox.vert.glsl")
+
+
+  after_build(function ()
+    os.cp('$(scriptdir)/*.jpg', executedir)
+    os.cp('$(scriptdir)/*.png', executedir)
+  end)
 
   add_packages("glfw", "glog", "shaderc", "gtest", "stb", "fmt", "glm")
-  add_deps("Marbas.RHI")
+  add_deps("Marbas.RHI", "TestBase")
 target_end()

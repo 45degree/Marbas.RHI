@@ -13,11 +13,11 @@ option("use vulkan")
   set_default(true)
 option_end()
 
-option("build test")
+option("buildTest")
   set_default(false)
 option_end()
 
-if has_config("build test") then
+if has_config("buildTest") then
   add_requires("tinyobjloader")
 end
 

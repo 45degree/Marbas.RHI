@@ -10,5 +10,5 @@ target("TestBase")
   add_files("**.cc")
 
   add_deps("Marbas.RHI")
-  add_packages("tinyobjloader", "glm", "glfw")
+  add_packages("tinyobjloader", "glm", "glfw", "stb")
 target_end()

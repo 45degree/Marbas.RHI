@@ -612,14 +612,16 @@ VulkanPipelineContext::CreateRenderPass(const RenderTargetDesc& renderTargetDesc
     reference.setLayout(vk::ImageLayout::eColorAttachmentOptimal);
     colorAttachmentReferences.push_back(reference);
 
-    description.setInitialLayout(vk::ImageLayout::eUndefined);
     description.setFormat(ConvertToVulkanFormat(colorTargetDesc.format));
     description.setSamples(ConvertToVulkanSampleCount(colorTargetDesc.sampleCount));
 
     if (colorTargetDesc.isClear) {
+      description.setInitialLayout(vk::ImageLayout::eUndefined);
       description.setLoadOp(vk::AttachmentLoadOp::eClear);
     } else {
-      description.setLoadOp(vk::AttachmentLoadOp::eDontCare);
+      // TODO
+      description.setInitialLayout(vk::ImageLayout::eColorAttachmentOptimal);
+      description.setLoadOp(vk::AttachmentLoadOp::eLoad);
     }
     description.setStoreOp(vk::AttachmentStoreOp::eStore);
 
@@ -648,7 +650,7 @@ VulkanPipelineContext::CreateRenderPass(const RenderTargetDesc& renderTargetDesc
     if (depthAttachment.isClear) {
       description.setLoadOp(vk::AttachmentLoadOp::eClear);
     } else {
-      description.setLoadOp(vk::AttachmentLoadOp::eDontCare);
+      description.setLoadOp(vk::AttachmentLoadOp::eLoad);
     }
     description.setStoreOp(vk::AttachmentStoreOp::eStore);
     attachmentDescriptions.push_back(description);

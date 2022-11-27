@@ -198,8 +198,17 @@ ConvertToVulkanDescriptorLayoutBinding(const DescriptorSetLayoutBinding& binding
   vkBinding.setDescriptorCount(binding.count);
   vkBinding.setBinding(binding.bindingPoint);
 
-  // TODO:
-  vkBinding.setStageFlags(vk::ShaderStageFlagBits::eAll);
+  switch (binding.visible) {
+    case DescriptorVisible::ALL:
+      vkBinding.setStageFlags(vk::ShaderStageFlagBits::eAll);
+      break;
+    case DescriptorVisible::VERTEX_SHADER:
+      vkBinding.setStageFlags(vk::ShaderStageFlagBits::eVertex);
+      break;
+    case DescriptorVisible::FRAGMENT_SHADER:
+      vkBinding.setStageFlags(vk::ShaderStageFlagBits::eFragment);
+      break;
+  }
   return vkBinding;
 }
 

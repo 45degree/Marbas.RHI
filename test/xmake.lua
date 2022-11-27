@@ -1,6 +1,6 @@
 ---@diagnostic disable: undefined-global
 
-if has_config("build test") then
+if has_config("buildTest") then
   includes("Base")
   includes("WindowTest")
   includes("DrawTriangleTest")
@@ -11,4 +11,5 @@ if has_config("build test") then
   includes("DepthBufferTest")
   includes("MipmapTest")
   includes("MsaaTest")
+  includes("MultiPassTest")
 end
