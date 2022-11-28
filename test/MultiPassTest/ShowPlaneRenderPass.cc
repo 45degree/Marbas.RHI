@@ -82,7 +82,7 @@ ShowPlaneRenderPass::CreatePipeline() {
   };
   createInfo.outputRenderTarget.colorAttachments = {Marbas::ColorTargetDesc{
       .isClear = false,
-      .isPresent = true,  // TODO: don't present
+      .isPresent = false,  // TODO: don't present
       .sampleCount = Marbas::SampleCount::BIT1,
       .format = Marbas::ImageFormat::BGRA,
   }};
@@ -91,7 +91,6 @@ ShowPlaneRenderPass::CreatePipeline() {
       .sampleCount = Marbas::SampleCount::BIT1,
   };
   createInfo.descriptorSetLayout = m_descriptorSetLayout;
-  createInfo.depthStencilInfo.depthTestEnable = false;
 
   return m_pipelineContext->CreatePipeline(createInfo);
 }

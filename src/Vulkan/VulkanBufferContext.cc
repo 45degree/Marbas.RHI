@@ -493,6 +493,8 @@ VulkanBufferContext::CreateCommandPool(CommandBufferUsage usage) {
     vkCommandPoolCreateInfo.setQueueFamilyIndex(m_graphicsQueueIndex);
   } else if (usage == CommandBufferUsage::COMPUTE) {
     vkCommandPoolCreateInfo.setQueueFamilyIndex(m_computeQueueIndex);
+  } else if (usage == CommandBufferUsage::TRANSFER) {
+    vkCommandPoolCreateInfo.setQueueFamilyIndex(m_transfermQueueIndex);
   }
 
   // TODO: how to set flags?
@@ -531,6 +533,9 @@ VulkanBufferContext::CreateCommandBuffer(CommandPool* commandPool) {
   } else if (vulkanCommandPool->usage == CommandBufferUsage::COMPUTE) {
     queueFamilyIndex = m_computeQueueIndex;
     queue = m_computeQueue;
+  } else if (vulkanCommandPool->usage == CommandBufferUsage::TRANSFER) {
+    queueFamilyIndex = m_transfermQueueIndex;
+    queue = m_transferQueue;
   }
 
   auto* vulkanCommandBuffer = new VulkanCommandBuffer(m_device, result[0], queueFamilyIndex, queue);

@@ -18,6 +18,8 @@ class RenderPassBase {
     for (const auto& frameBuffer : m_frameBuffers) {
       m_pipelineContext->DestroyFrameBuffer(frameBuffer);
     }
+    m_bufferContext->DestroyCommandBuffer(m_commandPool, m_commandBuffer);
+    m_bufferContext->DestroyCommandPool(m_commandPool);
   }
 
  public:

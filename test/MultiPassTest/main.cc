@@ -3,6 +3,7 @@
 #include "RHIFactory.hpp"
 #include "ShowBoxRenderPass.hpp"
 #include "ShowPlaneRenderPass.hpp"
+#include "ShowScreenRenderPass.hpp"
 
 Marbas::Image*
 CreateDepthBuffer(Marbas::BufferContext* bufferContext, uint32_t width, uint32_t height) {
@@ -36,6 +37,25 @@ main(void) {
   auto* bufferContext = factory->GetBufferContext();
   auto* pipelineContext = factory->GetPipelineContext();
 
+  // create a color attachments
+  auto* image = bufferContext->CreateImage(Marbas::ImageCreateInfo{
+      .width = static_cast<uint32_t>(width),
+      .height = static_cast<uint32_t>(height),
+      .format = swapChain->imageFormat,
+      .sampleCount = Marbas::SampleCount::BIT1,
+      .mipMapLevel = 1,
+      .usage = Marbas::ImageUsageFlags::COLOR_RENDER_TARGET | Marbas::ImageUsageFlags::SHADER_READ,
+      .imageDesc = Marbas::Image2DDesc{},
+  });
+  auto* imageView = bufferContext->CreateImageView(Marbas::ImageViewCreateInfo{
+      .image = image,
+      .type = Marbas::ImageViewType::TEXTURE2D,
+      .baseLevel = 0,
+      .levelCount = 1,
+      .baseArrayLayer = 0,
+      .layerCount = 1,
+  });
+
   // swapchain semaphores
   auto imageCount = swapChain->images.size();
   std::vector<Marbas::Semaphore*> aviableSemaphores(imageCount);
@@ -61,36 +81,72 @@ main(void) {
     createInfo.height = height;
     createInfo.width = width;
     createInfo.layer = 1;
-    createInfo.attachments.colorAttachments = std::span(swapChain->imageViews.begin() + i, 1);
+    createInfo.attachments.colorAttachments = std::span(&imageView, 1);
     createInfo.attachments.depthAttachment = depthBufferView;
     frameBufferCreateInfos.push_back(createInfo);
   }
 
   // create commandBuffer
-  Marbas::ShowBoxRenderPass showBoxRenderPass(factory.get());
-  Marbas::ShowPlaneRenderPass showPlaneRenderPass(factory.get());
-  showBoxRenderPass.CreateFrameBuffer(frameBufferCreateInfos);
-  showPlaneRenderPass.CreateFrameBuffer(frameBufferCreateInfos);
+  auto commandPool = bufferContext->CreateCommandPool(Marbas::CommandBufferUsage::TRANSFER);
+  auto* commandBuffer = bufferContext->CreateCommandBuffer(commandPool);
 
-  uint32_t currentFrame = 0;
-  Marbas::Semaphore* showBoxRenderPassSemaphore = factory->CreateGPUSemaphore();
+  {
+    Marbas::ShowBoxRenderPass showBoxRenderPass(factory.get());
+    Marbas::ShowPlaneRenderPass showPlaneRenderPass(factory.get());
+    Marbas::ShowScreenRenderPass showScreenRenderPass(factory.get(), imageView);
+    showBoxRenderPass.CreateFrameBuffer(frameBufferCreateInfos);
+    showPlaneRenderPass.CreateFrameBuffer(frameBufferCreateInfos);
 
-  auto* fence = factory->CreateFence();
-  while (!glfwWindowShouldClose(glfwWindow)) {
-    glfwPollEvents();
-    factory->ResetFence(fence);
-    auto nextImage = factory->AcquireNextImage(swapChain, aviableSemaphores[currentFrame]);
+    for (int i = 0; i < frameBufferCreateInfos.size(); i++) {
+      auto& createInfo = frameBufferCreateInfos[i];
+      createInfo.attachments.colorAttachments = std::span(swapChain->imageViews.begin() + i, 1);
+      createInfo.attachments.depthAttachment = nullptr;
+    }
+    showScreenRenderPass.CreateFrameBuffer(frameBufferCreateInfos);
 
-    showBoxRenderPass.Render({aviableSemaphores.begin() + currentFrame, 1}, {&showBoxRenderPassSemaphore, 1}, nullptr,
-                             currentFrame);
-    // showPlaneRenderPass.Render({aviableSemaphores.begin() + currentFrame, 1},
-    //                            {waitSemaphores.begin() + currentFrame, 1}, fence, currentFrame);
-    // factory->WaitIdle();
-    showPlaneRenderPass.Render({&showBoxRenderPassSemaphore, 1}, {waitSemaphores.begin() + currentFrame, 1}, fence,
+    uint32_t currentFrame = 0;
+    Marbas::Semaphore* showBoxRenderPassSemaphore = factory->CreateGPUSemaphore();
+    Marbas::Semaphore* showPlaneSemaphore = factory->CreateGPUSemaphore();
+    Marbas::Semaphore* transferFinishSemaphore = factory->CreateGPUSemaphore();
+    auto* fence = factory->CreateFence();
+    while (!glfwWindowShouldClose(glfwWindow)) {
+      glfwPollEvents();
+      factory->ResetFence(fence);
+      auto nextImage = factory->AcquireNextImage(swapChain, aviableSemaphores[currentFrame]);
+
+      showBoxRenderPass.Render({aviableSemaphores.begin() + currentFrame, 1}, {&showBoxRenderPassSemaphore, 1}, nullptr,
                                currentFrame);
+      showPlaneRenderPass.Render({&showBoxRenderPassSemaphore, 1}, {&showPlaneSemaphore, 1}, nullptr, currentFrame);
 
-    factory->Present(swapChain, std::span(waitSemaphores.begin() + currentFrame, 1), nextImage);
-    factory->WaitForFence(fence);
-    currentFrame = (currentFrame + 1) % imageCount;
+      commandBuffer->Begin();
+      commandBuffer->TransformImageState(image, Marbas::ImageState::RENDER_TARGET, Marbas::ImageState::SHADER_READ);
+      commandBuffer->End();
+      commandBuffer->Submit({&showPlaneSemaphore, 1}, {&transferFinishSemaphore, 1}, nullptr);
+
+      showScreenRenderPass.Render({&transferFinishSemaphore, 1}, {waitSemaphores.begin() + currentFrame, 1}, fence,
+                                  nextImage);
+      factory->Present(swapChain, std::span(waitSemaphores.begin() + currentFrame, 1), nextImage);
+      factory->WaitForFence(fence);
+      currentFrame = (currentFrame + 1) % imageCount;
+    }
+    factory->WaitIdle();
+    factory->DestroyFence(fence);
+    factory->DestroyGPUSemaphore(showBoxRenderPassSemaphore);
+    factory->DestroyGPUSemaphore(showPlaneSemaphore);
+    factory->DestroyGPUSemaphore(transferFinishSemaphore);
   }
+
+  for (int i = 0; i < aviableSemaphores.size(); i++) {
+    factory->DestroyGPUSemaphore(aviableSemaphores[i]);
+    factory->DestroyGPUSemaphore(waitSemaphores[i]);
+  }
+
+  bufferContext->DestroyImage(image);
+  bufferContext->DestroyImageView(imageView);
+  bufferContext->DestroyImage(depthBuffer);
+  bufferContext->DestroyImageView(depthBufferView);
+  bufferContext->DestroyCommandBuffer(commandPool, commandBuffer);
+  bufferContext->DestroyCommandPool(commandPool);
+
+  factory->Quit();
 }

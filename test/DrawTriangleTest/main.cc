@@ -148,7 +148,7 @@ main(void) {
     std::array<Marbas::ScissorInfo, 1> scissorInfos = {scissorInfo};
 
     commandBuffer->Begin();
-    commandBuffer->BeginPipeline(pipeline, frameBuffers[nextImage], {Marbas::ClearValue({1, 1, 1, 1})});
+    commandBuffer->BeginPipeline(pipeline, frameBuffers[nextImage], {{1, 1, 1, 1}});
     commandBuffer->SetViewports(viewportInfos);
     commandBuffer->SetScissors(scissorInfos);
     commandBuffer->Draw(3, 1, 0, 0);

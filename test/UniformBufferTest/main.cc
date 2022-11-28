@@ -246,7 +246,7 @@ main(void) {
     bufferContext->UpdateBuffer(uniformbuffer, &ubo, sizeof(ubo), 0);
 
     commandBuffer->Begin();
-    commandBuffer->BeginPipeline(pipeline, frameBuffers[nextImage], {Marbas::ClearValue({1, 1, 1, 1})});
+    commandBuffer->BeginPipeline(pipeline, frameBuffers[nextImage], {{1, 1, 1, 1}});
     commandBuffer->SetViewports(viewportInfos);
     commandBuffer->SetScissors(scissorInfos);
     commandBuffer->BindVertexBuffer(vertexBuffer);

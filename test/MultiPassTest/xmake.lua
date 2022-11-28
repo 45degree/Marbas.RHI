@@ -10,9 +10,7 @@ target("MultiPassTest")
   add_rules("utils.glsl2spv", {outputdir = executedir})
 
   add_files("*.cc")
-  add_files("showBox.frag.glsl")
-  add_files("showBox.vert.glsl")
-
+  add_files("**.glsl")
 
   after_build(function ()
     os.cp('$(scriptdir)/*.jpg', executedir)
