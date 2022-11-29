@@ -29,6 +29,13 @@
 
 namespace Marbas {
 
+static VKAPI_ATTR VkBool32 VKAPI_CALL
+debugCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT messageSeverity, vk::DebugUtilsMessageTypeFlagsEXT messageType,
+              const vk::DebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
+  DLOG(ERROR) << FORMAT("validation layer: {}", pCallbackData->pMessage);
+  return VK_FALSE;
+}
+
 VulkanRHIFactory::VulkanRHIFactory() { glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API); }
 VulkanRHIFactory::~VulkanRHIFactory() = default;
 
@@ -40,7 +47,7 @@ VulkanRHIFactory::CreateInstance(GLFWwindow* glfwWindow) {
   glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
   // combine all extension needed to enable
-  std::vector vulkanExtensions = {"VK_EXT_depth_clip_enable"};
+  std::vector vulkanExtensions = {VK_EXT_DEBUG_UTILS_EXTENSION_NAME};
   for (int i = 0; i < glfwExtensionCount; i++) {
     auto iter = std::find_if(vulkanExtensions.begin(), vulkanExtensions.end(), [&](const char* extension) -> bool {
       return std::strcmp(extension, *(glfwExtensions + i)) == 0;
@@ -57,16 +64,33 @@ VulkanRHIFactory::CreateInstance(GLFWwindow* glfwWindow) {
   std::array<const char*, 0> layers = {};
 #endif
 
-  // TODO: set error callback functions
-
   // create vulkan instance
   vk::InstanceCreateInfo instanceCreateInfo;
-  instanceCreateInfo.setEnabledExtensionCount(glfwExtensionCount);
-  instanceCreateInfo.ppEnabledExtensionNames = glfwExtensions;
+  instanceCreateInfo.setEnabledExtensionCount(vulkanExtensions.size());
+  instanceCreateInfo.setPEnabledExtensionNames(vulkanExtensions);
   instanceCreateInfo.setEnabledLayerCount(layers.size());
   instanceCreateInfo.setPpEnabledLayerNames(layers.data());
 
   m_instance = vk::createInstance(instanceCreateInfo);
+
+#ifndef NDEBUG
+  vk::DynamicLoader dl;
+  auto GetInstanceProcAddr = dl.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
+  m_dispatch = vk::DispatchLoaderDynamic(m_instance, GetInstanceProcAddr);
+
+  vk::DebugUtilsMessengerCreateInfoEXT createInfo;
+  auto CallbackFunc = reinterpret_cast<PFN_vkDebugUtilsMessengerCallbackEXT>(debugCallback);
+  createInfo.setMessageSeverity(vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose |
+                                vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning |
+                                vk::DebugUtilsMessageSeverityFlagBitsEXT::eError);
+  createInfo.setMessageType(vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral |
+                            vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation |
+                            vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance);
+  createInfo.setPfnUserCallback(CallbackFunc);
+  createInfo.pUserData = nullptr;
+
+  m_debugMessenger = m_instance.createDebugUtilsMessengerEXT(createInfo, nullptr, m_dispatch);
+#endif
 }
 
 void
@@ -336,6 +360,7 @@ VulkanRHIFactory::Quit() {
   m_pipelineContext = nullptr;
 
   m_device.destroy();
+  m_instance.destroyDebugUtilsMessengerEXT(m_debugMessenger, nullptr, m_dispatch);
   m_instance.destroySurfaceKHR(m_surface);
   m_instance.destroy();
 }

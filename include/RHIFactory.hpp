@@ -80,9 +80,6 @@ class RHIFactory {
     return m_imguiContext.get();
   }
 
-  // TODO: add supoort for offscreen
-  // virtual void
-  // OffscreenInit();
  public:
   static std::unique_ptr<RHIFactory>
   CreateInstance(const RendererType& rendererTyoe);

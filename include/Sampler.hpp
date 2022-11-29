@@ -31,7 +31,6 @@ enum class SampleCount {
   BIT64,
 };
 
-// TODO: rename
 enum class Filter {
   MIN_MAG_MIP_POINT,
   MIN_MAG_POINT_MIP_LINEAR,

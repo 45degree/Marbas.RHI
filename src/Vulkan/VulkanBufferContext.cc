@@ -316,14 +316,14 @@ VulkanBufferContext::GenerateMipmap(Image* image, uint32_t mipmapLevel) {
   barrier.setImage(vkImage);
   barrier.setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
   barrier.setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
-  barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;  // TODO: depth?
+  barrier.subresourceRange.aspectMask = vulkanImage->vkAspect;
   barrier.subresourceRange.baseArrayLayer = 0;
   barrier.subresourceRange.layerCount = vulkanImage->arrayLayer;
   barrier.subresourceRange.setLevelCount(1);
 
   // TODO:
-  int32_t mipWidth = vulkanImage->width;
-  int32_t mipHeight = vulkanImage->height;
+  auto mipWidth = static_cast<int32_t>(vulkanImage->width);
+  auto mipHeight = static_cast<int32_t>(vulkanImage->height);
 
   for (uint32_t i = 1; i < mipmapLevel; i++) {
     barrier.subresourceRange.setBaseMipLevel(i - 1);

@@ -112,7 +112,7 @@ ShowBoxRenderPass::CreatePipeline() {
   };
   createInfo.outputRenderTarget.colorAttachments = {Marbas::ColorTargetDesc{
       .isClear = true,
-      .isPresent = false,  // TODO: don't present
+      .isPresent = false,
       .sampleCount = Marbas::SampleCount::BIT1,
       .format = Marbas::ImageFormat::BGRA,
   }};

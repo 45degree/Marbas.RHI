@@ -89,9 +89,12 @@ class VulkanRHIFactory final : public RHIFactory {
   DestroySwapchain();
 
  private:
-  vk::Instance m_instace;
   vk::Device m_device;
   vk::PhysicalDevice m_physicalDevice;
+#ifndef NDEBUG
+  vk::DispatchLoaderDynamic m_dispatch;
+  vk::DebugUtilsMessengerEXT m_debugMessenger;
+#endif
 
   std::optional<uint32_t> m_graphicsQueueFamilyIndex = std::nullopt;
   std::optional<uint32_t> m_presentQueueFamilyIndex = std::nullopt;
