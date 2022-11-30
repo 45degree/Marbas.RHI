@@ -32,7 +32,13 @@ namespace Marbas {
 static VKAPI_ATTR VkBool32 VKAPI_CALL
 debugCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT messageSeverity, vk::DebugUtilsMessageTypeFlagsEXT messageType,
               const vk::DebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
-  DLOG(ERROR) << FORMAT("validation layer: {}", pCallbackData->pMessage);
+  if (messageSeverity == vk::DebugUtilsMessageSeverityFlagBitsEXT::eError) {
+    DLOG(ERROR) << FORMAT("validation layer Error: {}", pCallbackData->pMessage);
+  } else if (messageSeverity == vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning) {
+    DLOG(WARNING) << FORMAT("validation layer Warning: {}", pCallbackData->pMessage);
+  } else if (messageSeverity == vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose) {
+    DLOG(INFO) << FORMAT("validation layer Verbose: {}", pCallbackData->pMessage);
+  }
   return VK_FALSE;
 }
 
@@ -57,12 +63,34 @@ VulkanRHIFactory::CreateInstance(GLFWwindow* glfwWindow) {
     }
   }
 
+  // check layer and extensions
+  auto aviableExtensions = vk::enumerateInstanceExtensionProperties();
+  for (auto& extension : vulkanExtensions) {
+    auto iter = std::find_if(aviableExtensions.cbegin(), aviableExtensions.cend(), [&](const auto& aviableExtension) {
+      return std::strcmp(aviableExtension.extensionName.data(), extension) == 0;
+    });
+    if (iter == aviableExtensions.end()) {
+      LOG(ERROR) << FORMAT("extension: {} is not allowed", extension);
+    }
+  }
+
   // validation layers
 #ifndef NDEBUG
   std::array layers = {"VK_LAYER_KHRONOS_validation"};
 #else
   std::array<const char*, 0> layers = {};
 #endif
+
+  // check layers
+  auto aviableLayers = vk::enumerateInstanceLayerProperties();
+  for (auto& layer : layers) {
+    auto iter = std::find_if(aviableLayers.cbegin(), aviableLayers.cend(), [&](const auto& aviableLayer) {
+      return std::strcmp(aviableLayer.layerName.data(), layer) == 0;
+    });
+    if (iter == aviableLayers.end()) {
+      LOG(ERROR) << FORMAT("layer: {} is not allowed", layer);
+    }
+  }
 
   // create vulkan instance
   vk::InstanceCreateInfo instanceCreateInfo;
