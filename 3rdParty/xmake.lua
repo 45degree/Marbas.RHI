@@ -15,7 +15,7 @@ target('imgui-docking')
   add_files("imgui/backends/imgui_impl_opengl3.cpp")
 
 
-  if has_config("use vulkan") then
+  if has_config("SupportVulkan") then
     add_rules("UseVulkan")
     add_files("imgui/backends/imgui_impl_vulkan.cpp")
   end

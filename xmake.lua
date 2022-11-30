@@ -9,12 +9,14 @@ add_requires("gtest 1.11.0")
 add_requires("stb 2021.09.10")
 add_requires("fmt 9.1.0")
 
-option("use vulkan")
+option("SupportVulkan")
   set_default(true)
+  set_description("add vulkan support")
 option_end()
 
 option("buildTest")
   set_default(false)
+  set_description("build test")
 option_end()
 
 if has_config("buildTest") then
@@ -26,10 +28,10 @@ if is_plat("linux") then
   add_requires("pkgconfig::shaderc_static")
   add_requires("spirv-cross 1.2.189+1");
 else
-  option("Vulkan SDK Path")
-    add_deps("use vulkan")
+  option("Vulkan_SDK_Path")
+    add_deps("SupportVulkan")
     set_default("D:/VulkanSDK/1.3.224.1")
-    set_description("Vulkan SDK Path")
+    set_description("vulkan SDK dir")
     set_showmenu(true)
   option_end()
 end
@@ -40,25 +42,25 @@ rule("UseVulkan")
       target:add("packages", "pkgconfig::vulkan")
       target:add("packages", "shaderc")
     else
-      local vulkanIncludePath = path.join('$(Vulkan SDK Path)', 'include')
-      local vulkanLibPath = path.join('$(Vulkan SDK Path)', 'lib')
-      local vulkanBinPath = path.join('$(Vulkan SDK Path)', 'bin')
+      local vulkanIncludePath = path.join('$(Vulkan_SDK_Path)', 'include')
+      local vulkanLibPath = path.join('$(Vulkan_SDK_Path)', 'lib')
+      local vulkanBinPath = path.join('$(Vulkan_SDK_Path)', 'bin')
 
       if not os.exists(vulkanIncludePath) then
-        if os.exists(path.join('$(Vulkan SDK Path)', 'Include')) then
-          vulkanIncludePath = path.join('$(Vulkan SDK Path)', 'Include')
+        if os.exists(path.join('$(Vulkan_SDK_Path)', 'Include')) then
+          vulkanIncludePath = path.join('$(Vulkan_SDK_Path)', 'Include')
         end
       end
 
       if os.exists(vulkanBinPath) then
-        if os.exists(path.join('$(Vulkan SDK Path)', 'Bin')) then
-          vulkanBinPath = path.join('$(Vulkan SDK Path)', 'Bin')
+        if os.exists(path.join('$(Vulkan_SDK_Path)', 'Bin')) then
+          vulkanBinPath = path.join('$(Vulkan_SDK_Path)', 'Bin')
         end
       end
 
       if os.exists(vulkanLibPath) then
-        if os.exists(path.join('$(Vulkan SDK Path)', 'Lib')) then
-          vulkanLibPath = path.join('$(Vulkan SDK Path)', 'Lib')
+        if os.exists(path.join('$(Vulkan_SDK_Path)', 'Lib')) then
+          vulkanLibPath = path.join('$(Vulkan_SDK_Path)', 'Lib')
         end
       end
 
@@ -96,7 +98,7 @@ target("Marbas.RHI")
     add_undefines("CreateSemaphore");
   end
 
-  if has_config("use vulkan") then
+  if has_config("SupportVulkan") then
     add_rules("UseVulkan")
     add_defines("USE_VULKAN")
     add_files("src/Vulkan/**.cc")
