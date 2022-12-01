@@ -92,12 +92,21 @@ VulkanRHIFactory::CreateInstance(GLFWwindow* glfwWindow) {
     }
   }
 
+  // create application info
+  vk::ApplicationInfo appInfo;
+  appInfo.setPApplicationName("Marbas");
+  appInfo.setApplicationVersion(VK_MAKE_VERSION(1, 0, 0));
+  appInfo.setPEngineName("No Engine");
+  appInfo.setEngineVersion(VK_MAKE_VERSION(1, 0, 0));
+  appInfo.setApiVersion(VK_MAKE_VERSION(1, 3, 0));
+
   // create vulkan instance
   vk::InstanceCreateInfo instanceCreateInfo;
   instanceCreateInfo.setEnabledExtensionCount(vulkanExtensions.size());
   instanceCreateInfo.setPEnabledExtensionNames(vulkanExtensions);
   instanceCreateInfo.setEnabledLayerCount(layers.size());
   instanceCreateInfo.setPpEnabledLayerNames(layers.data());
+  instanceCreateInfo.setPApplicationInfo(&appInfo);
 
   m_instance = vk::createInstance(instanceCreateInfo);
 
