@@ -25,18 +25,20 @@ if has_config("buildTest") then
   add_requires("tinyobjloader")
 end
 
-if is_plat("linux") then
-  add_requires("pkgconfig::vulkan")
-  add_requires("pkgconfig::shaderc_static")
-  add_requires("spirv-cross 1.2.189+1");
-else
-  option("Vulkan_SDK_Path")
-    add_deps("SupportVulkan")
-    set_category("Marbas Render Hardware Interface")
-    set_default("D:/VulkanSDK/1.3.224.1")
-    set_description("vulkan SDK dir")
-    set_showmenu(true)
-  option_end()
+if has_config("SupportVulkan") then
+  if is_plat("linux") then
+    add_requires("pkgconfig::vulkan")
+    add_requires("pkgconfig::shaderc", {alias = "shaderc"})
+    add_requires("spirv-cross 1.2.189+1");
+  else
+    option("Vulkan_SDK_Path")
+      add_deps("SupportVulkan")
+      set_category("Marbas Render Hardware Interface")
+      set_default("D:/VulkanSDK/1.3.224.1")
+      set_description("vulkan SDK dir")
+      set_showmenu(true)
+    option_end()
+  end
 end
 
 rule("UseVulkan")
