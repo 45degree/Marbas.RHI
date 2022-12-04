@@ -11,11 +11,13 @@ add_requires("fmt 9.1.0")
 
 option("SupportVulkan")
   set_default(true)
+  set_category("Marbas Render Hardware Interface")
   set_description("add vulkan support")
 option_end()
 
 option("buildTest")
   set_default(false)
+  set_category("Marbas Render Hardware Interface")
   set_description("build test")
 option_end()
 
@@ -30,6 +32,7 @@ if is_plat("linux") then
 else
   option("Vulkan_SDK_Path")
     add_deps("SupportVulkan")
+    set_category("Marbas Render Hardware Interface")
     set_default("D:/VulkanSDK/1.3.224.1")
     set_description("vulkan SDK dir")
     set_showmenu(true)
