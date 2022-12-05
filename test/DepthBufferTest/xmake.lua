@@ -18,5 +18,5 @@ target("DepthBufferTest")
   add_files("shader.vert")
 
   add_packages("glfw", "glog", "shaderc", "gtest", "stb", "fmt", "glm")
-  add_deps("Marbas.RHI")
+  add_deps("Marbas.RHI", "TestBase")
 target_end()

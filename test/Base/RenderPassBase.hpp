@@ -39,6 +39,13 @@ class RenderPassBase {
   static std::tuple<Marbas::Image*, uint32_t>
   LoadImage(Marbas::BufferContext* bufferContext, const std::string& imagePath);
 
+  static ShaderModule*
+  CreateShaderModule(RHIFactory* factory, const std::string& shaderPath);
+
+ protected:
+  ShaderModule*
+  CreateShaderModule(const std::string& shaderPath);
+
  protected:
   Pipeline* m_pipeline = nullptr;
   CommandPool* m_commandPool = nullptr;

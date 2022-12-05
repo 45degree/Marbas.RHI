@@ -59,8 +59,8 @@ ShowScreenRenderPass::CreateDescirptorSet(ImageView* imageView) {
 
 Pipeline*
 ShowScreenRenderPass::CreatePipeline() {
-  m_vertexShaderModule = m_pipelineContext->CreateShaderModule("showBoxScreen.vert.glsl.spv");
-  m_fragmentShaderModule = m_pipelineContext->CreateShaderModule("showBoxScreen.frag.glsl.spv");
+  m_vertexShaderModule = CreateShaderModule("showBoxScreen.vert.glsl.spv");
+  m_fragmentShaderModule = CreateShaderModule("showBoxScreen.frag.glsl.spv");
 
   std::vector<ShaderStageCreateInfo> shaderStageCreateInfos = {
       ShaderStageCreateInfo{

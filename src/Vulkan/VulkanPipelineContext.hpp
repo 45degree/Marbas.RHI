@@ -43,7 +43,7 @@ class VulkanPipelineContext final : public PipelineContext {
 
  public:
   ShaderModule*
-  CreateShaderModule(const std::string& spirvPath) override;
+  CreateShaderModule(std::span<char> sprivCode) override;
 
   void
   DestroyShaderModule(ShaderModule* shaderModule) override;

@@ -86,8 +86,8 @@ ShowBoxRenderPass::CreatePipeline() {
   m_descriptorSetLayout = CreateDescriptorSetLayout();
 
   // create shader
-  m_vertexShaderModule = m_pipelineContext->CreateShaderModule("showBox.vert.glsl.spv");
-  m_fragmentShaderModule = m_pipelineContext->CreateShaderModule("showBox.frag.glsl.spv");
+  m_vertexShaderModule = CreateShaderModule("showBox.vert.glsl.spv");
+  m_fragmentShaderModule = CreateShaderModule("showBox.frag.glsl.spv");
   Marbas::ShaderStageCreateInfo showBoxVert, showBoxFrag;
   showBoxVert.shaderModule = m_vertexShaderModule;
   showBoxVert.stage = Marbas::ShaderType::VERTEX_SHADER;

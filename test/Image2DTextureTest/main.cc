@@ -1,4 +1,3 @@
-#define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
 #include <chrono>
@@ -6,6 +5,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "RHIFactory.hpp"
+#include "RenderPassBase.hpp"
 
 struct Vertex {
   glm::vec2 pos;
@@ -91,8 +91,8 @@ main(void) {
   auto* pipelineContext = factory->GetPipelineContext();
   auto* bufferContext = factory->GetBufferContext();
   auto* swapchain = factory->GetSwapchain();
-  auto* vertexShader = pipelineContext->CreateShaderModule("shader.vert.spv");
-  auto* fragShader = pipelineContext->CreateShaderModule("shader.frag.spv");
+  auto* vertexShader = Marbas::RenderPassBase::CreateShaderModule(factory.get(), "shader.vert.spv");
+  auto* fragShader = Marbas::RenderPassBase::CreateShaderModule(factory.get(), "shader.frag.spv");
 
   auto* image = LoadImage(factory->GetBufferContext(), "texture.jpg");
   auto* imageView = bufferContext->CreateImageView(Marbas::ImageViewCreateInfo{

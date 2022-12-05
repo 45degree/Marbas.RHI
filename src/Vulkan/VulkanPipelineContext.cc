@@ -15,7 +15,6 @@
  */
 #include "VulkanPipelineContext.hpp"
 
-#include <fstream>
 #include <optional>
 
 #include "VulkanBuffer.hpp"
@@ -235,15 +234,12 @@ VulkanPipelineContext::DestroySampler(Sampler* sampler) {
 }
 
 ShaderModule*
-VulkanPipelineContext::CreateShaderModule(const std::string& spirvPath) {
+VulkanPipelineContext::CreateShaderModule(std::span<char> spirvCode) {
   auto* vulkanShaderModule = new VulkanShaderModule();
 
-  std::ifstream file(spirvPath, std::ios::binary | std::ios::in);
-  std::vector<char> content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-
   vk::ShaderModuleCreateInfo vkCreateInfo;
-  vkCreateInfo.setPCode(reinterpret_cast<uint32_t*>(content.data()));
-  vkCreateInfo.setCodeSize(content.size());
+  vkCreateInfo.setPCode(reinterpret_cast<uint32_t*>(spirvCode.data()));
+  vkCreateInfo.setCodeSize(spirvCode.size());
 
   vulkanShaderModule->vkShaderModule = m_device.createShaderModule(vkCreateInfo);
 

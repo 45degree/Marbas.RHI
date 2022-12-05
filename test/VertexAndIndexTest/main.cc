@@ -1,6 +1,7 @@
 #include <glm/glm.hpp>
 
 #include "RHIFactory.hpp"
+#include "RenderPassBase.hpp"
 
 struct Vertex {
   glm::vec2 pos;
@@ -30,8 +31,8 @@ main(void) {
   auto* pipelineContext = factory->GetPipelineContext();
   auto* bufferContext = factory->GetBufferContext();
   auto* swapchain = factory->GetSwapchain();
-  auto* vertexShader = pipelineContext->CreateShaderModule("shader.vert.spv");
-  auto* fragShader = pipelineContext->CreateShaderModule("shader.frag.spv");
+  auto* vertexShader = Marbas::RenderPassBase::CreateShaderModule(factory.get(), "shader.vert.spv");
+  auto* fragShader = Marbas::RenderPassBase::CreateShaderModule(factory.get(), "shader.frag.spv");
 
   // render target desc and blend
   Marbas::RenderTargetDesc renderTargetDesc = {

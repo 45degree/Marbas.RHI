@@ -161,8 +161,8 @@ ShowPlaneRenderPass::CreateDescriptor() {
 
 void
 ShowPlaneRenderPass::ReadShader() {
-  m_vertexShaderModule = m_pipelineContext->CreateShaderModule("showBox.vert.glsl.spv");
-  m_fragmentShaderModule = m_pipelineContext->CreateShaderModule("showBox.frag.glsl.spv");
+  m_vertexShaderModule = CreateShaderModule("showBox.vert.glsl.spv");
+  m_fragmentShaderModule = CreateShaderModule("showBox.frag.glsl.spv");
 }
 
 void

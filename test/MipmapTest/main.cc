@@ -1,10 +1,10 @@
-#define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
 #include <chrono>
 
 #include "Model.hpp"
 #include "RHIFactory.hpp"
+#include "RenderPassBase.hpp"
 
 struct UniformBufferObject {
   glm::mat4 model;
@@ -96,8 +96,8 @@ main(void) {
   auto* pipelineContext = factory->GetPipelineContext();
   auto* bufferContext = factory->GetBufferContext();
   auto* swapchain = factory->GetSwapchain();
-  auto* vertexShader = pipelineContext->CreateShaderModule("shader.vert.spv");
-  auto* fragShader = pipelineContext->CreateShaderModule("shader.frag.spv");
+  auto* vertexShader = Marbas::RenderPassBase::CreateShaderModule(factory.get(), "shader.vert.spv");
+  auto* fragShader = Marbas::RenderPassBase::CreateShaderModule(factory.get(), "shader.frag.spv");
 
   auto [image, lod] = LoadImage(factory->GetBufferContext(), "viking_room.png");
   auto* imageView = bufferContext->CreateImageView(Marbas::ImageViewCreateInfo{

@@ -60,7 +60,7 @@ class PipelineContext {
 
  public:
   virtual ShaderModule*
-  CreateShaderModule(const std::string& spirvPath) = 0;
+  CreateShaderModule(std::span<char> sprivCode) = 0;
 
   virtual void
   DestroyShaderModule(ShaderModule* shaderModule) = 0;

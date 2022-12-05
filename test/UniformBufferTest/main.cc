@@ -3,6 +3,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "RHIFactory.hpp"
+#include "RenderPassBase.hpp"
 
 struct Vertex {
   glm::vec2 pos;
@@ -50,8 +51,8 @@ main(void) {
   auto* pipelineContext = factory->GetPipelineContext();
   auto* bufferContext = factory->GetBufferContext();
   auto* swapchain = factory->GetSwapchain();
-  auto* vertexShader = pipelineContext->CreateShaderModule("shader.vert.spv");
-  auto* fragShader = pipelineContext->CreateShaderModule("shader.frag.spv");
+  auto* vertexShader = Marbas::RenderPassBase::CreateShaderModule(factory.get(), "shader.vert.spv");
+  auto* fragShader = Marbas::RenderPassBase::CreateShaderModule(factory.get(), "shader.frag.spv");
 
   UniformBufferObject ubo;
   ubo.model = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));

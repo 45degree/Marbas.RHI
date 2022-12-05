@@ -5,6 +5,7 @@
 
 #include <stb_image.h>
 
+#include <fstream>
 #include <stdexcept>
 
 namespace Marbas {
@@ -69,6 +70,21 @@ RenderPassBase::CreateFrameBuffer(std::vector<FrameBufferCreateInfo>& frameBuffe
     frameBufferCreateInfo.pieline = m_pipeline;
     m_frameBuffers.push_back(m_pipelineContext->CreateFrameBuffer(frameBufferCreateInfo));
   }
+}
+
+ShaderModule*
+RenderPassBase::CreateShaderModule(const std::string& shaderPath) {
+  std::ifstream file(shaderPath, std::ios::binary | std::ios::in);
+  std::vector<char> content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+  return m_pipelineContext->CreateShaderModule(content);
+}
+
+ShaderModule*
+RenderPassBase::CreateShaderModule(RHIFactory* factory, const std::string& shaderPath) {
+  auto pipelineContext = factory->GetPipelineContext();
+  std::ifstream file(shaderPath, std::ios::binary | std::ios::in);
+  std::vector<char> content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+  return pipelineContext->CreateShaderModule(content);
 }
 
 }  // namespace Marbas
