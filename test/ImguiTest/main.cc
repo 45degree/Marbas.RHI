@@ -59,6 +59,8 @@ main(int argc, char* argv[]) {
   auto* imguiInterface = factory->GetImguiContext();
   auto* swapChain = factory->GetSwapchain();
 
+  imguiInterface->SetResultImage(swapChain->imageViews);
+
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
 
@@ -100,6 +102,7 @@ main(int argc, char* argv[]) {
 
       if (width > 0 && height > 0) {
         swapChain = factory->RecreateSwapchain(swapChain, width, height);
+        imguiInterface->SetResultImage(swapChain->imageViews);
         imguiInterface->Resize(width, height);
         currentFrame = 0;
         needResize = false;

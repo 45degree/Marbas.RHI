@@ -282,7 +282,6 @@ VulkanRHIFactory::Init(GLFWwindow* window, uint32_t width, uint32_t height) {
       .graphicsQueueFamilyIndex = *m_graphicsQueueFamilyIndex,
       .graphicsQueue = m_graphicsQueue,
       .device = m_device,
-      .swapchain = &m_swapChain,
       .width = width,
       .height = height,
   });
@@ -371,6 +370,7 @@ VulkanRHIFactory::CreateSwapchain(uint32_t width, uint32_t height) {
     imageViewCreateInfo.setSubresourceRange(range);
 
     vulkanImageView->vkImageView = m_device.createImageView(imageViewCreateInfo);
+    vulkanImageView->vkFormat = m_surfaceFormat.format;
 
     m_swapChain.imageViews.push_back(vulkanImageView);
   }

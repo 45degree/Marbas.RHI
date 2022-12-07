@@ -21,13 +21,14 @@
 
 #include "VulkanImage.hpp"
 #include "VulkanSynchronic.hpp"
+#include "common.hpp"
 
 namespace Marbas {
 
 static vk::RenderPass
-CreateImguiRenderPass(const vk::Device& device, const vk::SurfaceFormatKHR& surfaceFormat, bool clearEnable) {
+CreateImguiRenderPass(const vk::Device& device, const vk::Format& surfaceFormat, bool clearEnable) {
   vk::AttachmentDescription attachment;
-  attachment.format = surfaceFormat.format;
+  attachment.format = surfaceFormat;
   attachment.samples = vk::SampleCountFlagBits::e1;
   attachment.loadOp = clearEnable ? vk::AttachmentLoadOp::eClear : vk::AttachmentLoadOp::eDontCare;
   attachment.storeOp = vk::AttachmentStoreOp::eStore;
@@ -89,14 +90,15 @@ VulkanImguiContext::SetUpVulkanWindowData(bool clearEnable) {
   descriptorPoolCreateInfo.setMaxSets(maxSize * poolSizes.size());
   m_descriptorPool = m_device.createDescriptorPool(descriptorPoolCreateInfo);
 
-  for (int i = 0; i < m_swapchain->imageCount; i++) {
-    auto imageView = static_cast<VulkanImageView*>(m_swapchain->imageViews[i])->vkImageView;
+  for (auto* imageView : m_resultImageViews) {
+    auto vulkanImageView = static_cast<VulkanImageView*>(imageView);
+    auto vkImageView = vulkanImageView->vkImageView;
 
     // create frame buffer
     vk::FramebufferCreateInfo frameCreateInfo;
-    frameCreateInfo.setAttachments(imageView);
-    frameCreateInfo.setWidth(m_swapchain->width);
-    frameCreateInfo.setHeight(m_swapchain->height);
+    frameCreateInfo.setAttachments(vkImageView);
+    frameCreateInfo.setWidth(m_width);
+    frameCreateInfo.setHeight(m_height);
     frameCreateInfo.setLayers(1);
     frameCreateInfo.setRenderPass(m_renderPass);
     m_framebuffers.push_back(m_device.createFramebuffer(frameCreateInfo));
@@ -107,7 +109,7 @@ void
 VulkanImguiContext::CreateWindowCommandBuffer() {
   // Create Command Buffers
   VkResult err;
-  auto imageCount = m_swapchain->imageCount;
+  auto imageCount = m_resultImageViews.size();
 
   {
     vk::CommandPoolCreateInfo info;
@@ -141,19 +143,12 @@ VulkanImguiContext::VulkanImguiContext(const VulkanImguiCreateInfo& createInfo)
       m_graphicsQueueFamilyIndex(createInfo.graphicsQueueFamilyIndex),
       m_graphicsQueue(createInfo.graphicsQueue),
       m_device(createInfo.device),
-      m_swapchain(createInfo.swapchain),
       m_width(createInfo.width),
       m_height(createInfo.height) {
-  auto surfaceFormat = m_swapchain->surfaceFormat;
-  m_renderPass = CreateImguiRenderPass(m_device, surfaceFormat, true);
-
   m_clearColor.color.float32[0] = 0;
   m_clearColor.color.float32[1] = 0;
   m_clearColor.color.float32[2] = 0;
   m_clearColor.color.float32[3] = 1;
-
-  SetUpVulkanWindowData(true);
-  CreateWindowCommandBuffer();
 }
 
 VulkanImguiContext::~VulkanImguiContext() {
@@ -185,7 +180,7 @@ VulkanImguiContext::Resize(uint32_t width, uint32_t height) {
     ImGui_ImplVulkan_SetMinImageCount(2);
 
     m_device.waitIdle();
-    auto imageCount = m_swapchain->imageCount;
+    auto imageCount = m_resultImageViews.size();
     for (int i = 0; i < imageCount; i++) {
       m_device.destroyFramebuffer(m_framebuffers[i]);
     }
@@ -197,7 +192,7 @@ VulkanImguiContext::Resize(uint32_t width, uint32_t height) {
     info.setLayers(1);
 
     for (uint32_t i = 0; i < imageCount; i++) {
-      vk::ImageView imageView = static_cast<VulkanImageView*>(m_swapchain->imageViews[i])->vkImageView;
+      vk::ImageView imageView = static_cast<VulkanImageView*>(m_resultImageViews[i])->vkImageView;
       info.setAttachments(imageView);
       m_framebuffers[i] = m_device.createFramebuffer(info);
     }
@@ -215,6 +210,25 @@ VulkanImguiContext::ClearUp() {
 
 void
 VulkanImguiContext::SetUpImguiBackend(GLFWwindow* windows) {
+  // check the result image view
+  vk::Format renderPassFormat = vk::Format::eR8G8B8A8Unorm;
+  if (!m_resultImageViews.empty()) {
+    renderPassFormat = static_cast<VulkanImageView*>(m_resultImageViews[0])->vkFormat;
+    for (auto* imageView : m_resultImageViews) {
+      auto vkFormat = static_cast<VulkanImageView*>(imageView)->vkFormat;
+      if (vkFormat != renderPassFormat) {
+        constexpr std::string_view errMsg = "the imgui render result image views's format are not equal";
+        LOG(ERROR) << errMsg;
+        throw std::runtime_error(errMsg.data());
+      }
+    }
+  }
+
+  m_renderPass = CreateImguiRenderPass(m_device, renderPassFormat, true);
+
+  SetUpVulkanWindowData(true);
+  CreateWindowCommandBuffer();
+
   ImGui_ImplGlfw_InitForVulkan(windows, true);
   ImGui_ImplVulkan_InitInfo init_info = {};
   init_info.Instance = m_instance;
@@ -226,7 +240,7 @@ VulkanImguiContext::SetUpImguiBackend(GLFWwindow* windows) {
   init_info.DescriptorPool = m_descriptorPool;
   init_info.Subpass = 0;
   init_info.MinImageCount = 2;
-  init_info.ImageCount = m_swapchain->imageCount;
+  init_info.ImageCount = m_resultImageViews.size();
   init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
   init_info.Allocator = nullptr;
   init_info.CheckVkResultFn = nullptr;

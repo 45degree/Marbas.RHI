@@ -441,11 +441,11 @@ VulkanBufferContext::CreateImageView(const ImageViewCreateInfo& createInfo) {
   auto* imageView = new VulkanImageView();
   auto* vulkanImage = static_cast<VulkanImage*>(createInfo.image);
   const auto& vkImage = vulkanImage->vkImage;
+  auto vkFormat = ConvertToVulkanFormat(vulkanImage->format);
 
   vk::ImageViewCreateInfo vkImageViewCreateInfo;
   vkImageViewCreateInfo.setImage(vkImage);
-
-  vkImageViewCreateInfo.setFormat(ConvertToVulkanFormat(vulkanImage->format));
+  vkImageViewCreateInfo.setFormat(vkFormat);
 
   switch (createInfo.type) {
     case ImageViewType::TEXTURE2D:
@@ -472,6 +472,7 @@ VulkanBufferContext::CreateImageView(const ImageViewCreateInfo& createInfo) {
 
   auto vkImageView = m_device.createImageView(vkImageViewCreateInfo);
   imageView->vkImageView = vkImageView;
+  imageView->vkFormat = vkFormat;
 
   return imageView;
 }

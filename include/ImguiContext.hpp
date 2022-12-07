@@ -17,6 +17,8 @@
 
 #include <GLFW/glfw3.h>
 
+#include <span>
+
 #include "Synchronic.hpp"
 
 namespace Marbas {
@@ -33,6 +35,11 @@ class ImguiContext {
 
  public:
   virtual void
+  SetResultImage(const std::vector<ImageView*>& resultImageViews) {
+    m_resultImageViews = resultImageViews;
+  }
+
+  virtual void
   Resize(uint32_t width, uint32_t height) = 0;
 
   virtual void
@@ -46,6 +53,9 @@ class ImguiContext {
 
   virtual void
   RenderData(uint32_t imageIndex, const ImguiRenderDataInfo& renderInfo) = 0;
+
+ protected:
+  std::vector<ImageView*> m_resultImageViews;
 };
 
 }  // namespace Marbas

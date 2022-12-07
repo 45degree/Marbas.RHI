@@ -33,6 +33,7 @@ struct VulkanImage final : public Image {
 
 struct VulkanImageView final : public ImageView {
   vk::ImageView vkImageView;
+  vk::Format vkFormat;
 };
 
 }  // namespace Marbas

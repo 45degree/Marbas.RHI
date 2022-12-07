@@ -33,7 +33,6 @@ struct VulkanImguiCreateInfo {
   uint32_t graphicsQueueFamilyIndex = 0;
   vk::Queue graphicsQueue;
   vk::Device device;
-  VulkanSwapchain* swapchain = nullptr;
   uint32_t width;
   uint32_t height;
 };
@@ -89,8 +88,6 @@ class VulkanImguiContext final : public ImguiContext {
   vk::RenderPass m_renderPass;
   vk::CommandPool m_commandPool;
   vk::DescriptorPool m_descriptorPool;
-
-  VulkanSwapchain* m_swapchain = nullptr;
 };
 
 }  // namespace Marbas
