@@ -227,6 +227,8 @@ VulkanPipelineContext::CreateSampler(const SamplerCreateInfo& createInfo) {
 
 void
 VulkanPipelineContext::DestroySampler(Sampler* sampler) {
+  if (sampler == nullptr) return;
+
   auto* vulkanSampler = static_cast<VulkanSampler*>(sampler);
   m_device.destroySampler(vulkanSampler->vkSampler);
 
@@ -248,6 +250,8 @@ VulkanPipelineContext::CreateShaderModule(std::span<char> spirvCode) {
 
 void
 VulkanPipelineContext::DestroyShaderModule(ShaderModule* shaderModule) {
+  if (shaderModule == nullptr) return;
+
   auto* vulkanShaderModule = static_cast<VulkanShaderModule*>(shaderModule);
   m_device.destroyShaderModule(vulkanShaderModule->vkShaderModule);
 
@@ -279,6 +283,8 @@ VulkanPipelineContext::CreateDescriptorPool(std::span<DescriptorPoolSize> descri
 
 void
 VulkanPipelineContext::DestroyDescriptorPool(DescriptorPool* descriptorPool) {
+  if (descriptorPool == nullptr) return;
+
   auto* vulkanDescriptorPool = static_cast<VulkanDescriptorPool*>(descriptorPool);
 
   m_device.destroyDescriptorPool(vulkanDescriptorPool->vkDescriptorPool);
@@ -305,6 +311,8 @@ VulkanPipelineContext::CreateDescriptorSetLayout(std::span<DescriptorSetLayoutBi
 
 void
 VulkanPipelineContext::DestroyDescriptorSetLayout(DescriptorSetLayout* descriptorSetLayout) {
+  if (descriptorSetLayout == nullptr) return;
+
   auto* vulkanDescriptorSetLayout = static_cast<VulkanDescriptorSetLayout*>(descriptorSetLayout);
   m_device.destroyDescriptorSetLayout(vulkanDescriptorSetLayout->vkLayout);
 
@@ -331,6 +339,8 @@ VulkanPipelineContext::CreateDescriptorSet(const DescriptorPool* pool, const Des
 
 void
 VulkanPipelineContext::DestroyDescriptorSet(const DescriptorPool* descriptorPool, DescriptorSet* descriptorSet) {
+  if (descriptorPool == nullptr || descriptorSet == nullptr) return;
+
   auto* vulkanDescriptorSet = static_cast<VulkanDescriptorSet*>(descriptorSet);
   delete vulkanDescriptorSet;
 }
@@ -557,6 +567,8 @@ VulkanPipelineContext::CreatePipeline(GraphicsPipeLineCreateInfo& createInfo) {
 
 void
 VulkanPipelineContext::DestroyPipeline(Pipeline* pipeline) {
+  if (pipeline == nullptr) return;
+
   auto* vulkanPipeline = static_cast<VulkanPipeline*>(pipeline);
   m_device.destroyRenderPass(vulkanPipeline->vkRenderPass);
   m_device.destroyPipeline(vulkanPipeline->vkPipeline);
@@ -602,6 +614,8 @@ VulkanPipelineContext::CreateFrameBuffer(const FrameBufferCreateInfo& createInfo
 
 void
 VulkanPipelineContext::DestroyFrameBuffer(FrameBuffer* frameBuffer) {
+  if (frameBuffer == nullptr) return;
+
   auto* vulkanFrameBuffer = static_cast<VulkanFrameBuffer*>(frameBuffer);
   m_device.destroyFramebuffer(vulkanFrameBuffer->vkFrameBuffer);
 

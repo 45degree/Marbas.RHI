@@ -34,6 +34,10 @@ enum class RendererType {
 
 class RHIFactory {
  public:
+  RHIFactory() = default;
+  virtual ~RHIFactory() = default;
+
+ public:
   virtual void
   Init(GLFWwindow* window, uint32_t width, uint32_t height) = 0;
 

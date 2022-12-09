@@ -160,6 +160,8 @@ VulkanBufferContext::UpdateBuffer(Buffer* buffer, const void* data, uint32_t siz
 
 void
 VulkanBufferContext::DestroyBuffer(Buffer* buffer) {
+  if (buffer == nullptr) return;
+
   auto* vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
   m_device.destroyBuffer(vulkanBuffer->vkBuffer);
   m_device.freeMemory(vulkanBuffer->vkMemory);
@@ -427,6 +429,8 @@ VulkanBufferContext::ConvertImageState(Image* image, ImageState srcState, ImageS
 
 void
 VulkanBufferContext::DestroyImage(Image* image) {
+  if (image == nullptr) return;
+
   auto* vulkanImage = static_cast<VulkanImage*>(image);
   m_device.destroyImage(vulkanImage->vkImage);
   m_device.destroyBuffer(vulkanImage->vkStagingBuffer);
@@ -479,6 +483,8 @@ VulkanBufferContext::CreateImageView(const ImageViewCreateInfo& createInfo) {
 
 void
 VulkanBufferContext::DestroyImageView(ImageView* imageView) {
+  if (imageView == nullptr) return;
+
   auto* vulkanImageView = static_cast<VulkanImageView*>(imageView);
   m_device.destroyImageView(vulkanImageView->vkImageView);
 
@@ -509,6 +515,8 @@ VulkanBufferContext::CreateCommandPool(CommandBufferUsage usage) {
 
 void
 VulkanBufferContext::DestroyCommandPool(CommandPool* commandPool) {
+  if (commandPool == nullptr) return;
+
   auto* vulkanCommandPool = static_cast<VulkanCommandPool*>(commandPool);
   m_device.destroyCommandPool(vulkanCommandPool->vkCommandPool);
 
@@ -546,6 +554,8 @@ VulkanBufferContext::CreateCommandBuffer(CommandPool* commandPool) {
 
 void
 VulkanBufferContext::DestroyCommandBuffer(CommandPool* commandPool, CommandBuffer* commandBuffer) {
+  if (commandPool == nullptr || commandBuffer == nullptr) return;
+
   auto* vulkanCommandBuffer = static_cast<VulkanCommandBuffer*>(commandBuffer);
   auto* vulkanCommandPool = static_cast<VulkanCommandPool*>(commandPool);
   m_device.freeCommandBuffers(vulkanCommandPool->vkCommandPool, vulkanCommandBuffer->m_commandBuffer);

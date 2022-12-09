@@ -480,6 +480,8 @@ VulkanRHIFactory::ResetFence(Fence* fence) {
 
 void
 VulkanRHIFactory::DestroyFence(Fence* fence) {
+  if (fence == nullptr) return;
+
   auto* vulkanFence = static_cast<VulkanFence*>(fence);
   m_device.destroyFence(vulkanFence->m_fence);
 
@@ -498,6 +500,8 @@ VulkanRHIFactory::CreateGPUSemaphore() {
 
 void
 VulkanRHIFactory::DestroyGPUSemaphore(Semaphore* semaphore) {
+  if (semaphore == nullptr) return;
+
   auto* vulkanSemaphore = static_cast<VulkanSemaphore*>(semaphore);
   m_device.destroySemaphore(vulkanSemaphore->semaphore);
 
