@@ -397,7 +397,9 @@ VulkanRHIFactory::Quit() {
   m_pipelineContext = nullptr;
 
   m_device.destroy();
+#ifndef NDEBUG
   m_instance.destroyDebugUtilsMessengerEXT(m_debugMessenger, nullptr, m_dispatch);
+#endif
   m_instance.destroySurfaceKHR(m_surface);
   m_instance.destroy();
 }
