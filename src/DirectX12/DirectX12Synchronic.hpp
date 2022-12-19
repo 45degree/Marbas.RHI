@@ -1,5 +1,5 @@
 /**
- * Copyright 2022.11.8 45degree
+ * Copyright 2022.12.18 45degree
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,20 +16,17 @@
 
 #pragma once
 
-#include <dxgi1_6.h>
-
-#include <cstdint>
-
-#include "Swapchain.hpp"
+#include "DirectX12Common.hpp"
+#include "Synchronic.hpp"
 
 namespace Marbas {
 
-struct DirectX12Swapchain final : public Swapchain {
-  IDXGISwapChain3* swapchain = nullptr;
-  uint32_t imageCount;
+struct DirectX12Semaphore final : public Semaphore {
+  ID3D12Fence* dxFence;
+};
 
-  uint32_t width;
-  uint32_t height;
+struct DirectX12Fence final : public Fence {
+  ID3D12Fence* dxFence;
 };
 
 }  // namespace Marbas

@@ -79,7 +79,7 @@ class DirectX12RHIFactory final : public RHIFactory {
 
  private:
   uint32_t m_dxgiFactoryFlags = 0;
-  IDXGIFactory6* m_dxgiFactory = nullptr;
+  IDXGIFactory4* m_dxgiFactory = nullptr;
   ID3D12Device* m_device = nullptr;
   IDXGIAdapter1* m_adapter = nullptr;
 
@@ -87,7 +87,7 @@ class DirectX12RHIFactory final : public RHIFactory {
   ID3D12CommandQueue* m_commandQueue = nullptr;
 
 #ifndef NDEBUG
-  ID3D12Debug3* m_debugController = nullptr;
+  ID3D12Debug1* m_debugController = nullptr;
   ID3D12DebugDevice* m_debugDevice = nullptr;
 #endif
 

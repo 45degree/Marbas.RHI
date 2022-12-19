@@ -22,6 +22,9 @@
 
 #include <iostream>
 
+#include "DirectX12Common.hpp"
+#include "DirectX12Image.hpp"
+#include "DirectX12Synchronic.hpp"
 #include "common.hpp"
 
 #define GLOG_NO_ABBREVIATED_SEVERITIES
@@ -47,8 +50,8 @@ DirectX12RHIFactory::Init(GLFWwindow* window, uint32_t width, uint32_t height) {
 
 #ifndef NDEBUG
   ID3D12Debug* dc = nullptr;
-  D3D12GetDebugInterface(IID_PPV_ARGS(&dc));
-  dc->QueryInterface(IID_PPV_ARGS(&m_debugController));
+  ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(&dc)));
+  ThrowIfFailed(dc->QueryInterface(IID_PPV_ARGS(&m_debugController)));
   m_debugController->EnableDebugLayer();
   m_debugController->SetEnableGPUBasedValidation(true);
   m_dxgiFactoryFlags |= DXGI_CREATE_FACTORY_DEBUG;
@@ -67,49 +70,63 @@ DirectX12RHIFactory::Init(GLFWwindow* window, uint32_t width, uint32_t height) {
       continue;
     }
 
+    // Check if the adapter supports Direct3D 12, and use that for the rest of the application
     if (SUCCEEDED(D3D12CreateDevice(m_adapter, D3D_FEATURE_LEVEL_12_0, __uuidof(ID3D12Device), nullptr))) {
-      auto str = FORMAT(L"{}", desc.Description);
-      std::wprintf(L"%s", str.data());
+      LOG(INFO) << FORMAT(L"{}", desc.Description);
       break;
     }
   }
 
-  D3D12CreateDevice(m_adapter, D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&m_device));
-  DLOG_ASSERT(m_device != nullptr);
+  ThrowIfFailed(D3D12CreateDevice(m_adapter, D3D_FEATURE_LEVEL_12_0, IID_PPV_ARGS(&m_device)));
 
 #ifndef NDEBUG
-  m_device->QueryInterface(&m_debugDevice);
-  DLOG_ASSERT(m_debugDevice != nullptr);
+  ThrowIfFailed(m_device->QueryInterface(&m_debugDevice));
 #endif
 
   // create command queue
   D3D12_COMMAND_QUEUE_DESC queueDesc = {};
   queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
   queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-  m_device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_commandQueue));
-  DLOG_ASSERT(m_commandQueue != nullptr);
+  ThrowIfFailed(m_device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_commandQueue)));
+
+  // create command allocator
+  ID3D12CommandAllocator* commandAllocator;
+  ThrowIfFailed(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAllocator)));
 
   // create swapchain
-  DXGI_SWAP_CHAIN_DESC sd;
-  sd.BufferDesc.Width = width;
-  sd.BufferDesc.Height = height;
-  sd.BufferDesc.RefreshRate.Numerator = 60;
-  sd.BufferDesc.RefreshRate.Denominator = 1;
-  sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-  sd.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
-  sd.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
+  DXGI_SWAP_CHAIN_DESC1 sd;
+  sd.BufferCount = 2;
+  sd.Width = width;
+  sd.Height = height;
+  sd.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+  sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+  sd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
   sd.SampleDesc.Count = 1;
   sd.SampleDesc.Quality = 0;
-  sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-  sd.BufferCount = 2;
-  sd.OutputWindow = nativeWindow;
-  sd.Windowed = true;
-  sd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-  sd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 
-  IDXGISwapChain* swapchain;
-  m_dxgiFactory->CreateSwapChain(m_commandQueue, &sd, &swapchain);
-  swapchain->QueryInterface(IID_PPV_ARGS(&m_swapchain.swapchain));
+  IDXGISwapChain1* swapchain;
+  ThrowIfFailed(m_dxgiFactory->CreateSwapChainForHwnd(m_commandQueue, nativeWindow, &sd, nullptr, nullptr, &swapchain));
+  if (SUCCEEDED(swapchain->QueryInterface(__uuidof(IDXGISwapChain3), (void**)&swapchain))) {
+    m_swapchain.swapchain = static_cast<IDXGISwapChain3*>(swapchain);
+    m_swapchain.height = height;
+    m_swapchain.width = width;
+    m_swapchain.imageCount = 2;
+    m_swapchain.imageFormat = ImageFormat::RGBA;
+
+    for (int i = 0; i < m_swapchain.imageCount; i++) {
+      auto* directx12Image = new DirectX12Image();
+      m_swapchain.swapchain->GetBuffer(i, IID_PPV_ARGS(&directx12Image->resource));
+      directx12Image->width = width;
+      directx12Image->height = height;
+      directx12Image->arrayLayer = 1;
+      directx12Image->depth = 1;
+      directx12Image->format = ImageFormat::RGBA;
+      directx12Image->mipMapLevel = 1;
+      directx12Image->sampleCount = SampleCount::BIT1;
+      directx12Image->usage = ImageUsageFlags::PRESENT;
+      m_swapchain.images.push_back(directx12Image);
+    }
+  }
   DLOG_ASSERT(m_swapchain.swapchain != nullptr);
 }
 
@@ -121,8 +138,7 @@ DirectX12RHIFactory::GetSwapchain() {
 int
 DirectX12RHIFactory::AcquireNextImage(Swapchain* swapchain, const Semaphore* semaphore) {
   auto* d3dSwapchain = static_cast<DirectX12Swapchain*>(swapchain);
-
-  return 0;
+  return static_cast<int>(d3dSwapchain->swapchain->GetCurrentBackBufferIndex());
 }
 
 int
@@ -132,18 +148,30 @@ DirectX12RHIFactory::Present(Swapchain* swapchain, std::span<Semaphore*> waitSem
 
 Fence*
 DirectX12RHIFactory::CreateFence() {
-  return nullptr;
+  auto fence = new DirectX12Fence();
+  ThrowIfFailed(m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence->dxFence)));
+  return fence;
 }
 
 void
-DirectX12RHIFactory::DestroyFence(Fence* fence) {}
+DirectX12RHIFactory::DestroyFence(Fence* fence) {
+  auto directx12fence = static_cast<DirectX12Fence*>(fence);
+  directx12fence->dxFence->Release();
+  delete directx12fence;
+}
 
 Semaphore*
 DirectX12RHIFactory::CreateGPUSemaphore() {
-  return nullptr;
+  auto semaphore = new DirectX12Semaphore();
+  ThrowIfFailed(m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&semaphore->dxFence)));
+  return semaphore;
 }
 
 void
-DirectX12RHIFactory::DestroyGPUSemaphore(Semaphore* semaphore) {}
+DirectX12RHIFactory::DestroyGPUSemaphore(Semaphore* semaphore) {
+  auto directx12Semaphore = static_cast<DirectX12Semaphore*>(semaphore);
+  directx12Semaphore->dxFence->Release();
+  delete directx12Semaphore;
+}
 
 }  // namespace Marbas
