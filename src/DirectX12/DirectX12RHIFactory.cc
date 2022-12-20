@@ -135,6 +135,11 @@ DirectX12RHIFactory::GetSwapchain() {
   return &m_swapchain;
 }
 
+Swapchain*
+DirectX12RHIFactory::RecreateSwapchain(Swapchain* oldSwapchain, uint32_t width, uint32_t height) {
+  return oldSwapchain;
+}
+
 int
 DirectX12RHIFactory::AcquireNextImage(Swapchain* swapchain, const Semaphore* semaphore) {
   auto* d3dSwapchain = static_cast<DirectX12Swapchain*>(swapchain);
@@ -143,6 +148,8 @@ DirectX12RHIFactory::AcquireNextImage(Swapchain* swapchain, const Semaphore* sem
 
 int
 DirectX12RHIFactory::Present(Swapchain* swapchain, std::span<Semaphore*> waitSemaphores, uint32_t imageIndex) {
+  auto* d3dSwapchain = static_cast<DirectX12Swapchain*>(swapchain);
+  // d3dSwapchain->swapchain->Present();
   return 0;
 }
 

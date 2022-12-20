@@ -38,11 +38,7 @@ GetChannelFromFormat(const ImageFormat& format) {
     case ImageFormat::RG16F:
     case ImageFormat::RG32F:
       return 2;
-    case ImageFormat::RGB:
-    case ImageFormat::BGR:
-    case ImageFormat::RGB16F:
     case ImageFormat::RGB32F:
-    case ImageFormat::RGB_SRGB:
       return 3;
     case ImageFormat::RGBA:
     case ImageFormat::BGRA:

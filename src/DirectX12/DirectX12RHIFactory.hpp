@@ -26,7 +26,7 @@ namespace Marbas {
 class DirectX12RHIFactory final : public RHIFactory {
  public:
   DirectX12RHIFactory();
-  ~DirectX12RHIFactory();
+  ~DirectX12RHIFactory() override;
 
  public:
   void
@@ -44,6 +44,9 @@ class DirectX12RHIFactory final : public RHIFactory {
  public:
   Swapchain*
   GetSwapchain() override;
+
+  Swapchain*
+  RecreateSwapchain(Swapchain* oldSwapchain, uint32_t width, uint32_t height) override;
 
   int
   AcquireNextImage(Swapchain* swapchain, const Semaphore* semaphore) override;

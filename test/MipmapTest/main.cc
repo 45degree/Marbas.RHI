@@ -110,14 +110,6 @@ main(void) {
   });
   bufferContext->GenerateMipmap(image, lod);
   auto* depthBuffer = CreateDepthBuffer(bufferContext, width, height);
-  auto* depthBufferView = bufferContext->CreateImageView(Marbas::ImageViewCreateInfo{
-      .image = depthBuffer,
-      .type = Marbas::ImageViewType::TEXTURE2D,
-      .baseLevel = 0,
-      .levelCount = 1,
-      .baseArrayLayer = 0,
-      .layerCount = 1,
-  });
 
   auto* sampler = pipelineContext->CreateSampler(Marbas::SamplerCreateInfo{
       .filter = Marbas::Filter::MIN_MAG_MIP_LINEAR,
@@ -258,8 +250,13 @@ main(void) {
     createInfo.width = width;
     createInfo.layer = 1;
     createInfo.pieline = pipeline;
-    createInfo.attachments.colorAttachments = std::span(swapchain->imageViews.begin() + i, 1);
-    createInfo.attachments.depthAttachment = depthBufferView;
+    createInfo.attachments.colorAttachments = {
+        {.image = swapchain->images[i], .subResInfo = Marbas::Attachment2D{.mipmapLevel = 0}},
+    };
+    createInfo.attachments.depthStencilAttachment = Marbas::DepthStencilAttachmentDesc{
+        .image = depthBuffer,
+        .subResInfo = Marbas::Attachment2D{.mipmapLevel = 0},
+    };
     frameBuffers.push_back(pipelineContext->CreateFrameBuffer(createInfo));
   }
 
@@ -291,17 +288,7 @@ main(void) {
 
     // destroy depthBuffer and recreate
     bufferContext->DestroyImage(depthBuffer);
-    bufferContext->DestroyImageView(depthBufferView);
-
     depthBuffer = CreateDepthBuffer(bufferContext, width, height);
-    depthBufferView = bufferContext->CreateImageView(Marbas::ImageViewCreateInfo{
-        .image = depthBuffer,
-        .type = Marbas::ImageViewType::TEXTURE2D,
-        .baseLevel = 0,
-        .levelCount = 1,
-        .baseArrayLayer = 0,
-        .layerCount = 1,
-    });
 
     // recreate framebuffer
     for (int i = 0; i < frameBuffers.size(); i++) {
@@ -312,8 +299,13 @@ main(void) {
       createInfo.width = width;
       createInfo.layer = 1;
       createInfo.pieline = pipeline;
-      createInfo.attachments.colorAttachments = std::span(swapchain->imageViews.begin() + i, 1);
-      createInfo.attachments.depthAttachment = depthBufferView;
+      createInfo.attachments.colorAttachments = {
+          {.image = swapchain->images[i], .subResInfo = Marbas::Attachment2D{.mipmapLevel = 0}},
+      };
+      createInfo.attachments.depthStencilAttachment = Marbas::DepthStencilAttachmentDesc{
+          .image = depthBuffer,
+          .subResInfo = Marbas::Attachment2D{.mipmapLevel = 0},
+      };
       frameBuffers[i] = pipelineContext->CreateFrameBuffer(createInfo);
     }
 
@@ -402,7 +394,6 @@ main(void) {
   bufferContext->DestroyImage(image);
   bufferContext->DestroyImage(depthBuffer);
   bufferContext->DestroyImageView(imageView);
-  bufferContext->DestroyImageView(depthBufferView);
 
   factory->DestroyFence(fence);
   for (auto* semaphore : waitSemaphore) {

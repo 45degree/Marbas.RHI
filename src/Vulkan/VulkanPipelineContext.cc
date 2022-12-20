@@ -583,17 +583,172 @@ VulkanPipelineContext::CreateFrameBuffer(const FrameBufferCreateInfo& createInfo
   auto* vulkanPipeline = static_cast<VulkanPipeline*>(createInfo.pieline);
   auto vkRenderPass = vulkanPipeline->vkRenderPass;
 
+  auto* vulkanFrameBuffer = new VulkanFrameBuffer();
+
   vk::FramebufferCreateInfo vkFramebufferCreateInfo;
   std::vector<vk::ImageView> vkAttachments;
-  std::transform(createInfo.attachments.colorAttachments.begin(), createInfo.attachments.colorAttachments.end(),
-                 std::back_inserter(vkAttachments),
-                 [](auto&& attachment) { return static_cast<VulkanImageView*>(attachment)->vkImageView; });
-  if (createInfo.attachments.depthAttachment != nullptr) {
-    vkAttachments.push_back(static_cast<VulkanImageView*>(createInfo.attachments.depthAttachment)->vkImageView);
+
+  for (auto& colorAttachment : createInfo.attachments.colorAttachments) {
+    auto* vulkanImage = static_cast<VulkanImage*>(colorAttachment.image);
+
+    vk::ImageViewCreateInfo vkImageViewCreateInfo;
+    vkImageViewCreateInfo.setImage(vulkanImage->vkImage);
+    vkImageViewCreateInfo.setFormat(ConvertToVulkanFormat(vulkanImage->format));
+
+    // clang-format off
+    vk::ImageSubresourceRange range;
+    std::visit([&](auto&& value){
+      using T = std::decay_t<decltype(value)>;
+      range.setAspectMask(vulkanImage->vkAspect);
+      if constexpr (std::is_same_v<T, Attachment2D>) {
+        vkImageViewCreateInfo.setViewType(vk::ImageViewType::e2D);
+        range.setBaseMipLevel(value.mipmapLevel);
+        range.setLevelCount(1);
+        range.setBaseArrayLayer(0);
+        range.setLayerCount(1);
+      } else if constexpr (std::is_same_v<T, Attachment2DMsaa>) {
+        vkImageViewCreateInfo.setViewType(vk::ImageViewType::e2D);
+        range.setBaseMipLevel(0);
+        range.setLevelCount(1);
+        range.setBaseArrayLayer(0);
+        range.setLayerCount(1);
+      } else if constexpr (std::is_same_v<T, Attachment2DArray>) {
+        vkImageViewCreateInfo.setViewType(vk::ImageViewType::e2DArray);
+        range.setBaseMipLevel(value.mipmapLevel);
+        range.setLevelCount(1);
+        range.setBaseArrayLayer(value.baseLayer);
+        range.setLayerCount(value.layerCount);
+      } else if constexpr (std::is_same_v<T, Attachment2DMsaaArray>) {
+        vkImageViewCreateInfo.setViewType(vk::ImageViewType::e2DArray);
+        range.setBaseMipLevel(0);
+        range.setLevelCount(1);
+        range.setBaseArrayLayer(value.baseLayer);
+        range.setLayerCount(value.layerCount);
+      } else if constexpr (std::is_same_v<T, Attachment3D>) {
+        vkImageViewCreateInfo.setViewType(vk::ImageViewType::e3D);
+        range.setBaseMipLevel(value.mipmapLevel);
+        range.setLevelCount(1);
+        range.setBaseArrayLayer(value.baseDepth);
+        range.setLayerCount(value.depthCount);
+      }
+    }, colorAttachment.subResInfo);
+    // clang-format on
+    vkImageViewCreateInfo.setSubresourceRange(range);
+
+    auto vkImageView = m_device.createImageView(vkImageViewCreateInfo);
+    vulkanFrameBuffer->colorAttachment.push_back(vkImageView);
   }
-  std::transform(createInfo.attachments.resolveAttachments.begin(), createInfo.attachments.resolveAttachments.end(),
-                 std::back_inserter(vkAttachments),
-                 [](auto&& attachment) { return static_cast<VulkanImageView*>(attachment)->vkImageView; });
+
+  /**
+   * depth stencil
+   */
+  if (createInfo.attachments.depthStencilAttachment) {
+    auto& depthStencilAttachment = createInfo.attachments.depthStencilAttachment;
+    auto* vulkanImage = static_cast<VulkanImage*>(depthStencilAttachment->image);
+
+    vk::ImageViewCreateInfo vkImageViewCreateInfo;
+    vkImageViewCreateInfo.setImage(vulkanImage->vkImage);
+    vkImageViewCreateInfo.setFormat(ConvertToVulkanFormat(vulkanImage->format));
+
+    // clang-format off
+    vk::ImageSubresourceRange range;
+    std::visit([&](auto&& value){
+      using T = std::decay_t<decltype(value)>;
+      range.setAspectMask(vulkanImage->vkAspect);
+      if constexpr (std::is_same_v<T, Attachment2D>) {
+        vkImageViewCreateInfo.setViewType(vk::ImageViewType::e2D);
+        range.setBaseMipLevel(value.mipmapLevel);
+        range.setLevelCount(1);
+        range.setBaseArrayLayer(0);
+        range.setLayerCount(1);
+      } else if constexpr (std::is_same_v<T, Attachment2DMsaa>) {
+        vkImageViewCreateInfo.setViewType(vk::ImageViewType::e2D);
+        range.setBaseMipLevel(0);
+        range.setLevelCount(1);
+        range.setBaseArrayLayer(0);
+        range.setLayerCount(1);
+      } else if constexpr (std::is_same_v<T, Attachment2DArray>) {
+        vkImageViewCreateInfo.setViewType(vk::ImageViewType::e2DArray);
+        range.setBaseMipLevel(value.mipmapLevel);
+        range.setLevelCount(1);
+        range.setBaseArrayLayer(value.baseLayer);
+        range.setLayerCount(value.layerCount);
+      } else if constexpr (std::is_same_v<T, Attachment2DMsaaArray>) {
+        vkImageViewCreateInfo.setViewType(vk::ImageViewType::e2DArray);
+        range.setBaseMipLevel(0);
+        range.setLevelCount(1);
+        range.setBaseArrayLayer(value.baseLayer);
+        range.setLayerCount(value.layerCount);
+      }
+    }, depthStencilAttachment->subResInfo);
+    // clang-format on
+    vkImageViewCreateInfo.setSubresourceRange(range);
+
+    auto vkImageView = m_device.createImageView(vkImageViewCreateInfo);
+    vulkanFrameBuffer->depthStencilAttachment = vkImageView;
+  }
+
+  /**
+   * resolve attachment
+   */
+  for (auto& resolveAttachment : createInfo.attachments.resolveAttachments) {
+    auto* vulkanImage = static_cast<VulkanImage*>(resolveAttachment.image);
+
+    vk::ImageViewCreateInfo vkImageViewCreateInfo;
+    vkImageViewCreateInfo.setImage(vulkanImage->vkImage);
+    vkImageViewCreateInfo.setFormat(ConvertToVulkanFormat(vulkanImage->format));
+
+    // clang-format off
+    vk::ImageSubresourceRange range;
+    std::visit([&](auto&& value){
+      using T = std::decay_t<decltype(value)>;
+      range.setAspectMask(vulkanImage->vkAspect);
+      if constexpr (std::is_same_v<T, Attachment2D>) {
+        vkImageViewCreateInfo.setViewType(vk::ImageViewType::e2D);
+        range.setBaseMipLevel(value.mipmapLevel);
+        range.setLevelCount(1);
+        range.setBaseArrayLayer(0);
+        range.setLayerCount(1);
+      } else if constexpr (std::is_same_v<T, Attachment2DMsaa>) {
+        vkImageViewCreateInfo.setViewType(vk::ImageViewType::e2D);
+        range.setBaseMipLevel(0);
+        range.setLevelCount(1);
+        range.setBaseArrayLayer(0);
+        range.setLayerCount(1);
+      } else if constexpr (std::is_same_v<T, Attachment2DArray>) {
+        vkImageViewCreateInfo.setViewType(vk::ImageViewType::e2DArray);
+        range.setBaseMipLevel(value.mipmapLevel);
+        range.setLevelCount(1);
+        range.setBaseArrayLayer(value.baseLayer);
+        range.setLayerCount(value.layerCount);
+      } else if constexpr (std::is_same_v<T, Attachment2DMsaaArray>) {
+        vkImageViewCreateInfo.setViewType(vk::ImageViewType::e2DArray);
+        range.setBaseMipLevel(0);
+        range.setLevelCount(1);
+        range.setBaseArrayLayer(value.baseLayer);
+        range.setLayerCount(value.layerCount);
+      } else if constexpr (std::is_same_v<T, Attachment3D>) {
+        vkImageViewCreateInfo.setViewType(vk::ImageViewType::e3D);
+        range.setBaseMipLevel(value.mipmapLevel);
+        range.setLevelCount(1);
+        range.setBaseArrayLayer(value.baseDepth);
+        range.setLayerCount(value.depthCount);
+      }
+    }, resolveAttachment.subResInfo);
+    // clang-format on
+    vkImageViewCreateInfo.setSubresourceRange(range);
+
+    auto vkImageView = m_device.createImageView(vkImageViewCreateInfo);
+    vulkanFrameBuffer->resolveAttachment.push_back(vkImageView);
+  }
+
+  vkAttachments.insert(vkAttachments.end(), vulkanFrameBuffer->colorAttachment.begin(),
+                       vulkanFrameBuffer->colorAttachment.end());
+  if (createInfo.attachments.depthStencilAttachment) {
+    vkAttachments.push_back(vulkanFrameBuffer->depthStencilAttachment);
+  }
+  vkAttachments.insert(vkAttachments.end(), vulkanFrameBuffer->resolveAttachment.begin(),
+                       vulkanFrameBuffer->resolveAttachment.end());
 
   vkFramebufferCreateInfo.setRenderPass(vkRenderPass);
   vkFramebufferCreateInfo.setAttachments(vkAttachments);
@@ -603,11 +758,9 @@ VulkanPipelineContext::CreateFrameBuffer(const FrameBufferCreateInfo& createInfo
 
   auto vkFramebuffer = m_device.createFramebuffer(vkFramebufferCreateInfo);
 
-  auto* vulkanFrameBuffer = new VulkanFrameBuffer();
   vulkanFrameBuffer->vkFrameBuffer = vkFramebuffer;
   vulkanFrameBuffer->width = createInfo.width;
   vulkanFrameBuffer->height = createInfo.height;
-  vulkanFrameBuffer->layerCount = createInfo.layer;
 
   return vulkanFrameBuffer;
 }
@@ -618,6 +771,17 @@ VulkanPipelineContext::DestroyFrameBuffer(FrameBuffer* frameBuffer) {
 
   auto* vulkanFrameBuffer = static_cast<VulkanFrameBuffer*>(frameBuffer);
   m_device.destroyFramebuffer(vulkanFrameBuffer->vkFrameBuffer);
+
+  for (auto& vkImageView : vulkanFrameBuffer->colorAttachment) {
+    m_device.destroyImageView(vkImageView);
+  }
+  if (vulkanFrameBuffer->depthStencilAttachment) {
+    m_device.destroyImageView(vulkanFrameBuffer->depthStencilAttachment);
+  }
+
+  for (auto& vkImageView : vulkanFrameBuffer->resolveAttachment) {
+    m_device.destroyImageView(vkImageView);
+  }
 
   delete vulkanFrameBuffer;
 }

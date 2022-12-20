@@ -15,6 +15,14 @@ option("SupportVulkan")
   set_description("add vulkan support")
 option_end()
 
+if is_plat("windows") then
+  option("SupportDirectX12")
+    set_default(true)
+    set_category("Marbas Render Hardware Interface")
+    set_description("add directx12 support")
+  option_end()
+end
+
 option("buildTest")
   set_default(false)
   set_category("Marbas Render Hardware Interface")
@@ -109,7 +117,7 @@ target("Marbas.RHI")
     add_files("src/Vulkan/**.cc")
   end
 
-  if has_config("use directx12") then
+  if has_config("SupportDirectX12") then
     add_rules("UseDirectX12")
     add_defines("USE_D3D12", 'NOMINMAX')
     add_files('src/DirectX12/**.cc')

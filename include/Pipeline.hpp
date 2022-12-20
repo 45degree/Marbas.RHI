@@ -269,21 +269,61 @@ struct Pipeline {
   PipelineType pipelineType = PipelineType::GRAPHICS;
 };
 
+struct Attachment3D {
+  uint32_t mipmapLevel;
+  uint32_t baseDepth;
+  uint32_t depthCount;
+  // TODO: support plane?
+};
+
+struct Attachment2D {
+  uint32_t mipmapLevel;
+  // TODO: support plane?
+};
+struct Attachment2DMsaa {};
+
+struct Attachment2DArray {
+  uint32_t mipmapLevel;
+  uint32_t baseLayer;
+  uint32_t layerCount;
+  // TODO: support plane?
+};
+
+struct Attachment2DMsaaArray {
+  uint32_t baseLayer;
+  uint32_t layerCount;
+};
+
+struct ColorAttachmentDesc {
+  using SubResInfo =
+      std::variant<Attachment2D, Attachment2DMsaa, Attachment2DArray, Attachment2DMsaaArray, Attachment3D>;
+
+  Image* image;
+  SubResInfo subResInfo;
+};
+
+struct DepthStencilAttachmentDesc {
+  using SubResInfo = std::variant<Attachment2D, Attachment2DMsaa, Attachment2DArray, Attachment2DMsaaArray>;
+
+  Image* image;
+  SubResInfo subResInfo;
+};
+
 struct FrameBufferCreateInfo {
   uint32_t height = 800;
   uint32_t width = 600;
   uint32_t layer = 1;
   Pipeline* pieline = nullptr;
+
   struct Attachment {
-    std::span<ImageView*> colorAttachments;
-    ImageView* depthAttachment = nullptr;
-    std::span<ImageView*> resolveAttachments;
+    std::vector<ColorAttachmentDesc> colorAttachments;
+    std::optional<DepthStencilAttachmentDesc> depthStencilAttachment;
+    std::vector<ColorAttachmentDesc> resolveAttachments;
   } attachments;
 };
 struct FrameBuffer {
   uint32_t height = 800;
   uint32_t width = 600;
-  uint32_t layerCount = 1;
 };
 
 }  // namespace Marbas

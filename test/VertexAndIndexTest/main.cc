@@ -113,7 +113,9 @@ main(void) {
     createInfo.width = width;
     createInfo.layer = 1;
     createInfo.pieline = pipeline;
-    createInfo.attachments.colorAttachments = std::span(swapchain->imageViews.begin() + i, 1);
+    createInfo.attachments.colorAttachments = {
+        {.image = swapchain->images[i], .subResInfo = Marbas::Attachment2D{.mipmapLevel = 0}},
+    };
     frameBuffers.push_back(pipelineContext->CreateFrameBuffer(createInfo));
   }
 
@@ -148,7 +150,9 @@ main(void) {
       createInfo.width = width;
       createInfo.layer = 1;
       createInfo.pieline = pipeline;
-      createInfo.attachments.colorAttachments = std::span(swapchain->imageViews.begin() + i, 1);
+      createInfo.attachments.colorAttachments = {
+          {.image = swapchain->images[i], .subResInfo = Marbas::Attachment2D{.mipmapLevel = 0}},
+      };
       frameBuffers[i] = pipelineContext->CreateFrameBuffer(createInfo);
     }
 

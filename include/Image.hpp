@@ -55,18 +55,14 @@ enum class ImageViewType {
 enum class ImageFormat {
   RED,
   RG,
-  RGB,
-  BGR,
   RGBA,
   BGRA,
   R32F,
   RG16F,
   RG32F,
-  RGB16F,
   RGB32F,
   DEPTH,
   RGBA_SRGB,
-  RGB_SRGB,
 };
 
 struct CubeMapImageDesc {};

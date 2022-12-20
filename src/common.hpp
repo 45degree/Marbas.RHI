@@ -31,4 +31,7 @@ namespace Marbas {
 
 #define FORMAT(Str, ...) fmt::format(Str, __VA_ARGS__)
 
+template <class>
+inline constexpr bool always_false_v = false;
+
 }  // namespace Marbas

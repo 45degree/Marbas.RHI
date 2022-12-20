@@ -36,6 +36,9 @@ struct VulkanPipeline final : public Pipeline {
 
 struct VulkanFrameBuffer final : public FrameBuffer {
   vk::Framebuffer vkFrameBuffer;
+  std::vector<vk::ImageView> colorAttachment;
+  vk::ImageView depthStencilAttachment;
+  std::vector<vk::ImageView> resolveAttachment;
 };
 
 }  // namespace Marbas
