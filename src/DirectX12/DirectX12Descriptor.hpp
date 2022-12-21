@@ -16,17 +16,14 @@
 
 #pragma once
 
-#include <d3d12.h>
-#include <dxgi1_2.h>
-
-#include "Image.hpp"
+#include "DescriptorSet.hpp"
+#include "DirectX12Common.hpp"
 
 namespace Marbas {
 
-struct DirectX12Image final : public Image {
-  ID3D12Resource* resource = nullptr;
+struct DirectX12DescriptorSetLayout final : public DescriptorSetLayout {
+  D3D12_DESCRIPTOR_RANGE1 range;
+  D3D12_ROOT_PARAMETER1 rootParameters;
 };
-
-struct DirectX12ImageView final : public ImageView {};
 
 }  // namespace Marbas

@@ -1,5 +1,22 @@
+/**
+ * Copyright 2022.12.21 45degree
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "DirectX12PipelineContext.hpp"
 
+#include "DirectX12Descriptor.hpp"
 #include "DirectX12Image.hpp"
 #include "DirectX12Pipeline.hpp"
 #include "DirectX12Util.hpp"
@@ -16,6 +33,17 @@ DirectX12PipelineContext::CreateDescriptorPool(std::span<DescriptorPoolSize> des
 
 void
 DirectX12PipelineContext::DestroyDescriptorPool(DescriptorPool* descriptorPool) {}
+
+DescriptorSetLayout*
+DirectX12PipelineContext::CreateDescriptorSetLayout(std::span<DescriptorSetLayoutBinding> layoutBinding) {
+  auto* directX12DescriptorSetLayout = new DirectX12DescriptorSetLayout();
+  return nullptr;
+}
+
+void
+DirectX12PipelineContext::DestroyDescriptorSetLayout(DescriptorSetLayout* descriptorSetLayout) {
+  // TODO: not impl
+}
 
 FrameBuffer*
 DirectX12PipelineContext::CreateFrameBuffer(const FrameBufferCreateInfo& createInfo) {
@@ -175,5 +203,21 @@ DirectX12PipelineContext::CreateFrameBuffer(const FrameBufferCreateInfo& createI
 
   return directX12FrameBuffer;
 }
+
+void
+DirectX12PipelineContext::DestroyFrameBuffer(FrameBuffer* frameBuffer) {
+  auto* directX12FrameBuffer = static_cast<DirectX12FrameBuffer*>(frameBuffer);
+  directX12FrameBuffer->dsvHeap->Release();
+  directX12FrameBuffer->rtvHeap->Release();
+  directX12FrameBuffer->resolveHeap->Release();
+}
+
+Pipeline*
+DirectX12PipelineContext::CreatePipeline(GraphicsPipeLineCreateInfo& createInfo) {
+  D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
+}
+
+void
+DirectX12PipelineContext::DestroyPipeline(Pipeline* pipeline) {}
 
 }  // namespace Marbas

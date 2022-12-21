@@ -23,7 +23,7 @@ namespace Marbas {
 
 class DirectX12PipelineContext final : public PipelineContext {
  public:
-  DirectX12PipelineContext() = default;
+  explicit DirectX12PipelineContext(ID3D12Device* device) : m_device(device) {}
   ~DirectX12PipelineContext() override = default;
 
  public:
@@ -35,17 +35,27 @@ class DirectX12PipelineContext final : public PipelineContext {
 
  public:
   Sampler*
-  CreateSampler(const SamplerCreateInfo& createInfo) override;
+  CreateSampler(const SamplerCreateInfo& createInfo) override {
+    // TODO: not impl
+    return nullptr;
+  }
 
   void
-  DestroySampler(Sampler* sampler) override;
+  DestroySampler(Sampler* sampler) override {
+    // TODO: not impl
+  }
 
  public:
   ShaderModule*
-  CreateShaderModule(std::span<char> sprivCode) override;
+  CreateShaderModule(std::span<char> sprivCode) override {
+    // TODO: not impl
+    return nullptr;
+  }
 
   void
-  DestroyShaderModule(ShaderModule* shaderModule) override;
+  DestroyShaderModule(ShaderModule* shaderModule) override {
+    // TODO: not impl
+  }
 
  public:
   DescriptorSetLayout*
@@ -55,16 +65,25 @@ class DirectX12PipelineContext final : public PipelineContext {
   DestroyDescriptorSetLayout(DescriptorSetLayout* descriptorSetLayout) override;
 
   DescriptorSet*
-  CreateDescriptorSet(const DescriptorPool* pool, const DescriptorSetLayout* layout) override;
+  CreateDescriptorSet(const DescriptorPool* pool, const DescriptorSetLayout* layout) override {
+    // TODO: not impl
+    return nullptr;
+  }
 
   void
-  DestroyDescriptorSet(const DescriptorPool* pool, DescriptorSet* descriptorSet) override;
+  DestroyDescriptorSet(const DescriptorPool* pool, DescriptorSet* descriptorSet) override {
+    // TODO: not impl
+  }
 
   void
-  BindImage(const BindImageInfo& bindImageInfo) override;
+  BindImage(const BindImageInfo& bindImageInfo) override {
+    // TODO: not impl
+  }
 
   void
-  BindBuffer(const BindBufferInfo& bindBufferInfo) override;
+  BindBuffer(const BindBufferInfo& bindBufferInfo) override {
+    // TODO: not impl
+  }
 
   DescriptorPool*
   CreateDescriptorPool(std::span<DescriptorPoolSize> descritorPoolSize, uint32_t maxSet) override;
