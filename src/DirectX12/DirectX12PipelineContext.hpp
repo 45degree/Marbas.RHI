@@ -98,6 +98,10 @@ class DirectX12PipelineContext final : public PipelineContext {
   void
   DestroyFrameBuffer(FrameBuffer* frameBuffer) override;
 
+ public:
+  static std::string
+  ConvertShader(const std::vector<char>& originCode);
+
  private:
   ID3D12Device* m_device;
 };

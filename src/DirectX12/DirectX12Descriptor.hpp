@@ -22,8 +22,7 @@
 namespace Marbas {
 
 struct DirectX12DescriptorSetLayout final : public DescriptorSetLayout {
-  D3D12_DESCRIPTOR_RANGE1 range;
-  D3D12_ROOT_PARAMETER1 rootParameters;
+  std::vector<DescriptorSetLayoutBinding> bindings;
 };
 
 }  // namespace Marbas

@@ -100,6 +100,10 @@ class RHIFactory {
   }
 
  public:
+  static std::string
+  ConvertShader(const std::vector<char>& code, RendererType type);
+
+ public:
   static std::unique_ptr<RHIFactory>
   CreateInstance(const RendererType& rendererTyoe);
 

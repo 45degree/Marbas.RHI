@@ -22,6 +22,7 @@
 #endif
 
 #ifdef USE_D3D12
+#include "DirectX12/DirectX12PipelineContext.hpp"
 #include "DirectX12/DirectX12RHIFactory.hpp"
 #endif
 
@@ -43,6 +44,16 @@ RHIFactory::CreateInstance(const RendererType& rendererTyoe) {
 
   DLOG_ASSERT(false);
   return nullptr;
+}
+
+std::string
+RHIFactory::ConvertShader(const std::vector<char>& code, RendererType type) {
+  if (type == RendererType::DirectX12) {
+    return DirectX12PipelineContext::ConvertShader(code);
+  }
+
+  DLOG_ASSERT(false);
+  return "";
 }
 
 }  // namespace Marbas

@@ -16,12 +16,42 @@
 
 #include "DirectX12PipelineContext.hpp"
 
+#include <spirv_cross/spirv_cross.hpp>
+#include <spirv_cross/spirv_hlsl.hpp>
+#include <spirv_cross/spirv_reflect.hpp>
+#include <unordered_map>
+
 #include "DirectX12Descriptor.hpp"
 #include "DirectX12Image.hpp"
 #include "DirectX12Pipeline.hpp"
 #include "DirectX12Util.hpp"
 
 namespace Marbas {
+
+std::string
+DirectX12PipelineContext::ConvertShader(const std::vector<char>& originCode) {
+  std::vector<uint32_t> code(std::ceil(originCode.size() / sizeof(uint32_t)));
+  memcpy(code.data(), originCode.data(), originCode.size());
+  spirv_cross::CompilerHLSL hlsl(code);
+  auto resources = hlsl.get_shader_resources();
+
+  for (auto& resource : resources.uniform_buffers) {
+    unsigned set = hlsl.get_decoration(resource.id, spv::DecorationDescriptorSet);
+    unsigned binding = hlsl.get_decoration(resource.id, spv::DecorationBinding);
+    printf("Image %s at set = %u, binding = %u\n", resource.name.c_str(), set, binding);
+
+    // Modify the decoration to prepare it for GLSL.
+    // hlsl.unset_decoration(resource.id, spv::DecorationDescriptorSet);
+
+    // Some arbitrary remapping if we want.
+    // hlsl.set_decoration(resource.id, spv::DecorationBinding, set * 16 + binding);
+  }
+
+  spirv_cross::CompilerHLSL::Options option;
+  option.shader_model = 51;
+  hlsl.set_hlsl_options(option);
+  return hlsl.compile();
+}
 
 DescriptorPool*
 DirectX12PipelineContext::CreateDescriptorPool(std::span<DescriptorPoolSize> descritorPoolSize, uint32_t maxSet) {
@@ -37,12 +67,14 @@ DirectX12PipelineContext::DestroyDescriptorPool(DescriptorPool* descriptorPool) 
 DescriptorSetLayout*
 DirectX12PipelineContext::CreateDescriptorSetLayout(std::span<DescriptorSetLayoutBinding> layoutBinding) {
   auto* directX12DescriptorSetLayout = new DirectX12DescriptorSetLayout();
-  return nullptr;
+  directX12DescriptorSetLayout->bindings = std::vector(layoutBinding.begin(), layoutBinding.end());
+  return directX12DescriptorSetLayout;
 }
 
 void
 DirectX12PipelineContext::DestroyDescriptorSetLayout(DescriptorSetLayout* descriptorSetLayout) {
-  // TODO: not impl
+  auto* dxDescriptorSetLayout = static_cast<DirectX12DescriptorSetLayout*>(descriptorSetLayout);
+  delete dxDescriptorSetLayout;
 }
 
 FrameBuffer*
@@ -215,6 +247,7 @@ DirectX12PipelineContext::DestroyFrameBuffer(FrameBuffer* frameBuffer) {
 Pipeline*
 DirectX12PipelineContext::CreatePipeline(GraphicsPipeLineCreateInfo& createInfo) {
   D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
+  return nullptr;
 }
 
 void

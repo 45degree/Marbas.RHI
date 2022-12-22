@@ -12,4 +12,5 @@ if has_config("buildTest") then
   includes("MipmapTest")
   includes("MsaaTest")
   includes("MultiPassTest")
+  includes("ShaderConvertTest")
 end
