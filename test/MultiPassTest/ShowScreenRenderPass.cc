@@ -85,7 +85,7 @@ ShowScreenRenderPass::CreatePipeline() {
   };
   createInfo.shaderStageCreateInfo = shaderStageCreateInfos;
   createInfo.depthStencilInfo.depthTestEnable = false;
-  createInfo.descriptorSetLayout = m_descriptorSetLayout;
+  createInfo.descriptorSetLayout = {m_descriptorSetLayout};
   createInfo.multisampleCreateInfo.rasterizationSamples = SampleCount::BIT1;
   createInfo.outputRenderTarget.colorAttachments = {ColorTargetDesc{
       .isClear = true,
@@ -101,9 +101,29 @@ ShowScreenRenderPass::CreatePipeline() {
 
 void
 ShowScreenRenderPass::RecordCommand(CommandBuffer* commandBuffer, uint32_t frameIndex) {
+  auto* frameBuffer = m_frameBuffers[frameIndex];
+  const auto& height = frameBuffer->height;
+  const auto& width = frameBuffer->width;
+
+  Marbas::ViewportInfo viewportInfo;
+  viewportInfo.x = 0;
+  viewportInfo.y = 0;
+  viewportInfo.width = static_cast<float>(width);
+  viewportInfo.height = static_cast<float>(height);
+  viewportInfo.minDepth = 0;
+  viewportInfo.maxDepth = 1;
+
+  Marbas::ScissorInfo scissorInfo;
+  scissorInfo.x = 0;
+  scissorInfo.y = 0;
+  scissorInfo.width = width;
+  scissorInfo.height = height;
+
   commandBuffer->Begin();
   commandBuffer->BeginPipeline(m_pipeline, m_frameBuffers[frameIndex], {{0, 0, 0, 1}});
   commandBuffer->BindDescriptorSet(m_pipeline, 0, {&m_descritorSet, 1});
+  commandBuffer->SetViewports({&viewportInfo, 1});
+  commandBuffer->SetScissors({&scissorInfo, 1});
   commandBuffer->Draw(6, 1, 0, 0);
   commandBuffer->EndPipeline(m_pipeline);
   commandBuffer->End();

@@ -274,7 +274,7 @@ main(void) {
   pipelineCreateInfo.rasterizationInfo.frontFace = Marbas::FrontFace::CCW;
   pipelineCreateInfo.rasterizationInfo.cullMode = Marbas::CullMode::BACK;
   pipelineCreateInfo.multisampleCreateInfo.rasterizationSamples = Marbas::SampleCount::BIT1;
-  pipelineCreateInfo.descriptorSetLayout = descriptorSetLayout;
+  pipelineCreateInfo.descriptorSetLayout = {descriptorSetLayout};
   pipelineCreateInfo.depthStencilInfo.depthTestEnable = true;
   pipelineCreateInfo.depthStencilInfo.stencilTestEnable = false;
   pipelineCreateInfo.depthStencilInfo.depthBoundsTestEnable = false;

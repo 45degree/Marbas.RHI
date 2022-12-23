@@ -120,8 +120,7 @@ ShowBoxRenderPass::CreatePipeline() {
       .isClear = true,
       .sampleCount = Marbas::SampleCount::BIT1,
   };
-  createInfo.descriptorSetLayout = m_descriptorSetLayout;
-  // createInfo.rasterizationInfo.depthCilpEnable = false;
+  createInfo.descriptorSetLayout = {m_descriptorSetLayout};
 
   return m_pipelineContext->CreatePipeline(createInfo);
 }

@@ -29,6 +29,7 @@ struct DirectX12FrameBuffer final : public FrameBuffer {
 
 struct DirectX12Pipeline final : public Pipeline {
   ID3D12PipelineState* pipelineState;
+  ID3D12RootSignature* rootSignature;
 };
 
 }  // namespace Marbas

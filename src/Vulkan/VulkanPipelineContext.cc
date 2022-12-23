@@ -415,10 +415,14 @@ VulkanPipelineContext::CreatePipeline(GraphicsPipeLineCreateInfo& createInfo) {
 
   // view port
   vk::PipelineViewportStateCreateInfo vkViewportStateCreateInfo;
+  auto viewPorts = {vk::Viewport(0, 0, 800, 600, 0.f, 1.f)};
+  auto scissor = {vk::Rect2D({0, 0}, {800, 600})};
+  vkViewportStateCreateInfo.setViewports(viewPorts);
+  vkViewportStateCreateInfo.setScissors(scissor);
   vkCreateInfo.setPViewportState(&vkViewportStateCreateInfo);
 
   // dynamic state
-  std::vector<vk::DynamicState> dynamicStates = {vk::DynamicState::eViewport, vk::DynamicState::eScissor};
+  std::vector<vk::DynamicState> dynamicStates = {vk::DynamicState::eScissor, vk::DynamicState::eViewport};
   vk::PipelineDynamicStateCreateInfo vkPipelineDynamicStateCreateInfo;
   vkPipelineDynamicStateCreateInfo.setDynamicStates(dynamicStates);
   vkCreateInfo.setPDynamicState(&vkPipelineDynamicStateCreateInfo);
@@ -551,8 +555,12 @@ VulkanPipelineContext::CreatePipeline(GraphicsPipeLineCreateInfo& createInfo) {
   vkCreateInfo.setPMultisampleState(&vkMultisampleStateCreateInfo);
 
   // layout
-  auto* vulkanDescriptorSetLayout = static_cast<VulkanDescriptorSetLayout*>(createInfo.descriptorSetLayout);
-  auto vkPipelineLayout = CreatePipelineLayout(vulkanDescriptorSetLayout);
+  std::vector<VulkanDescriptorSetLayout*> vulkanLayouts;
+  for (auto* layout : createInfo.descriptorSetLayout) {
+    auto* vulkanLayout = static_cast<VulkanDescriptorSetLayout*>(layout);
+    vulkanLayouts.push_back(vulkanLayout);
+  }
+  auto vkPipelineLayout = CreatePipelineLayout(vulkanLayouts);
   vkCreateInfo.setLayout(vkPipelineLayout);
 
   auto result = m_device.createGraphicsPipeline(nullptr, vkCreateInfo);
@@ -890,14 +898,14 @@ VulkanPipelineContext::CreateRenderPass(const RenderTargetDesc& renderTargetDesc
 }
 
 vk::PipelineLayout
-VulkanPipelineContext::CreatePipelineLayout(const VulkanDescriptorSetLayout* descriptorSetLayout) {
+VulkanPipelineContext::CreatePipelineLayout(const std::vector<VulkanDescriptorSetLayout*>& descriptorSetLayout) {
   vk::PipelineLayoutCreateInfo vkPipelineLayoutCreateInfo;
-  if (descriptorSetLayout == nullptr) {
-    return m_device.createPipelineLayout(vkPipelineLayoutCreateInfo);
+  std::vector<vk::DescriptorSetLayout> vkLayouts;
+  for (auto* vulkanLayout : descriptorSetLayout) {
+    vkLayouts.push_back(vulkanLayout->vkLayout);
   }
 
-  vk::DescriptorSetLayout vkLayout = descriptorSetLayout->vkLayout;
-  vkPipelineLayoutCreateInfo.setSetLayouts(vkLayout);
+  vkPipelineLayoutCreateInfo.setSetLayouts(vkLayouts);
   return m_device.createPipelineLayout(vkPipelineLayoutCreateInfo);
 }
 

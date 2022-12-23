@@ -78,7 +78,7 @@ class VulkanPipelineContext final : public PipelineContext {
   CreateRenderPass(const RenderTargetDesc& renderTargetDesc, const vk::PipelineBindPoint& pipelineType);
 
   vk::PipelineLayout
-  CreatePipelineLayout(const VulkanDescriptorSetLayout* descriptorSetLayout);
+  CreatePipelineLayout(const std::vector<VulkanDescriptorSetLayout*>& descriptorSetLayout);
 
  public:
   FrameBuffer*

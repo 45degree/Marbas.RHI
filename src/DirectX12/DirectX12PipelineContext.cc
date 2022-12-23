@@ -246,8 +246,68 @@ DirectX12PipelineContext::DestroyFrameBuffer(FrameBuffer* frameBuffer) {
 
 Pipeline*
 DirectX12PipelineContext::CreatePipeline(GraphicsPipeLineCreateInfo& createInfo) {
+  auto* dxPipeline = new DirectX12Pipeline();
+
+  // create root signature
+  D3D12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc;
+  std::vector<D3D12_ROOT_PARAMETER1> rootParams;
+  for (int space = 0; auto* descriptorSetLayout : createInfo.descriptorSetLayout) {
+    auto bindings = static_cast<DirectX12DescriptorSetLayout*>(descriptorSetLayout)->bindings;
+    for (const auto& binding : bindings) {
+      D3D12_ROOT_PARAMETER1 param;
+      param.Descriptor.ShaderRegister = binding.bindingPoint;
+      param.Descriptor.RegisterSpace = space;
+      param.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+      switch (binding.descriptorType) {
+        case DescriptorType::UNIFORM_BUFFER:
+        case DescriptorType::DYNAMIC_UNIFORM_BUFFER:
+          param.ParameterType = D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_UAV;
+          break;
+        case DescriptorType::IMAGE:
+          param.ParameterType = D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_SRV;
+          break;
+      }
+      rootParams.push_back(param);
+    }
+    space++;
+  }
+  rootSignatureDesc.Version = D3D_ROOT_SIGNATURE_VERSION_1_1;
+  rootSignatureDesc.Desc_1_1.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
+  rootSignatureDesc.Desc_1_1.NumParameters = rootParams.size();
+  rootSignatureDesc.Desc_1_1.pParameters = rootParams.data();
+  rootSignatureDesc.Desc_1_1.NumStaticSamplers = 0;
+  rootSignatureDesc.Desc_1_1.pStaticSamplers = nullptr;
+
+  ID3DBlob* signature;
+  ID3DBlob* error;
+  try {
+    ThrowIfFailed(D3D12SerializeVersionedRootSignature(&rootSignatureDesc, &signature, &error));
+    ThrowIfFailed(m_device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(),
+                                                IID_PPV_ARGS(&dxPipeline->rootSignature)));
+    dxPipeline->rootSignature->SetName(L"Hello Triangle Root Signature");
+  } catch (std::exception e) {
+    auto errStr = static_cast<const char*>(error->GetBufferPointer());
+    std::cout << errStr;
+    error->Release();
+    error = nullptr;
+  }
+  if (signature) {
+    signature->Release();
+    signature = nullptr;
+  }
+  if (error) {
+    error->Release();
+    error = nullptr;
+  }
+
+  // create pso
   D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc = {};
-  return nullptr;
+  D3D12_INPUT_ELEMENT_DESC inputElementDescs[] = {
+      {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+      {"COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0},
+  };
+
+  return dxPipeline;
 }
 
 void

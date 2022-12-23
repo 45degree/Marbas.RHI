@@ -90,7 +90,7 @@ ShowPlaneRenderPass::CreatePipeline() {
       .isClear = false,
       .sampleCount = Marbas::SampleCount::BIT1,
   };
-  createInfo.descriptorSetLayout = m_descriptorSetLayout;
+  createInfo.descriptorSetLayout = {m_descriptorSetLayout};
 
   return m_pipelineContext->CreatePipeline(createInfo);
 }

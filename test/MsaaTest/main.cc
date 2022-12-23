@@ -281,7 +281,7 @@ main(void) {
   pipelineCreateInfo.shaderStageCreateInfo = shaderStageCreateInfos;
   pipelineCreateInfo.rasterizationInfo.frontFace = Marbas::FrontFace::CCW;
   pipelineCreateInfo.multisampleCreateInfo.rasterizationSamples = Marbas::SampleCount::BIT8;
-  pipelineCreateInfo.descriptorSetLayout = descriptorSetLayout;
+  pipelineCreateInfo.descriptorSetLayout = {descriptorSetLayout};
   pipelineCreateInfo.depthStencilInfo.depthTestEnable = true;
   pipelineCreateInfo.depthStencilInfo.stencilTestEnable = false;
   pipelineCreateInfo.depthStencilInfo.depthBoundsTestEnable = false;

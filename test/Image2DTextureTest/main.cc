@@ -239,7 +239,7 @@ main(void) {
   pipelineCreateInfo.outputRenderTarget = renderTargetDesc;
   pipelineCreateInfo.shaderStageCreateInfo = shaderStageCreateInfos;
   pipelineCreateInfo.multisampleCreateInfo.rasterizationSamples = Marbas::SampleCount::BIT1;
-  pipelineCreateInfo.descriptorSetLayout = descriptorSetLayout;
+  pipelineCreateInfo.descriptorSetLayout = {descriptorSetLayout};
   pipelineCreateInfo.depthStencilInfo.depthTestEnable = false;
   pipelineCreateInfo.depthStencilInfo.stencilTestEnable = false;
   pipelineCreateInfo.depthStencilInfo.depthBoundsTestEnable = false;

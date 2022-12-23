@@ -10,7 +10,7 @@ layout(binding = 0, set = 1) uniform UniformBufferObject2 {
   mat4 model;
   mat4 view;
   mat4 proj;
-} ubo2;
+} ubo2[2];
 
 layout(location = 0) in vec2 inPosition;
 layout(location = 1) in vec3 inColor;

@@ -16,11 +16,19 @@ option("SupportVulkan")
   set_description("add vulkan support")
 option_end()
 
-if is_plat("windows") then
+if is_host("windows") then
   option("SupportDirectX12")
     set_default(true)
     set_category("Marbas Render Hardware Interface")
     set_description("add directx12 support")
+  option_end()
+
+  option("Vulkan_SDK_Path")
+    add_deps("SupportVulkan")
+    set_category("Marbas Render Hardware Interface")
+    set_default("D:/VulkanSDK/1.3.224.1")
+    set_description("vulkan SDK dir")
+    set_showmenu(true)
   option_end()
 end
 
@@ -35,24 +43,17 @@ if has_config("buildTest") then
 end
 
 if has_config("SupportVulkan") then
-  if is_plat("linux") then
+  if is_host("linux") then
     add_requires("pkgconfig::vulkan")
     add_requires("pkgconfig::shaderc", {alias = "shaderc"})
   else
     add_requires("shaderc v2022.2")
-    option("Vulkan_SDK_Path")
-      add_deps("SupportVulkan")
-      set_category("Marbas Render Hardware Interface")
-      set_default("D:/VulkanSDK/1.3.224.1")
-      set_description("vulkan SDK dir")
-      set_showmenu(true)
-    option_end()
   end
 end
 
 rule("UseVulkan")
   on_load(function (target)
-    if is_plat("linux") then
+    if is_host("linux") then
       target:add("packages", "pkgconfig::vulkan")
       target:add("packages", "shaderc")
     else
@@ -84,7 +85,7 @@ rule_end()
 
 rule("UseDirectX12")
   on_load(function(target)
-    if not is_plat("windows") then
+    if not is_host("windows") then
       return
     end
     target:add('links', 'd3d12')
@@ -100,7 +101,7 @@ target("Marbas.RHI")
   add_includedirs("src", { public = false })
   add_files("include/**.cc")
 
-  if is_plat("windows") then
+  if is_host("windows") then
     add_undefines("CreateSemaphore");
   end
 
