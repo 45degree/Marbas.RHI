@@ -9,6 +9,7 @@ add_requires("gtest 1.11.0")
 add_requires("stb 2021.09.10")
 add_requires("fmt 9.1.0")
 add_requires("spirv-cross c77b09b57c27837dc2d41aa371ed3d236ce9ce47") -- sdk-1.3.236.0
+add_requires("directxShaderCompiler")
 
 option("SupportVulkan")
   set_default(true)
