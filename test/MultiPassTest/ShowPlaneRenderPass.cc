@@ -30,7 +30,7 @@ ShowPlaneRenderPass::ShowPlaneRenderPass(RHIFactory* rhiFactory) : RenderPassBas
   });
   m_pipelineContext->BindImage(BindImageInfo{
       .descriptorSet = m_descriptorSet,
-      .bindingPoint = 1,
+      .bindingPoint = 0,
       .imageView = m_textureView,
       .sampler = m_sampler,
   });
@@ -45,8 +45,6 @@ ShowPlaneRenderPass::~ShowPlaneRenderPass() {
   m_bufferContext->DestroyBuffer(m_uniformBuffer);
   m_bufferContext->DestroyBuffer(m_vertexBuffer);
 
-  m_pipelineContext->DestroyShaderModule(m_vertexShaderModule);
-  m_pipelineContext->DestroyShaderModule(m_fragmentShaderModule);
   m_pipelineContext->DestroyDescriptorSetLayout(m_descriptorSetLayout);
   m_pipelineContext->DestroyDescriptorPool(m_descritporPool);
   m_pipelineContext->DestroyPipeline(m_pipeline);
@@ -58,12 +56,12 @@ ShowPlaneRenderPass::CreatePipeline() {
   std::vector shaderCreateInfos = {
       ShaderStageCreateInfo{
           .stage = ShaderType::VERTEX_SHADER,
-          .shaderModule = m_vertexShaderModule,
+          .code = m_vertexShaderModule,
           .interName = "main",
       },
       ShaderStageCreateInfo{
           .stage = ShaderType::FRAGMENT_SHADER,
-          .shaderModule = m_fragmentShaderModule,
+          .code = m_fragmentShaderModule,
           .interName = "main",
       },
   };
@@ -90,7 +88,7 @@ ShowPlaneRenderPass::CreatePipeline() {
       .isClear = false,
       .sampleCount = Marbas::SampleCount::BIT1,
   };
-  createInfo.descriptorSetLayout = m_descriptorSetLayout;
+  createInfo.layout = m_descriptorSetLayout;
 
   return m_pipelineContext->CreatePipeline(createInfo);
 }
@@ -120,7 +118,7 @@ ShowPlaneRenderPass::RecordCommand(CommandBuffer* commandBuffer, uint32_t frameI
   commandBuffer->SetViewports({&viewportInfo, 1});
   commandBuffer->SetScissors({&scissorInfo, 1});
   commandBuffer->BindVertexBuffer(m_vertexBuffer);
-  commandBuffer->BindDescriptorSet(m_pipeline, 0, {&m_descriptorSet, 1});
+  commandBuffer->BindDescriptorSet(m_pipeline, m_descriptorSet);
   commandBuffer->Draw(m_model.m_vertices.size(), 1, 0, 0);
   commandBuffer->EndPipeline(m_pipeline);
   commandBuffer->End();
@@ -128,18 +126,14 @@ ShowPlaneRenderPass::RecordCommand(CommandBuffer* commandBuffer, uint32_t frameI
 
 void
 ShowPlaneRenderPass::CreateDescriptor() {
-  std::array bindings = {
+  std::vector bindings = {
       DescriptorSetLayoutBinding{
           .bindingPoint = 0,
           .descriptorType = DescriptorType::UNIFORM_BUFFER,
-          .count = 1,
-          .visible = DescriptorVisible::ALL,
       },
       DescriptorSetLayoutBinding{
-          .bindingPoint = 1,
+          .bindingPoint = 0,
           .descriptorType = DescriptorType::IMAGE,
-          .count = 1,
-          .visible = DescriptorVisible::ALL,
       },
   };
   m_descriptorSetLayout = m_pipelineContext->CreateDescriptorSetLayout(bindings);
@@ -154,7 +148,7 @@ ShowPlaneRenderPass::CreateDescriptor() {
           .size = 1,
       },
   };
-  m_descritporPool = m_pipelineContext->CreateDescriptorPool(descriptorSize, 1);
+  m_descritporPool = m_pipelineContext->CreateDescriptorPool(descriptorSize);
 
   m_descriptorSet = m_pipelineContext->CreateDescriptorSet(m_descritporPool, m_descriptorSetLayout);
 }

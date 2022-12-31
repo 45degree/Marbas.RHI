@@ -10,8 +10,6 @@ class ShowBoxRenderPass final : public RenderPassBase {
     m_bufferContext->DestroyBuffer(m_uniformBuffer);
     m_bufferContext->DestroyImage(m_texture);
     m_bufferContext->DestroyImageView(m_textureView);
-    m_pipelineContext->DestroyShaderModule(m_vertexShaderModule);
-    m_pipelineContext->DestroyShaderModule(m_fragmentShaderModule);
     m_pipelineContext->DestroySampler(m_sampler);
     m_pipelineContext->DestroyPipeline(m_pipeline);
     m_pipelineContext->DestroyDescriptorSetLayout(m_descriptorSetLayout);
@@ -39,8 +37,8 @@ class ShowBoxRenderPass final : public RenderPassBase {
   ImageView* m_textureView = nullptr;
   Sampler* m_sampler = nullptr;
 
-  ShaderModule* m_vertexShaderModule = nullptr;
-  ShaderModule* m_fragmentShaderModule = nullptr;
+  std::vector<char> m_vertexShaderModule;
+  std::vector<char> m_fragmentShaderModule;
 
   Buffer* m_vertexBuffer = nullptr;
   Buffer* m_uniformBuffer = nullptr;

@@ -72,19 +72,19 @@ RenderPassBase::CreateFrameBuffer(std::vector<FrameBufferCreateInfo>& frameBuffe
   }
 }
 
-ShaderModule*
+std::vector<char>
 RenderPassBase::CreateShaderModule(const std::string& shaderPath) {
   std::ifstream file(shaderPath, std::ios::binary | std::ios::in);
   std::vector<char> content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-  return m_pipelineContext->CreateShaderModule(content);
+  return content;
 }
 
-ShaderModule*
+std::vector<char>
 RenderPassBase::CreateShaderModule(RHIFactory* factory, const std::string& shaderPath) {
   auto pipelineContext = factory->GetPipelineContext();
   std::ifstream file(shaderPath, std::ios::binary | std::ios::in);
   std::vector<char> content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-  return pipelineContext->CreateShaderModule(content);
+  return content;
 }
 
 }  // namespace Marbas

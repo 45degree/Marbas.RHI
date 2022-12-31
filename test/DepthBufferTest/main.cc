@@ -114,8 +114,8 @@ main(void) {
   auto* pipelineContext = factory->GetPipelineContext();
   auto* bufferContext = factory->GetBufferContext();
   auto* swapchain = factory->GetSwapchain();
-  auto* vertexShader = Marbas::RenderPassBase::CreateShaderModule(factory.get(), "shader.vert.spv");
-  auto* fragShader = Marbas::RenderPassBase::CreateShaderModule(factory.get(), "shader.frag.spv");
+  auto vertexShader = Marbas::RenderPassBase::CreateShaderModule(factory.get(), "shader.vert.spv");
+  auto fragShader = Marbas::RenderPassBase::CreateShaderModule(factory.get(), "shader.frag.spv");
 
   auto* image = LoadImage(factory->GetBufferContext(), "texture.jpg");
   auto* imageView = bufferContext->CreateImageView(Marbas::ImageViewCreateInfo{
@@ -162,15 +162,12 @@ main(void) {
       {
           .bindingPoint = 0,
           .descriptorType = Marbas::DescriptorType::UNIFORM_BUFFER,
-          .count = 1,
-          .visible = Marbas::DescriptorVisible::ALL,
       },
       {
-          .bindingPoint = 1,
+          .bindingPoint = 0,
           .descriptorType = Marbas::DescriptorType::IMAGE,
-          .count = 1,
-          .visible = Marbas::DescriptorVisible::ALL,
-      }};
+      },
+  };
   std::array descriptorPoolSizes = {
       Marbas::DescriptorPoolSize{
           .type = Marbas::DescriptorType::UNIFORM_BUFFER,
@@ -181,7 +178,7 @@ main(void) {
           .size = 1,
       },
   };
-  auto* descriptorPool = pipelineContext->CreateDescriptorPool(descriptorPoolSizes, 1);
+  auto* descriptorPool = pipelineContext->CreateDescriptorPool(descriptorPoolSizes);
   auto* descriptorSetLayout = pipelineContext->CreateDescriptorSetLayout(layoutBindings);
 
   // create descriptorSet
@@ -196,7 +193,7 @@ main(void) {
   });
   pipelineContext->BindImage(Marbas::BindImageInfo{
       .descriptorSet = descriptorSet,
-      .bindingPoint = 1,
+      .bindingPoint = 0,
       .imageView = imageView,
       .sampler = sampler,
   });
@@ -220,12 +217,12 @@ main(void) {
   std::vector<Marbas::ShaderStageCreateInfo> shaderStageCreateInfos;
   shaderStageCreateInfos.push_back(Marbas::ShaderStageCreateInfo{
       .stage = Marbas::ShaderType::VERTEX_SHADER,
-      .shaderModule = vertexShader,
+      .code = vertexShader,
       .interName = "main",
   });
   shaderStageCreateInfos.push_back(Marbas::ShaderStageCreateInfo{
       .stage = Marbas::ShaderType::FRAGMENT_SHADER,
-      .shaderModule = fragShader,
+      .code = fragShader,
       .interName = "main",
   });
 
@@ -274,7 +271,7 @@ main(void) {
   pipelineCreateInfo.rasterizationInfo.frontFace = Marbas::FrontFace::CCW;
   pipelineCreateInfo.rasterizationInfo.cullMode = Marbas::CullMode::BACK;
   pipelineCreateInfo.multisampleCreateInfo.rasterizationSamples = Marbas::SampleCount::BIT1;
-  pipelineCreateInfo.descriptorSetLayout = descriptorSetLayout;
+  pipelineCreateInfo.layout = descriptorSetLayout;
   pipelineCreateInfo.depthStencilInfo.depthTestEnable = true;
   pipelineCreateInfo.depthStencilInfo.stencilTestEnable = false;
   pipelineCreateInfo.depthStencilInfo.depthBoundsTestEnable = false;
@@ -396,7 +393,7 @@ main(void) {
     commandBuffer->SetViewports(viewportInfos);
     commandBuffer->SetScissors(scissorInfos);
     commandBuffer->BindVertexBuffer(vertexBuffer);
-    commandBuffer->BindDescriptorSet(pipeline, 0, std::span(&descriptorSet, 1));
+    commandBuffer->BindDescriptorSet(pipeline, descriptorSet);
     commandBuffer->BindIndexBuffer(indexBuffer);
     commandBuffer->DrawIndexed(indices.size(), 1, 0, 0, 0);
     commandBuffer->EndPipeline(pipeline);
@@ -415,8 +412,6 @@ main(void) {
 
   factory->WaitIdle();
 
-  pipelineContext->DestroyShaderModule(vertexShader);
-  pipelineContext->DestroyShaderModule(fragShader);
   for (auto* framebuffer : frameBuffers) {
     pipelineContext->DestroyFrameBuffer(framebuffer);
   }

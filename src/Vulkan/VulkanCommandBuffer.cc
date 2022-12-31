@@ -111,8 +111,9 @@ VulkanCommandBuffer::TransformImageState(Image* image, ImageState srcState, Imag
 }
 
 void
-VulkanCommandBuffer::BindDescriptorSet(const Pipeline* pipeline, int first, std::span<DescriptorSet*> descriptors) {
+VulkanCommandBuffer::BindDescriptorSet(const Pipeline* pipeline, DescriptorSet* descriptors) {
   const auto* vulkanPipeline = static_cast<const VulkanPipeline*>(pipeline);
+  auto* vulkanDescriptorSet = static_cast<VulkanDescriptorSet*>(descriptors);
   vk::PipelineBindPoint vkPipelineBindPoint;
   if (vulkanPipeline->pipelineType == PipelineType::GRAPHICS) {
     vkPipelineBindPoint = vk::PipelineBindPoint::eGraphics;
@@ -121,10 +122,10 @@ VulkanCommandBuffer::BindDescriptorSet(const Pipeline* pipeline, int first, std:
   }
 
   std::vector<vk::DescriptorSet> vkDescriptorSets;
-  std::transform(descriptors.begin(), descriptors.end(), std::back_inserter(vkDescriptorSets),
-                 [](auto* descriptor) { return static_cast<VulkanDescriptorSet*>(descriptor)->vkDescriptorSet; });
+  vkDescriptorSets.push_back(vulkanDescriptorSet->uniformBufferSet);
+  vkDescriptorSets.push_back(vulkanDescriptorSet->sampledImageSet);
 
-  m_commandBuffer.bindDescriptorSets(vkPipelineBindPoint, vulkanPipeline->vkPipelineLayout, first, vkDescriptorSets,
+  m_commandBuffer.bindDescriptorSets(vkPipelineBindPoint, vulkanPipeline->vkPipelineLayout, 0, vkDescriptorSets,
                                      nullptr);
 }
 

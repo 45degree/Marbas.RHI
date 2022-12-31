@@ -31,17 +31,15 @@ enum class DescriptorType {
   IMAGE,
 };
 
-enum class DescriptorVisible {
-  ALL,
-  VERTEX_SHADER,
-  FRAGMENT_SHADER,
-};
+// enum class DescriptorVisible {
+//   ALL,
+//   VERTEX_SHADER,
+//   FRAGMENT_SHADER,
+// };
 
 struct DescriptorSetLayoutBinding {
   uint16_t bindingPoint = 0;
   DescriptorType descriptorType = DescriptorType::UNIFORM_BUFFER;
-  uint32_t count = 1;
-  DescriptorVisible visible = DescriptorVisible::ALL;
 };
 
 struct DescriptorSetLayout {};

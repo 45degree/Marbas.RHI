@@ -18,6 +18,6 @@
 
 namespace Marbas {
 
-class ShaderModule {};
+// class ShaderModule {};
 
 }  // namespace Marbas

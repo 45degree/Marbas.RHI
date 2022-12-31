@@ -20,6 +20,7 @@
 
 #include "PipelineContext.hpp"
 #include "VulkanDescriptor.hpp"
+#include "VulkanPipeline.hpp"
 
 namespace Marbas {
 
@@ -42,21 +43,14 @@ class VulkanPipelineContext final : public PipelineContext {
   DestroySampler(Sampler* sampler) override;
 
  public:
-  ShaderModule*
-  CreateShaderModule(std::span<char> sprivCode) override;
-
-  void
-  DestroyShaderModule(ShaderModule* shaderModule) override;
-
- public:
   DescriptorSetLayout*
-  CreateDescriptorSetLayout(std::span<DescriptorSetLayoutBinding> layoutBinding) override;
+  CreateDescriptorSetLayout(const std::vector<DescriptorSetLayoutBinding>& layoutBinding) override;
 
   void
   DestroyDescriptorSetLayout(DescriptorSetLayout* descriptorSetLayout) override;
 
   DescriptorSet*
-  CreateDescriptorSet(const DescriptorPool* pool, const DescriptorSetLayout* layout) override;
+  CreateDescriptorSet(const DescriptorPool* pool, const DescriptorSetLayout* descriptorLayout) override;
 
   void
   DestroyDescriptorSet(const DescriptorPool* pool, DescriptorSet* descriptorSet) override;
@@ -68,7 +62,7 @@ class VulkanPipelineContext final : public PipelineContext {
   BindBuffer(const BindBufferInfo& bindBufferInfo) override;
 
   DescriptorPool*
-  CreateDescriptorPool(std::span<DescriptorPoolSize> descritorPoolSize, uint32_t maxSet) override;
+  CreateDescriptorPool(std::span<DescriptorPoolSize> descritorPoolSize) override;
 
   void
   DestroyDescriptorPool(DescriptorPool* descriptorPool) override;
@@ -79,6 +73,9 @@ class VulkanPipelineContext final : public PipelineContext {
 
   vk::PipelineLayout
   CreatePipelineLayout(const VulkanDescriptorSetLayout* descriptorSetLayout);
+
+  vk::ShaderModule
+  CreateShaderModule(const std::vector<char>& spirvCode, ShaderType type);
 
  public:
   FrameBuffer*

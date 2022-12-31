@@ -20,8 +20,8 @@ class ShowScreenRenderPass final : public RenderPassBase {
   CreateDescirptorSet(ImageView* imageView);
 
  private:
-  ShaderModule* m_vertexShaderModule = nullptr;
-  ShaderModule* m_fragmentShaderModule = nullptr;
+  std::vector<char> m_vertexShaderModule;
+  std::vector<char> m_fragmentShaderModule;
   Sampler* m_sampler = nullptr;
   DescriptorPool* m_descriptorPool = nullptr;
   DescriptorSet* m_descritorSet = nullptr;

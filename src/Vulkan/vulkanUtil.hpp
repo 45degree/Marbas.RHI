@@ -206,27 +206,6 @@ ConvertToVulkanDescriptorType(DescriptorType type) {
   DLOG_ASSERT(false);
 }
 
-FORCE_INLINE vk::DescriptorSetLayoutBinding
-ConvertToVulkanDescriptorLayoutBinding(const DescriptorSetLayoutBinding& binding) {
-  vk::DescriptorSetLayoutBinding vkBinding;
-  vkBinding.setDescriptorType(ConvertToVulkanDescriptorType(binding.descriptorType));
-  vkBinding.setDescriptorCount(binding.count);
-  vkBinding.setBinding(binding.bindingPoint);
-
-  switch (binding.visible) {
-    case DescriptorVisible::ALL:
-      vkBinding.setStageFlags(vk::ShaderStageFlagBits::eAll);
-      break;
-    case DescriptorVisible::VERTEX_SHADER:
-      vkBinding.setStageFlags(vk::ShaderStageFlagBits::eVertex);
-      break;
-    case DescriptorVisible::FRAGMENT_SHADER:
-      vkBinding.setStageFlags(vk::ShaderStageFlagBits::eFragment);
-      break;
-  }
-  return vkBinding;
-}
-
 FORCE_INLINE vk::CullModeFlags
 ConvertToVulkanCullMode(const CullMode& cullMode) {
   switch (cullMode) {

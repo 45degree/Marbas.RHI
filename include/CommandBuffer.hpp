@@ -56,7 +56,7 @@ struct ClearValue {
 class CommandBuffer {
  public:
   virtual void
-  BindDescriptorSet(const Pipeline* pipeline, int first, std::span<DescriptorSet*> descriptors) = 0;
+  BindDescriptorSet(const Pipeline* pipeline, DescriptorSet* descriptors) = 0;
 
   virtual void
   BindVertexBuffer(Buffer* buffer) = 0;

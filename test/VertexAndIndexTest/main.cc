@@ -31,8 +31,8 @@ main(void) {
   auto* pipelineContext = factory->GetPipelineContext();
   auto* bufferContext = factory->GetBufferContext();
   auto* swapchain = factory->GetSwapchain();
-  auto* vertexShader = Marbas::RenderPassBase::CreateShaderModule(factory.get(), "shader.vert.spv");
-  auto* fragShader = Marbas::RenderPassBase::CreateShaderModule(factory.get(), "shader.frag.spv");
+  auto vertexShader = Marbas::RenderPassBase::CreateShaderModule(factory.get(), "shader.vert.spv");
+  auto fragShader = Marbas::RenderPassBase::CreateShaderModule(factory.get(), "shader.frag.spv");
 
   // render target desc and blend
   Marbas::RenderTargetDesc renderTargetDesc = {
@@ -49,12 +49,12 @@ main(void) {
   std::vector<Marbas::ShaderStageCreateInfo> shaderStageCreateInfos;
   shaderStageCreateInfos.push_back(Marbas::ShaderStageCreateInfo{
       .stage = Marbas::ShaderType::VERTEX_SHADER,
-      .shaderModule = vertexShader,
+      .code = vertexShader,
       .interName = "main",
   });
   shaderStageCreateInfos.push_back(Marbas::ShaderStageCreateInfo{
       .stage = Marbas::ShaderType::FRAGMENT_SHADER,
-      .shaderModule = fragShader,
+      .code = fragShader,
       .interName = "main",
   });
 
@@ -211,8 +211,6 @@ main(void) {
 
   factory->WaitIdle();
 
-  pipelineContext->DestroyShaderModule(vertexShader);
-  pipelineContext->DestroyShaderModule(fragShader);
   for (auto* framebuffer : frameBuffers) {
     pipelineContext->DestroyFrameBuffer(framebuffer);
   }

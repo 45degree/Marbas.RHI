@@ -9,8 +9,6 @@ ShowScreenRenderPass::ShowScreenRenderPass(RHIFactory* rhiFactory, ImageView* im
 }
 
 ShowScreenRenderPass::~ShowScreenRenderPass() {
-  m_pipelineContext->DestroyShaderModule(m_vertexShaderModule);
-  m_pipelineContext->DestroyShaderModule(m_fragmentShaderModule);
   m_pipelineContext->DestroyDescriptorSetLayout(m_descriptorSetLayout);
   m_pipelineContext->DestroyDescriptorPool(m_descriptorPool);
   m_pipelineContext->DestroyPipeline(m_pipeline);
@@ -34,8 +32,6 @@ ShowScreenRenderPass::CreateDescirptorSet(ImageView* imageView) {
   std::vector<DescriptorSetLayoutBinding> bindings = {DescriptorSetLayoutBinding{
       .bindingPoint = 0,
       .descriptorType = DescriptorType::IMAGE,
-      .count = 1,
-      .visible = DescriptorVisible::FRAGMENT_SHADER,
   }};
   m_descriptorSetLayout = m_pipelineContext->CreateDescriptorSetLayout(bindings);
 
@@ -45,7 +41,7 @@ ShowScreenRenderPass::CreateDescirptorSet(ImageView* imageView) {
           .size = 1,
       },
   };
-  m_descriptorPool = m_pipelineContext->CreateDescriptorPool(poolSize, 1);
+  m_descriptorPool = m_pipelineContext->CreateDescriptorPool(poolSize);
 
   m_descritorSet = m_pipelineContext->CreateDescriptorSet(m_descriptorPool, m_descriptorSetLayout);
 
@@ -65,12 +61,12 @@ ShowScreenRenderPass::CreatePipeline() {
   std::vector<ShaderStageCreateInfo> shaderStageCreateInfos = {
       ShaderStageCreateInfo{
           .stage = ShaderType::VERTEX_SHADER,
-          .shaderModule = m_vertexShaderModule,
+          .code = m_vertexShaderModule,
           .interName = "main",
       },
       ShaderStageCreateInfo{
           .stage = ShaderType::FRAGMENT_SHADER,
-          .shaderModule = m_fragmentShaderModule,
+          .code = m_fragmentShaderModule,
           .interName = "main",
       },
   };
@@ -85,7 +81,7 @@ ShowScreenRenderPass::CreatePipeline() {
   };
   createInfo.shaderStageCreateInfo = shaderStageCreateInfos;
   createInfo.depthStencilInfo.depthTestEnable = false;
-  createInfo.descriptorSetLayout = m_descriptorSetLayout;
+  createInfo.layout = m_descriptorSetLayout;
   createInfo.multisampleCreateInfo.rasterizationSamples = SampleCount::BIT1;
   createInfo.outputRenderTarget.colorAttachments = {ColorTargetDesc{
       .isClear = true,
@@ -103,7 +99,7 @@ void
 ShowScreenRenderPass::RecordCommand(CommandBuffer* commandBuffer, uint32_t frameIndex) {
   commandBuffer->Begin();
   commandBuffer->BeginPipeline(m_pipeline, m_frameBuffers[frameIndex], {{0, 0, 0, 1}});
-  commandBuffer->BindDescriptorSet(m_pipeline, 0, {&m_descritorSet, 1});
+  commandBuffer->BindDescriptorSet(m_pipeline, m_descritorSet);
   commandBuffer->Draw(6, 1, 0, 0);
   commandBuffer->EndPipeline(m_pipeline);
   commandBuffer->End();

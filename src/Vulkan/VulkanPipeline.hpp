@@ -28,7 +28,7 @@ struct VulkanSampler final : public Sampler {
 };
 
 struct VulkanPipeline final : public Pipeline {
-  vk::DescriptorSetLayout vkDescriptorSetLayout;
+  std::vector<vk::ShaderModule> shaderModule;
   vk::PipelineLayout vkPipelineLayout;
   vk::Pipeline vkPipeline;
   vk::RenderPass vkRenderPass;

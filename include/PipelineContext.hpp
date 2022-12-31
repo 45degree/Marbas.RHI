@@ -59,21 +59,14 @@ class PipelineContext {
   DestroySampler(Sampler* sampler) = 0;
 
  public:
-  virtual ShaderModule*
-  CreateShaderModule(std::span<char> sprivCode) = 0;
-
-  virtual void
-  DestroyShaderModule(ShaderModule* shaderModule) = 0;
-
- public:
   virtual DescriptorSetLayout*
-  CreateDescriptorSetLayout(std::span<DescriptorSetLayoutBinding> layoutBinding) = 0;
+  CreateDescriptorSetLayout(const std::vector<DescriptorSetLayoutBinding>& layoutBinding) = 0;
 
   virtual void
   DestroyDescriptorSetLayout(DescriptorSetLayout* descriptorSetLayout) = 0;
 
   virtual DescriptorSet*
-  CreateDescriptorSet(const DescriptorPool* pool, const DescriptorSetLayout* layout) = 0;
+  CreateDescriptorSet(const DescriptorPool* pool, const DescriptorSetLayout* descriptorLayout) = 0;
 
   virtual void
   DestroyDescriptorSet(const DescriptorPool* pool, DescriptorSet* descriptorSet) = 0;
@@ -85,7 +78,7 @@ class PipelineContext {
   BindBuffer(const BindBufferInfo& bindBufferInfo) = 0;
 
   virtual DescriptorPool*
-  CreateDescriptorPool(std::span<DescriptorPoolSize> descritorPoolSize, uint32_t maxSet) = 0;
+  CreateDescriptorPool(std::span<DescriptorPoolSize> descritorPoolSize) = 0;
 
   virtual void
   DestroyDescriptorPool(DescriptorPool* descriptorPool) = 0;

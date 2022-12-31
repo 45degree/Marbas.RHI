@@ -8,12 +8,29 @@ add_requires("glm 0.9.9+8")
 add_requires("gtest 1.11.0")
 add_requires("stb 2021.09.10")
 add_requires("fmt 9.1.0")
+add_requires("spirv-cross c77b09b57c27837dc2d41aa371ed3d236ce9ce47")
 
 option("SupportVulkan")
   set_default(true)
   set_category("Marbas Render Hardware Interface")
   set_description("add vulkan support")
 option_end()
+
+if is_host("windows") then
+  option("SupportDirectX12")
+    set_default(true)
+    set_category("Marbas Render Hardware Interface")
+    set_description("add directx12 support")
+  option_end()
+
+  option("Vulkan_SDK_Path")
+    add_deps("SupportVulkan")
+    set_category("Marbas Render Hardware Interface")
+    set_default("D:/VulkanSDK/1.3.224.1")
+    set_description("vulkan SDK dir")
+    set_showmenu(true)
+  option_end()
+end
 
 option("buildTest")
   set_default(false)
@@ -26,24 +43,17 @@ if has_config("buildTest") then
 end
 
 if has_config("SupportVulkan") then
-  if is_plat("linux") then
+  if is_host("linux") then
     add_requires("pkgconfig::vulkan")
     add_requires("pkgconfig::shaderc", {alias = "shaderc"})
-    add_requires("spirv-cross 1.2.189+1");
   else
-    option("Vulkan_SDK_Path")
-      add_deps("SupportVulkan")
-      set_category("Marbas Render Hardware Interface")
-      set_default("D:/VulkanSDK/1.3.224.1")
-      set_description("vulkan SDK dir")
-      set_showmenu(true)
-    option_end()
+    add_requires("shaderc v2022.2")
   end
 end
 
 rule("UseVulkan")
   on_load(function (target)
-    if is_plat("linux") then
+    if is_host("linux") then
       target:add("packages", "pkgconfig::vulkan")
       target:add("packages", "shaderc")
     else
@@ -51,32 +61,24 @@ rule("UseVulkan")
       local vulkanLibPath = path.join('$(Vulkan_SDK_Path)', 'lib')
       local vulkanBinPath = path.join('$(Vulkan_SDK_Path)', 'bin')
 
-      if not os.exists(vulkanIncludePath) then
-        if os.exists(path.join('$(Vulkan_SDK_Path)', 'Include')) then
-          vulkanIncludePath = path.join('$(Vulkan_SDK_Path)', 'Include')
-        end
+      -- copy the vulkan header and libary
+      local tmpVulkanDir = "$(buildir)/vulkan";
+      local tmpVulkanIncludeDir = path.join(tmpVulkanDir, "include/")
+      local tmpVukanLibDir = path.join(tmpVulkanDir, "lib")
+      local tmpVukanBinDir = path.join(tmpVulkanDir, "bin")
+      if os.exists(tmpVulkanDir) then
+        os.rm(tmpVulkanDir);
       end
+      os.mkdir(tmpVulkanDir);
+      os.mkdir(tmpVulkanIncludeDir);
+      os.mkdir(tmpVukanLibDir);
 
-      if os.exists(vulkanBinPath) then
-        if os.exists(path.join('$(Vulkan_SDK_Path)', 'Bin')) then
-          vulkanBinPath = path.join('$(Vulkan_SDK_Path)', 'Bin')
-        end
-      end
+      os.cp(path.join(vulkanIncludePath, "vulkan"), path.join(tmpVulkanIncludeDir, "vulkan")) -- copy header
+      os.cp(path.join(vulkanLibPath, "vulkan-1.*"), tmpVukanLibDir) -- copy lib
 
-      if os.exists(vulkanLibPath) then
-        if os.exists(path.join('$(Vulkan_SDK_Path)', 'Lib')) then
-          vulkanLibPath = path.join('$(Vulkan_SDK_Path)', 'Lib')
-        end
-      end
-
-      target:add('includedirs', vulkanIncludePath)
-
-      for _, filepath in ipairs(os.files(vulkanLibPath .. "spriv-*.lib")) do
-        target:add("links", filepath)
-      end
-
-      target:add("links", path.join(vulkanLibPath, "vulkan-1"))
-      target:add('rpathdirs', vulkanBinPath)
+      target:add('includedirs', tmpVulkanIncludeDir)
+      target:add("linkdirs", tmpVukanLibDir)
+      target:add("links", "vulkan-1")
     end
   end)
 rule_end()
@@ -116,7 +118,7 @@ target("Marbas.RHI")
   end
 
   add_deps("imgui-docking")
-  add_packages("glfw", "glog", "shaderc", "gtest", "stb", "fmt")
+  add_packages("glfw", "glog", "shaderc", "gtest", "stb", "fmt", "spirv-cross")
 target_end()
 
 includes("test")

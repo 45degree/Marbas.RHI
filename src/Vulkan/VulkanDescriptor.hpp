@@ -27,11 +27,13 @@ struct VulkanDescriptorPool final : public DescriptorPool {
 };
 
 struct VulkanDescriptorSet final : public DescriptorSet {
-  vk::DescriptorSet vkDescriptorSet;
+  vk::DescriptorSet uniformBufferSet;
+  vk::DescriptorSet sampledImageSet;
 };
 
 struct VulkanDescriptorSetLayout final : public DescriptorSetLayout {
-  vk::DescriptorSetLayout vkLayout;
+  vk::DescriptorSetLayout vkUboLayout;
+  vk::DescriptorSetLayout vkSampledImageLayout;
 };
 
 }  // namespace Marbas

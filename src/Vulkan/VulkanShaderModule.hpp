@@ -21,8 +21,8 @@
 
 namespace Marbas {
 
-struct VulkanShaderModule final : public ShaderModule {
-  vk::ShaderModule vkShaderModule;
-};
+// struct VulkanShaderModule final : public ShaderModule {
+//   vk::ShaderModule vkShaderModule;
+// };
 
 }  // namespace Marbas

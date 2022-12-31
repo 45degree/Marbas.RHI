@@ -89,10 +89,10 @@ ShowBoxRenderPass::CreatePipeline() {
   m_vertexShaderModule = CreateShaderModule("showBox.vert.glsl.spv");
   m_fragmentShaderModule = CreateShaderModule("showBox.frag.glsl.spv");
   Marbas::ShaderStageCreateInfo showBoxVert, showBoxFrag;
-  showBoxVert.shaderModule = m_vertexShaderModule;
+  showBoxVert.code = m_vertexShaderModule;
   showBoxVert.stage = Marbas::ShaderType::VERTEX_SHADER;
   showBoxVert.interName = "main";
-  showBoxFrag.shaderModule = m_fragmentShaderModule;
+  showBoxFrag.code = m_fragmentShaderModule;
   showBoxFrag.stage = Marbas::ShaderType::FRAGMENT_SHADER;
   showBoxFrag.interName = "main";
 
@@ -120,7 +120,7 @@ ShowBoxRenderPass::CreatePipeline() {
       .isClear = true,
       .sampleCount = Marbas::SampleCount::BIT1,
   };
-  createInfo.descriptorSetLayout = m_descriptorSetLayout;
+  createInfo.layout = m_descriptorSetLayout;
   // createInfo.rasterizationInfo.depthCilpEnable = false;
 
   return m_pipelineContext->CreatePipeline(createInfo);
@@ -132,14 +132,10 @@ ShowBoxRenderPass::CreateDescriptorSetLayout() {
   showBoxPipelinelayoutBinding.push_back(Marbas::DescriptorSetLayoutBinding{
       .bindingPoint = 0,
       .descriptorType = Marbas::DescriptorType::UNIFORM_BUFFER,
-      .count = 1,
-      .visible = Marbas::DescriptorVisible::ALL,
   });
   showBoxPipelinelayoutBinding.push_back(Marbas::DescriptorSetLayoutBinding{
-      .bindingPoint = 1,
+      .bindingPoint = 0,
       .descriptorType = Marbas::DescriptorType::IMAGE,
-      .count = 1,
-      .visible = Marbas::DescriptorVisible::ALL,
   });
   return m_pipelineContext->CreateDescriptorSetLayout(showBoxPipelinelayoutBinding);
 }
@@ -156,12 +152,12 @@ ShowBoxRenderPass::CreateDescriptorSet() {
           .size = 1,
       },
   };
-  m_descriptorPool = m_pipelineContext->CreateDescriptorPool(descriptorSize, 1);
+  m_descriptorPool = m_pipelineContext->CreateDescriptorPool(descriptorSize);
 
   m_descriptorSet = m_pipelineContext->CreateDescriptorSet(m_descriptorPool, m_descriptorSetLayout);
   m_pipelineContext->BindImage(BindImageInfo{
       .descriptorSet = m_descriptorSet,
-      .bindingPoint = 1,
+      .bindingPoint = 0,
       .imageView = m_textureView,
       .sampler = m_sampler,
   });
@@ -200,7 +196,7 @@ ShowBoxRenderPass::RecordCommand(CommandBuffer* commandBuffer, uint32_t frameInd
   commandBuffer->SetViewports({&viewportInfo, 1});
   commandBuffer->SetScissors({&scissorInfo, 1});
   commandBuffer->BindVertexBuffer(m_vertexBuffer);
-  commandBuffer->BindDescriptorSet(m_pipeline, 0, {&m_descriptorSet, 1});
+  commandBuffer->BindDescriptorSet(m_pipeline, m_descriptorSet);
   commandBuffer->Draw(m_model.m_vertices.size(), 1, 0, 0);
   commandBuffer->EndPipeline(m_pipeline);
   commandBuffer->End();

@@ -32,8 +32,8 @@ class ShowPlaneRenderPass final : public RenderPassBase {
 
   Buffer* m_uniformBuffer = nullptr;
   Buffer* m_vertexBuffer = nullptr;
-  ShaderModule* m_vertexShaderModule = nullptr;
-  ShaderModule* m_fragmentShaderModule = nullptr;
+  std::vector<char> m_vertexShaderModule;
+  std::vector<char> m_fragmentShaderModule;
 
   Image* m_texture;
   ImageView* m_textureView;

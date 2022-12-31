@@ -202,7 +202,7 @@ enum class ShaderType {
 
 struct ShaderStageCreateInfo {
   ShaderType stage = ShaderType::VERTEX_SHADER;
-  ShaderModule* shaderModule = nullptr;
+  std::vector<char> code;
   std::string interName = "main";
 };
 
@@ -243,8 +243,8 @@ struct RenderTargetDesc {
 };
 
 struct GraphicsPipeLineCreateInfo {
-  DescriptorSetLayout* descriptorSetLayout = nullptr;
   InputLayoutDesc vertexInputLayout = {};
+  DescriptorSetLayout* layout = nullptr;
   std::vector<ShaderStageCreateInfo> shaderStageCreateInfo = {};
   InputAssemblyStateCreateInfo inputAssemblyState = {};
   RasterizationCreateInfo rasterizationInfo = {};
