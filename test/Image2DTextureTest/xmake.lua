@@ -7,7 +7,7 @@ target("Image2DTextureTest")
   set_targetdir(executedir)
 
   add_defines("USE_VULKAN");
-  add_rules("utils.glsl2spv", {outputdir = executedir, targetenv = "opengl"})
+  add_rules("utils.glsl2spv", {outputdir = executedir})
 
   after_build(function ()
     os.cp('$(scriptdir)/texture.jpg', executedir)

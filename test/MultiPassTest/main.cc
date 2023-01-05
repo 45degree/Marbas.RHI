@@ -81,7 +81,7 @@ main(void) {
     createInfo.height = height;
     createInfo.width = width;
     createInfo.layer = 1;
-    createInfo.attachments.colorAttachments = std::span(&imageView, 1);
+    createInfo.attachments.colorAttachments = {imageView};
     createInfo.attachments.depthAttachment = depthBufferView;
     frameBufferCreateInfos.push_back(createInfo);
   }
@@ -99,7 +99,7 @@ main(void) {
 
     for (int i = 0; i < frameBufferCreateInfos.size(); i++) {
       auto& createInfo = frameBufferCreateInfos[i];
-      createInfo.attachments.colorAttachments = std::span(swapChain->imageViews.begin() + i, 1);
+      createInfo.attachments.colorAttachments = {swapChain->imageViews[i]};
       createInfo.attachments.depthAttachment = nullptr;
     }
     showScreenRenderPass.CreateFrameBuffer(frameBufferCreateInfos);

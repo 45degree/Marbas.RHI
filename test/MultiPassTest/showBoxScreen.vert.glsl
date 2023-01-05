@@ -16,4 +16,5 @@ void main() {
   vec3 p = gridPlane[gl_VertexIndex].xyz;
   TexCoords = TexCoor[gl_VertexIndex];
   gl_Position = vec4(p.x, p.y, 0.0, 1.0);
+  gl_Position.y = -gl_Position.y;
 }

@@ -275,9 +275,9 @@ struct FrameBufferCreateInfo {
   uint32_t layer = 1;
   Pipeline* pieline = nullptr;
   struct Attachment {
-    std::span<ImageView*> colorAttachments;
+    std::vector<ImageView*> colorAttachments;
     ImageView* depthAttachment = nullptr;
-    std::span<ImageView*> resolveAttachments;
+    std::vector<ImageView*> resolveAttachments;
   } attachments;
 };
 struct FrameBuffer {

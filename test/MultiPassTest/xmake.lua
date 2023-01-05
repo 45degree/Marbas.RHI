@@ -7,7 +7,7 @@ target("MultiPassTest")
   set_targetdir(executedir)
 
   add_defines("USE_VULKAN");
-  add_rules("utils.glsl2spv", {outputdir = executedir, targetenv = "opengl"})
+  add_rules("utils.glsl2spv", {outputdir = executedir})
 
   add_files("*.cc")
   add_files("**.glsl")

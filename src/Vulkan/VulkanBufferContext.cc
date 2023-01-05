@@ -38,12 +38,8 @@ GetChannelFromFormat(const ImageFormat& format) {
     case ImageFormat::RG16F:
     case ImageFormat::RG32F:
       return 2;
-    case ImageFormat::RGB:
-    case ImageFormat::BGR:
-    case ImageFormat::RGB16F:
-    case ImageFormat::RGB32F:
-    case ImageFormat::RGB_SRGB:
-      return 3;
+    case ImageFormat::RGBA16F:
+    case ImageFormat::RGBA32F:
     case ImageFormat::RGBA:
     case ImageFormat::BGRA:
     case ImageFormat::RGBA_SRGB:
@@ -242,6 +238,22 @@ VulkanBufferContext::CreateImage(const ImageCreateInfo& imageCreateInfo) {
   vkCreateInfo.setUsage(ConvertToVulkanImageUsage(imageCreateInfo.usage));
   vkCreateInfo.setSharingMode(vk::SharingMode::eExclusive);
 
+  vk::ImageFormatProperties imageFormatProp;
+  auto result =
+      m_physicalDevice.getImageFormatProperties(vkCreateInfo.format, vkCreateInfo.imageType, vk::ImageTiling::eOptimal,
+                                                vkCreateInfo.usage, vkCreateInfo.flags, &imageFormatProp);
+  if (result == vk::Result::eErrorFormatNotSupported) {
+    // result =
+    //     m_physicalDevice.getImageFormatProperties(vkCreateInfo.format, vkCreateInfo.imageType,
+    //     vk::ImageTiling::eLinear,
+    //                                               vkCreateInfo.usage, vkCreateInfo.flags, &imageFormatProp);
+    // if (result != vk::Result::eSuccess) {
+    //   delete vulkanImage;
+    //   throw std::runtime_error("the image format is error, can't create image");
+    // }
+    vkCreateInfo.setTiling(vk::ImageTiling::eLinear);
+  }
+
   vulkanImage->vkImage = m_device.createImage(vkCreateInfo);
 
   /**
@@ -264,6 +276,10 @@ VulkanBufferContext::CreateImage(const ImageCreateInfo& imageCreateInfo) {
 
   vulkanImage->vkStagingBuffer = StagingBuffer;
   vulkanImage->vkStagingBufferMemory = StagingMemory;
+
+  if (imageCreateInfo.initState != ImageState::UNDEFINED) {
+    ConvertImageState(vulkanImage, ImageState::UNDEFINED, imageCreateInfo.initState);
+  }
 
   return vulkanImage;
 }

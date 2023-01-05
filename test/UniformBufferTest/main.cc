@@ -165,7 +165,7 @@ main(void) {
     createInfo.width = width;
     createInfo.layer = 1;
     createInfo.pieline = pipeline;
-    createInfo.attachments.colorAttachments = std::span(swapchain->imageViews.begin() + i, 1);
+    createInfo.attachments.colorAttachments = {swapchain->imageViews[i]};
     frameBuffers.push_back(pipelineContext->CreateFrameBuffer(createInfo));
   }
 
@@ -200,7 +200,7 @@ main(void) {
       createInfo.width = width;
       createInfo.layer = 1;
       createInfo.pieline = pipeline;
-      createInfo.attachments.colorAttachments = std::span(swapchain->imageViews.begin() + i, 1);
+      createInfo.attachments.colorAttachments = {swapchain->imageViews[i]};
       frameBuffers[i] = pipelineContext->CreateFrameBuffer(createInfo);
     }
 

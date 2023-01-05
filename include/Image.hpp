@@ -55,18 +55,15 @@ enum class ImageViewType {
 enum class ImageFormat {
   RED,
   RG,
-  RGB,
-  BGR,
   RGBA,
   BGRA,
   R32F,
   RG16F,
   RG32F,
-  RGB16F,
-  RGB32F,
+  RGBA16F,
+  RGBA32F,
   DEPTH,
   RGBA_SRGB,
-  RGB_SRGB,
 };
 
 struct CubeMapImageDesc {};
@@ -79,12 +76,13 @@ struct Image2DArrayDesc {
 };
 
 struct ImageCreateInfo {
-  uint32_t width = 0;
-  uint32_t height = 0;
+  uint32_t width = 256;
+  uint32_t height = 256;
   ImageFormat format = ImageFormat::RGBA;
   SampleCount sampleCount = SampleCount::BIT1;
   uint32_t mipMapLevel = 1;
   uint32_t usage = ImageUsageFlags::SHADER_READ | ImageUsageFlags::COLOR_RENDER_TARGET;
+  ImageState initState = ImageState::UNDEFINED;
   std::variant<CubeMapImageDesc, CubeMapArrayImageDesc, Image2DDesc, Image2DArrayDesc> imageDesc;
 };
 

@@ -35,10 +35,6 @@ ConvertToVulkanFormat(ImageFormat format) {
       return vk::Format::eR8Unorm;
     case ImageFormat::RG:
       return vk::Format::eR8G8Unorm;
-    case ImageFormat::RGB:
-      return vk::Format::eR8G8B8Unorm;
-    case ImageFormat::BGR:
-      return vk::Format::eB8G8R8Unorm;
     case ImageFormat::RGBA:
       return vk::Format::eR8G8B8A8Unorm;
     case ImageFormat::BGRA:
@@ -49,16 +45,14 @@ ConvertToVulkanFormat(ImageFormat format) {
       return vk::Format::eR16G16Sfloat;
     case ImageFormat::RG32F:
       return vk::Format::eR32G32Sfloat;
-    case ImageFormat::RGB16F:
-      return vk::Format::eR16G16B16Sfloat;
-    case ImageFormat::RGB32F:
-      return vk::Format::eR32G32B32Sfloat;
+    case ImageFormat::RGBA16F:
+      return vk::Format::eR16G16B16A16Sfloat;
+    case ImageFormat::RGBA32F:
+      return vk::Format::eR32G32B32A32Sfloat;
     case ImageFormat::DEPTH:
       return vk::Format::eD32SfloatS8Uint;
     case ImageFormat::RGBA_SRGB:
       return vk::Format::eR8G8B8A8Srgb;
-    case ImageFormat::RGB_SRGB:
-      return vk::Format::eR8G8B8Srgb;
   }
   return vk::Format::eR8G8B8A8Unorm;
 }
