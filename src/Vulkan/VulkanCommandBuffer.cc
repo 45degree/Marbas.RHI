@@ -86,31 +86,6 @@ VulkanCommandBuffer::InsertImageBarrier(const std::vector<ImageBarrier>& barrier
 }
 
 void
-VulkanCommandBuffer::TransformImageState(Image* image, ImageState srcState, ImageState dstState) {
-  vk::ImageMemoryBarrier imageMemoryBarrier;
-  const auto* vulkanImage = static_cast<VulkanImage*>(image);
-
-  imageMemoryBarrier.setImage(vulkanImage->vkImage);
-  imageMemoryBarrier.setDstQueueFamilyIndex(m_queueFamily);
-  imageMemoryBarrier.setSrcQueueFamilyIndex(m_queueFamily);
-  imageMemoryBarrier.setSrcAccessMask(vk::AccessFlagBits::eMemoryWrite);
-  imageMemoryBarrier.setDstAccessMask(vk::AccessFlagBits::eMemoryWrite);
-  imageMemoryBarrier.setOldLayout(ConvertToVulkanImageLayout(srcState));
-  imageMemoryBarrier.setNewLayout(ConvertToVulkanImageLayout(dstState));
-
-  vk::ImageSubresourceRange range;
-  range.setAspectMask(vulkanImage->vkAspect);
-  range.setBaseArrayLayer(0);
-  range.setBaseMipLevel(0);
-  range.setLayerCount(vulkanImage->arrayLayer);
-  range.setLevelCount(vulkanImage->mipMapLevel);
-  imageMemoryBarrier.setSubresourceRange(range);
-
-  m_commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eAllCommands, vk::PipelineStageFlagBits::eAllCommands,
-                                  vk::DependencyFlagBits::eByRegion, nullptr, nullptr, imageMemoryBarrier);
-}
-
-void
 VulkanCommandBuffer::BindDescriptorSet(const Pipeline* pipeline, DescriptorSet* descriptors) {
   const auto* vulkanPipeline = static_cast<const VulkanPipeline*>(pipeline);
   auto* vulkanDescriptorSet = static_cast<VulkanDescriptorSet*>(descriptors);

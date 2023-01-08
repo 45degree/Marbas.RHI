@@ -19,6 +19,7 @@
 #include <imgui/backends/imgui_impl_vulkan.h>
 #include <imgui/imgui.h>
 
+#include <unordered_map>
 #include <vulkan/vulkan.hpp>
 
 #include "ImguiContext.hpp"
@@ -63,6 +64,12 @@ class VulkanImguiContext final : public ImguiContext {
   void
   RenderData(uint32_t imageIndex, const ImguiRenderDataInfo& renderInfo) override;
 
+  ImTextureID
+  CreateImGuiImage(ImageView* image) override;
+
+  void
+  DestroyImGuiImage(ImTextureID imTextureId) override;
+
  private:
   void
   SetUpVulkanWindowData(bool clearEnable);
@@ -88,6 +95,8 @@ class VulkanImguiContext final : public ImguiContext {
   vk::RenderPass m_renderPass;
   vk::CommandPool m_commandPool;
   vk::DescriptorPool m_descriptorPool;
+
+  std::unordered_map<ImTextureID, vk::Sampler> m_imguiTexture;
 };
 
 }  // namespace Marbas

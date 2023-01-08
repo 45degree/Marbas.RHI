@@ -79,26 +79,15 @@ ConvertToVulkanFormat(ElementType type) {
 }
 
 FORCE_INLINE vk::ImageLayout
-ConvertToVulkanImageLayout(const ImageState& state) {
-  switch (state) {
-    case ImageState::SHADER_READ:
-      return vk::ImageLayout::eShaderReadOnlyOptimal;
-    case ImageState::RENDER_TARGET:
-      return vk::ImageLayout::eColorAttachmentOptimal;
-    case ImageState::PRESENT:
-      return vk::ImageLayout::ePresentSrcKHR;
-    case ImageState::DEPTH:
-      return vk::ImageLayout::eDepthStencilAttachmentOptimal;
-    case ImageState::UNDEFINED:
-      return vk::ImageLayout::eUndefined;
-    case ImageState::TRANSFER_SRC:
-      return vk::ImageLayout::eTransferSrcOptimal;
-    case ImageState::TRANSFER_DST:
-      return vk::ImageLayout::eTransferDstOptimal;
-    case ImageState::GENERAL:
-      return vk::ImageLayout::eGeneral;
+GetDefaultImageLayoutFromUsage(uint32_t usage) {
+  if (usage & ImageUsageFlags::SHADER_READ) {
+    return vk::ImageLayout::eShaderReadOnlyOptimal;
+  } else if (usage & ImageUsageFlags::COLOR_RENDER_TARGET) {
+    return vk::ImageLayout::eColorAttachmentOptimal;
+  } else if (usage & ImageUsageFlags::DEPTH_STENCIL) {
+    return vk::ImageLayout::eDepthStencilAttachmentOptimal;
   }
-  return vk::ImageLayout::eColorAttachmentOptimal;
+  return vk::ImageLayout::eGeneral;
 }
 
 FORCE_INLINE vk::AccessFlags
@@ -113,7 +102,7 @@ ConvertToVulkanImageAccess(uint32_t usage) {
   if (usage & ImageUsageFlags::SHADER_READ) {
     flags |= vk::AccessFlagBits::eShaderRead;
   }
-  if (usage & ImageUsageFlags::DEPTH) {
+  if (usage & ImageUsageFlags::DEPTH_STENCIL) {
     flags |= vk::AccessFlagBits::eDepthStencilAttachmentWrite;
   }
   if (usage & ImageUsageFlags::COLOR_RENDER_TARGET) {
@@ -172,7 +161,7 @@ ConvertToVulkanImageUsage(uint32_t usage) {
   if (usage & ImageUsageFlags::COLOR_RENDER_TARGET) {
     flags |= vk::ImageUsageFlagBits::eColorAttachment;
   }
-  if (usage & ImageUsageFlags::DEPTH) {
+  if (usage & ImageUsageFlags::DEPTH_STENCIL) {
     flags |= vk::ImageUsageFlagBits::eDepthStencilAttachment;
   }
   if (usage & ImageUsageFlags::SHADER_READ) {

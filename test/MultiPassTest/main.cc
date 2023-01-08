@@ -11,13 +11,12 @@ CreateDepthBuffer(Marbas::BufferContext* bufferContext, uint32_t width, uint32_t
   imageCreateInfo.height = height;
   imageCreateInfo.width = width;
   imageCreateInfo.imageDesc = Marbas::Image2DDesc();
-  imageCreateInfo.usage = Marbas::ImageUsageFlags::DEPTH;
+  imageCreateInfo.usage = Marbas::ImageUsageFlags::DEPTH_STENCIL;
   imageCreateInfo.mipMapLevel = 1;
   imageCreateInfo.format = Marbas::ImageFormat::DEPTH;
   imageCreateInfo.sampleCount = Marbas::SampleCount::BIT1;
 
   auto* image = bufferContext->CreateImage(imageCreateInfo);
-  bufferContext->ConvertImageState(image, Marbas::ImageState::UNDEFINED, Marbas::ImageState::DEPTH);
 
   return image;
 }
@@ -107,7 +106,6 @@ main(void) {
     uint32_t currentFrame = 0;
     Marbas::Semaphore* showBoxRenderPassSemaphore = factory->CreateGPUSemaphore();
     Marbas::Semaphore* showPlaneSemaphore = factory->CreateGPUSemaphore();
-    Marbas::Semaphore* transferFinishSemaphore = factory->CreateGPUSemaphore();
     auto* fence = factory->CreateFence();
     while (!glfwWindowShouldClose(glfwWindow)) {
       glfwPollEvents();
@@ -118,12 +116,7 @@ main(void) {
                                currentFrame);
       showPlaneRenderPass.Render({&showBoxRenderPassSemaphore, 1}, {&showPlaneSemaphore, 1}, nullptr, currentFrame);
 
-      commandBuffer->Begin();
-      commandBuffer->TransformImageState(image, Marbas::ImageState::RENDER_TARGET, Marbas::ImageState::SHADER_READ);
-      commandBuffer->End();
-      commandBuffer->Submit({&showPlaneSemaphore, 1}, {&transferFinishSemaphore, 1}, nullptr);
-
-      showScreenRenderPass.Render({&transferFinishSemaphore, 1}, {waitSemaphores.begin() + currentFrame, 1}, fence,
+      showScreenRenderPass.Render({&showPlaneSemaphore, 1}, {waitSemaphores.begin() + currentFrame, 1}, fence,
                                   nextImage);
       factory->Present(swapChain, std::span(waitSemaphores.begin() + currentFrame, 1), nextImage);
       factory->WaitForFence(fence);
@@ -133,7 +126,6 @@ main(void) {
     factory->DestroyFence(fence);
     factory->DestroyGPUSemaphore(showBoxRenderPassSemaphore);
     factory->DestroyGPUSemaphore(showPlaneSemaphore);
-    factory->DestroyGPUSemaphore(transferFinishSemaphore);
   }
 
   for (int i = 0; i < aviableSemaphores.size(); i++) {

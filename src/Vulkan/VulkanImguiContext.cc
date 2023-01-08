@@ -22,6 +22,7 @@
 #include "VulkanImage.hpp"
 #include "VulkanSynchronic.hpp"
 #include "common.hpp"
+#include "vulkanUtil.hpp"
 
 namespace Marbas {
 
@@ -90,7 +91,7 @@ VulkanImguiContext::SetUpVulkanWindowData(bool clearEnable) {
   descriptorPoolCreateInfo.setMaxSets(maxSize * poolSizes.size());
   m_descriptorPool = m_device.createDescriptorPool(descriptorPoolCreateInfo);
 
-  for (auto* imageView : m_resultImageViews) {
+  for (auto* imageView : m_renderResultImageViews) {
     auto vulkanImageView = static_cast<VulkanImageView*>(imageView);
     auto vkImageView = vulkanImageView->vkImageView;
 
@@ -109,7 +110,7 @@ void
 VulkanImguiContext::CreateWindowCommandBuffer() {
   // Create Command Buffers
   VkResult err;
-  auto imageCount = m_resultImageViews.size();
+  auto imageCount = m_renderResultImageViews.size();
 
   {
     vk::CommandPoolCreateInfo info;
@@ -180,7 +181,7 @@ VulkanImguiContext::Resize(uint32_t width, uint32_t height) {
     ImGui_ImplVulkan_SetMinImageCount(2);
 
     m_device.waitIdle();
-    auto imageCount = m_resultImageViews.size();
+    auto imageCount = m_renderResultImageViews.size();
     for (int i = 0; i < imageCount; i++) {
       m_device.destroyFramebuffer(m_framebuffers[i]);
     }
@@ -192,7 +193,7 @@ VulkanImguiContext::Resize(uint32_t width, uint32_t height) {
     info.setLayers(1);
 
     for (uint32_t i = 0; i < imageCount; i++) {
-      vk::ImageView imageView = static_cast<VulkanImageView*>(m_resultImageViews[i])->vkImageView;
+      vk::ImageView imageView = static_cast<VulkanImageView*>(m_renderResultImageViews[i])->vkImageView;
       info.setAttachments(imageView);
       m_framebuffers[i] = m_device.createFramebuffer(info);
     }
@@ -212,9 +213,9 @@ void
 VulkanImguiContext::SetUpImguiBackend(GLFWwindow* windows) {
   // check the result image view
   vk::Format renderPassFormat = vk::Format::eR8G8B8A8Unorm;
-  if (!m_resultImageViews.empty()) {
-    renderPassFormat = static_cast<VulkanImageView*>(m_resultImageViews[0])->vkFormat;
-    for (auto* imageView : m_resultImageViews) {
+  if (!m_renderResultImageViews.empty()) {
+    renderPassFormat = static_cast<VulkanImageView*>(m_renderResultImageViews[0])->vkFormat;
+    for (auto* imageView : m_renderResultImageViews) {
       auto vkFormat = static_cast<VulkanImageView*>(imageView)->vkFormat;
       if (vkFormat != renderPassFormat) {
         constexpr std::string_view errMsg = "the imgui render result image views's format are not equal";
@@ -240,7 +241,7 @@ VulkanImguiContext::SetUpImguiBackend(GLFWwindow* windows) {
   init_info.DescriptorPool = m_descriptorPool;
   init_info.Subpass = 0;
   init_info.MinImageCount = 2;
-  init_info.ImageCount = m_resultImageViews.size();
+  init_info.ImageCount = m_renderResultImageViews.size();
   init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
   init_info.Allocator = nullptr;
   init_info.CheckVkResultFn = nullptr;
@@ -316,6 +317,38 @@ VulkanImguiContext::RenderData(uint32_t imageIndex, const ImguiRenderDataInfo& r
     info.setCommandBuffers(commandBuffer);
     m_graphicsQueue.submit(info, m_fences[imageIndex]);
   }
+}
+
+ImTextureID
+VulkanImguiContext::CreateImGuiImage(ImageView* imageView) {
+  auto vulkanImage = static_cast<VulkanImageView*>(imageView);
+
+  // create sampler
+  vk::SamplerCreateInfo createInfo;
+  createInfo.setMagFilter(vk::Filter::eLinear);
+  createInfo.setMinFilter(vk::Filter::eLinear);
+  createInfo.setMipmapMode(vk::SamplerMipmapMode::eLinear);
+  createInfo.setAddressModeU(vk::SamplerAddressMode::eRepeat);
+  createInfo.setAddressModeV(vk::SamplerAddressMode::eRepeat);
+  createInfo.setAddressModeW(vk::SamplerAddressMode::eRepeat);
+  createInfo.setMinLod(-1000);
+  createInfo.setMaxLod(-1000);
+  createInfo.setMaxAnisotropy(1.0f);
+
+  auto vkSampler = m_device.createSampler(createInfo);
+  auto vkLayout = static_cast<VkImageLayout>(vk::ImageLayout::eShaderReadOnlyOptimal);
+
+  auto imTextureId = ImGui_ImplVulkan_AddTexture(vkSampler, vulkanImage->vkImageView, vkLayout);
+  m_imguiTexture[imTextureId] = vkSampler;
+
+  return imTextureId;
+}
+
+void
+VulkanImguiContext::DestroyImGuiImage(ImTextureID imTextureId) {
+  auto vkSampler = m_imguiTexture[imTextureId];
+  m_device.destroySampler(vkSampler);
+  ImGui_ImplVulkan_RemoveTexture(static_cast<VkDescriptorSet>(imTextureId));
 }
 
 }  // namespace Marbas

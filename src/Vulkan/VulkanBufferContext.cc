@@ -191,10 +191,9 @@ VulkanBufferContext::CreateImage(const ImageCreateInfo& imageCreateInfo) {
   vulkanImage->mipMapLevel = imageCreateInfo.mipMapLevel;
   vulkanImage->format = imageCreateInfo.format;
 
-  if (imageCreateInfo.usage & ImageUsageFlags::DEPTH) {
+  if (imageCreateInfo.usage & ImageUsageFlags::DEPTH_STENCIL) {
     // when image be used as a depth image, it can't be used as a color render target
     DLOG_ASSERT(!(imageCreateInfo.usage & ImageUsageFlags::COLOR_RENDER_TARGET));
-    DLOG_ASSERT(!(imageCreateInfo.usage & ImageUsageFlags::PRESENT));
     vulkanImage->vkAspect = vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil;
   } else {
     vulkanImage->vkAspect = vk::ImageAspectFlagBits::eColor;
@@ -204,7 +203,6 @@ VulkanBufferContext::CreateImage(const ImageCreateInfo& imageCreateInfo) {
   vkCreateInfo.setInitialLayout(vk::ImageLayout::eUndefined);
   vkCreateInfo.setMipLevels(imageCreateInfo.mipMapLevel);
 
-  // TODO:
   vkCreateInfo.setTiling(vk::ImageTiling::eOptimal);
   vkCreateInfo.setSamples(ConvertToVulkanSampleCount(imageCreateInfo.sampleCount));
 
@@ -277,9 +275,8 @@ VulkanBufferContext::CreateImage(const ImageCreateInfo& imageCreateInfo) {
   vulkanImage->vkStagingBuffer = StagingBuffer;
   vulkanImage->vkStagingBufferMemory = StagingMemory;
 
-  if (imageCreateInfo.initState != ImageState::UNDEFINED) {
-    ConvertImageState(vulkanImage, ImageState::UNDEFINED, imageCreateInfo.initState);
-  }
+  auto defaultImageLayout = GetDefaultImageLayoutFromUsage(vulkanImage->usage);
+  ConvertImageState(vulkanImage, vk::ImageLayout::eUndefined, defaultImageLayout);
 
   return vulkanImage;
 }
@@ -292,7 +289,9 @@ VulkanBufferContext::UpdateImage(const UpdateImageInfo& updateInfo) {
   memcpy(mapData, updateInfo.data, updateInfo.dataSize);
   m_device.unmapMemory(vulkanImage->vkStagingBufferMemory);
 
-  ConvertImageState(updateInfo.image, ImageState::UNDEFINED, ImageState::TRANSFER_DST);
+  auto defaultImageLayout = GetDefaultImageLayoutFromUsage(vulkanImage->usage);
+
+  ConvertImageState(updateInfo.image, defaultImageLayout, vk::ImageLayout::eTransferDstOptimal);
 
   vk::BufferImageCopy range;
   range.setBufferImageHeight(0);
@@ -308,12 +307,13 @@ VulkanBufferContext::UpdateImage(const UpdateImageInfo& updateInfo) {
   range.imageExtent = vk::Extent3D(updateInfo.width, updateInfo.height, updateInfo.depth);
 
   CopyBufferToImage(vulkanImage->vkStagingBuffer, vulkanImage->vkImage, range);
-  ConvertImageState(updateInfo.image, ImageState::TRANSFER_DST, ImageState::SHADER_READ);
+  ConvertImageState(updateInfo.image, vk::ImageLayout::eTransferDstOptimal, defaultImageLayout);
 }
 
 void
 VulkanBufferContext::GenerateMipmap(Image* image, uint32_t mipmapLevel) {
-  ConvertImageState(image, Marbas::ImageState::UNDEFINED, Marbas::ImageState::TRANSFER_DST);
+  auto defaultImageLayout = GetDefaultImageLayoutFromUsage(image->usage);
+  ConvertImageState(image, defaultImageLayout, vk::ImageLayout::eTransferDstOptimal);
   auto* vulkanImage = static_cast<VulkanImage*>(image);
   const auto& vkImage = vulkanImage->vkImage;
 
@@ -382,7 +382,7 @@ VulkanBufferContext::GenerateMipmap(Image* image, uint32_t mipmapLevel) {
   }
   barrier.subresourceRange.baseMipLevel = mipmapLevel - 1;
   barrier.setOldLayout(vk::ImageLayout::eTransferDstOptimal);
-  barrier.setNewLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+  barrier.setNewLayout(defaultImageLayout);
   barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
   barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
   commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eFragmentShader,
@@ -400,7 +400,7 @@ VulkanBufferContext::GenerateMipmap(Image* image, uint32_t mipmapLevel) {
 
 // TODO: improve
 void
-VulkanBufferContext::ConvertImageState(Image* image, ImageState srcState, ImageState dstState) {
+VulkanBufferContext::ConvertImageState(Image* image, vk::ImageLayout srcLayout, vk::ImageLayout dstLayout) {
   auto* vulkanImage = static_cast<VulkanImage*>(image);
   auto vkImage = vulkanImage->vkImage;
 
@@ -425,8 +425,8 @@ VulkanBufferContext::ConvertImageState(Image* image, ImageState srcState, ImageS
   range.setBaseMipLevel(0);
   range.setLevelCount(image->mipMapLevel);
 
-  barrier.setOldLayout(ConvertToVulkanImageLayout(srcState));
-  barrier.setNewLayout(ConvertToVulkanImageLayout(dstState));
+  barrier.setOldLayout(srcLayout);
+  barrier.setNewLayout(dstLayout);
   barrier.setImage(vkImage);
   barrier.setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
   barrier.setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);

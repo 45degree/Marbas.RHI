@@ -79,13 +79,16 @@ ShowPlaneRenderPass::CreatePipeline() {
       BlendAttachment{.blendEnable = false},
   };
   createInfo.outputRenderTarget.colorAttachments = {Marbas::ColorTargetDesc{
-      .isClear = false,
-      .isPresent = false,
+      .initAction = AttachmentInitAction::KEEP,
+      .finalAction = AttachmentFinalAction::READ,
+      .usage = ImageUsageFlags::SHADER_READ | ImageUsageFlags::COLOR_RENDER_TARGET,
       .sampleCount = Marbas::SampleCount::BIT1,
       .format = Marbas::ImageFormat::BGRA,
   }};
   createInfo.outputRenderTarget.depthAttachments = Marbas::DepthTargetDesc{
-      .isClear = false,
+      .initAction = AttachmentInitAction::KEEP,
+      .finalAction = AttachmentFinalAction::READ,
+      .usage = ImageUsageFlags::DEPTH_STENCIL,
       .sampleCount = Marbas::SampleCount::BIT1,
   };
   createInfo.layout = m_descriptorSetLayout;

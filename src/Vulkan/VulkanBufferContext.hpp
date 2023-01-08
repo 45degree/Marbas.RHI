@@ -59,9 +59,6 @@ class VulkanBufferContext final : public BufferContext {
   GenerateMipmap(Image* image, uint32_t mipmapLevel) override;
 
   void
-  ConvertImageState(Image* image, ImageState srcState, ImageState dstState) override;
-
-  void
   DestroyImage(Image* image) override;
 
   ImageView*
@@ -98,6 +95,9 @@ class VulkanBufferContext final : public BufferContext {
 
   vk::Format
   FindSupportFormat(const std::vector<vk::Format>& candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features);
+
+  void
+  ConvertImageState(Image* image, vk::ImageLayout srcLayout, vk::ImageLayout dstLayout);
 
  private:
   uint32_t m_graphicsQueueIndex;

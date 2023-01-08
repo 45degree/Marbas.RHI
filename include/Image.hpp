@@ -25,24 +25,12 @@ namespace Marbas {
 
 struct ImageUsageFlags {
   enum value : uint32_t {
-    SHADER_READ = 1,
+    SHADER_READ = 1 << 0,
     COLOR_RENDER_TARGET = 1 << 1,
     TRANSFER_SRC = 1 << 2,
     TRANSFER_DST = 1 << 3,
-    PRESENT = 1 << 4,
-    DEPTH = 1 << 5,
+    DEPTH_STENCIL = 1 << 4,
   };
-};
-
-enum class ImageState {
-  UNDEFINED,
-  GENERAL,
-  TRANSFER_SRC,
-  TRANSFER_DST,
-  SHADER_READ,
-  RENDER_TARGET,
-  PRESENT,
-  DEPTH,
 };
 
 enum class ImageViewType {
@@ -82,8 +70,8 @@ struct ImageCreateInfo {
   SampleCount sampleCount = SampleCount::BIT1;
   uint32_t mipMapLevel = 1;
   uint32_t usage = ImageUsageFlags::SHADER_READ | ImageUsageFlags::COLOR_RENDER_TARGET;
-  ImageState initState = ImageState::UNDEFINED;
-  std::variant<CubeMapImageDesc, CubeMapArrayImageDesc, Image2DDesc, Image2DArrayDesc> imageDesc;
+  // ImageState initState = ImageState::UNDEFINED;
+  std::variant<CubeMapImageDesc, CubeMapArrayImageDesc, Image2DDesc, Image2DArrayDesc> imageDesc = Image2DDesc{};
 };
 
 struct Image {

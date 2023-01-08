@@ -16,6 +16,7 @@
 #pragma once
 
 #include <GLFW/glfw3.h>
+#include <imgui.h>
 
 #include <span>
 
@@ -34,9 +35,15 @@ class ImguiContext {
   virtual ~ImguiContext() = default;
 
  public:
+  virtual ImTextureID
+  CreateImGuiImage(ImageView* imageView) = 0;
+
   virtual void
-  SetResultImage(const std::vector<ImageView*>& resultImageViews) {
-    m_resultImageViews = resultImageViews;
+  DestroyImGuiImage(ImTextureID imTextureId) = 0;
+
+  virtual void
+  SetRenderResultImage(const std::vector<ImageView*>& resultImageViews) {
+    m_renderResultImageViews = resultImageViews;
   }
 
   virtual void
@@ -55,7 +62,7 @@ class ImguiContext {
   RenderData(uint32_t imageIndex, const ImguiRenderDataInfo& renderInfo) = 0;
 
  protected:
-  std::vector<ImageView*> m_resultImageViews;
+  std::vector<ImageView*> m_renderResultImageViews;
 };
 
 }  // namespace Marbas

@@ -203,6 +203,96 @@ ConvertOpenGLSpirvToVulkanShader(const std::vector<uint32_t>& code, ShaderType s
   return {module.begin(), module.end()};
 }
 
+static void
+SetAttachmentLayout(vk::AttachmentDescription& description, AttachmentInitAction initAction,
+                    AttachmentFinalAction finalAction, uint32_t usage) {
+  bool isColorTarget = usage & ImageUsageFlags::COLOR_RENDER_TARGET;
+  bool isDepthStencil = usage & ImageUsageFlags::DEPTH_STENCIL;
+
+  if (isColorTarget == isDepthStencil) {
+    // never enter this
+    LOG(ERROR) << "attachment usage must contain one of COLOR_RENDER_TARGET and DEPTH_STENCIL";
+    throw std::runtime_error("attachment usage error");
+  }
+
+  if (finalAction == AttachmentFinalAction::PRESENT && isDepthStencil) {
+    LOG(ERROR) << "the final action is present, but it used as depth stencil attachment";
+    throw std::runtime_error("attachment usage error");
+  }
+
+  auto defaultImageLayout = GetDefaultImageLayoutFromUsage(usage);
+
+  // set init layout
+  bool isSample = usage & ImageUsageFlags::SHADER_READ;
+  switch (initAction) {
+    case AttachmentInitAction::CLEAR: {
+      if (isColorTarget) {
+        description.setLoadOp(vk::AttachmentLoadOp::eClear);
+        description.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare);
+        description.setInitialLayout(defaultImageLayout);
+      } else if (isDepthStencil) {
+        description.setLoadOp(vk::AttachmentLoadOp::eClear);
+        description.setStencilLoadOp(vk::AttachmentLoadOp::eClear);
+        description.setInitialLayout(defaultImageLayout);
+      }
+      break;
+    }
+    case AttachmentInitAction::KEEP: {
+      if (isColorTarget) {
+        description.setLoadOp(vk::AttachmentLoadOp::eLoad);
+        description.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare);
+        description.setInitialLayout(defaultImageLayout);
+      } else if (isDepthStencil) {
+        description.setLoadOp(vk::AttachmentLoadOp::eLoad);
+        description.setStencilLoadOp(vk::AttachmentLoadOp::eLoad);
+        description.setInitialLayout(defaultImageLayout);
+      }
+      break;
+    }
+    case AttachmentInitAction::DROP: {
+      if (isColorTarget) {
+        description.setLoadOp(vk::AttachmentLoadOp::eDontCare);
+        description.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare);
+        description.setInitialLayout(defaultImageLayout);
+      } else if (isDepthStencil) {
+        description.setLoadOp(vk::AttachmentLoadOp::eDontCare);
+        description.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare);
+        description.setInitialLayout(vk::ImageLayout::eUndefined);
+      }
+      break;
+    }
+  }
+
+  // set final layout
+  switch (finalAction) {
+    case AttachmentFinalAction::READ: {
+      if (isColorTarget) {
+        description.setStoreOp(vk::AttachmentStoreOp::eStore);
+        description.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare);
+        description.setFinalLayout(defaultImageLayout);
+      } else if (isDepthStencil) {
+        description.setStoreOp(vk::AttachmentStoreOp::eStore);
+        description.setStencilStoreOp(vk::AttachmentStoreOp::eStore);
+        description.setFinalLayout(defaultImageLayout);
+      }
+      break;
+    }
+    case AttachmentFinalAction::DISCARD: {
+      description.setStoreOp(vk::AttachmentStoreOp::eDontCare);
+      description.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare);
+      description.setFinalLayout(defaultImageLayout);
+      break;
+    }
+    case AttachmentFinalAction::PRESENT: {
+      description.setInitialLayout(vk::ImageLayout::eUndefined);
+      description.setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
+      description.setStoreOp(vk::AttachmentStoreOp::eStore);
+      description.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare);
+      break;
+    }
+  }
+}
+
 Sampler*
 VulkanPipelineContext::CreateSampler(const SamplerCreateInfo& createInfo) {
   vk::SamplerCreateInfo vkCreateInfo;
@@ -474,7 +564,11 @@ VulkanPipelineContext::CreatePipeline(GraphicsPipeLineCreateInfo& createInfo) {
   vkCreateInfo.setStages(vkShaderStageCreateInfos);
 
   // view port
+  std::array<vk::Viewport, 1> viewports = {vk::Viewport(0, 0, 800, 600)};
+  std::array<vk::Rect2D, 1> scissors = {vk::Rect2D({0, 0}, {800, 600})};
   vk::PipelineViewportStateCreateInfo vkViewportStateCreateInfo;
+  vkViewportStateCreateInfo.setViewports(viewports);
+  vkViewportStateCreateInfo.setScissors(scissors);
   vkCreateInfo.setPViewportState(&vkViewportStateCreateInfo);
 
   // dynamic state
@@ -701,22 +795,7 @@ VulkanPipelineContext::CreateRenderPass(const RenderTargetDesc& renderTargetDesc
     description.setFormat(ConvertToVulkanFormat(colorTargetDesc.format));
     description.setSamples(ConvertToVulkanSampleCount(colorTargetDesc.sampleCount));
 
-    if (colorTargetDesc.isClear) {
-      description.setInitialLayout(vk::ImageLayout::eUndefined);
-      description.setLoadOp(vk::AttachmentLoadOp::eClear);
-    } else {
-      // TODO
-      description.setInitialLayout(vk::ImageLayout::eColorAttachmentOptimal);
-      description.setLoadOp(vk::AttachmentLoadOp::eLoad);
-    }
-    description.setStoreOp(vk::AttachmentStoreOp::eStore);
-
-    if (colorTargetDesc.isPresent) {
-      description.setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
-    } else {
-      description.setFinalLayout(vk::ImageLayout::eColorAttachmentOptimal);
-    }
-
+    SetAttachmentLayout(description, colorTargetDesc.initAction, colorTargetDesc.finalAction, colorTargetDesc.usage);
     attachmentDescriptions.push_back(description);
   }
 
@@ -728,17 +807,10 @@ VulkanPipelineContext::CreateRenderPass(const RenderTargetDesc& renderTargetDesc
     depthAttachmentReference->setAttachment(attachmentDescriptions.size());
     depthAttachmentReference->setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
 
-    description.setInitialLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
-    description.setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
     description.setFormat(ConvertToVulkanFormat(ImageFormat::DEPTH));
     description.setSamples(ConvertToVulkanSampleCount(depthAttachment.sampleCount));
 
-    if (depthAttachment.isClear) {
-      description.setLoadOp(vk::AttachmentLoadOp::eClear);
-    } else {
-      description.setLoadOp(vk::AttachmentLoadOp::eLoad);
-    }
-    description.setStoreOp(vk::AttachmentStoreOp::eStore);
+    SetAttachmentLayout(description, depthAttachment.initAction, depthAttachment.finalAction, depthAttachment.usage);
     attachmentDescriptions.push_back(description);
   }
 
@@ -751,18 +823,9 @@ VulkanPipelineContext::CreateRenderPass(const RenderTargetDesc& renderTargetDesc
     resolveAttachmentReference.push_back(reference);
 
     description.setFormat(ConvertToVulkanFormat(resolveAttachment.format));
-    description.setInitialLayout(vk::ImageLayout::eUndefined);
     description.setSamples(ConvertToVulkanSampleCount(resolveAttachment.sampleCount));
-    description.setLoadOp(vk::AttachmentLoadOp::eDontCare);
-    description.setStoreOp(vk::AttachmentStoreOp::eStore);
-    description.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare);
-    description.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare);
-
-    if (resolveAttachment.isPresent) {
-      description.setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
-    } else {
-      description.setFinalLayout(vk::ImageLayout::eColorAttachmentOptimal);
-    }
+    SetAttachmentLayout(description, resolveAttachment.initAction, resolveAttachment.finalAction,
+                        resolveAttachment.usage);
     attachmentDescriptions.push_back(description);
   }
 

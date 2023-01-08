@@ -50,8 +50,6 @@ LoadImage(Marbas::BufferContext* bufferContext, const std::string& imagePath) {
   auto image = bufferContext->CreateImage(imageCreateInfo);
   bufferContext->UpdateImage(Marbas::UpdateImageInfo{
       .image = image,
-      .srcImageState = Marbas::ImageState::UNDEFINED,
-      .dstImageState = Marbas::ImageState::SHADER_READ,
       .level = 0,
       .xOffset = 0,
       .yOffset = 0,
@@ -171,8 +169,9 @@ main(void) {
       .colorAttachments =
           {
               Marbas::ColorTargetDesc{
-                  .isClear = true,
-                  .isPresent = true,
+                  .initAction = Marbas::AttachmentInitAction::CLEAR,
+                  .finalAction = Marbas::AttachmentFinalAction::PRESENT,
+                  .usage = Marbas::ImageUsageFlags::COLOR_RENDER_TARGET,
                   .format = swapchain->imageFormat,
               },
           },

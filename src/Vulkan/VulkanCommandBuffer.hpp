@@ -51,9 +51,6 @@ class VulkanCommandBuffer final : public CommandBuffer {
   void
   InsertImageBarrier(const std::vector<ImageBarrier>& barriers) override;
 
-  void
-  TransformImageState(Image* image, ImageState srcState, ImageState dstState) override;
-
  public:
   void
   Begin() override;

@@ -26,7 +26,7 @@ if is_host("windows") then
   option("Vulkan_SDK_Path")
     add_deps("SupportVulkan")
     set_category("Marbas Render Hardware Interface")
-    set_default("D:/VulkanSDK/1.3.224.1")
+    set_default("$(env VK_SDK_PATH)")
     set_description("vulkan SDK dir")
     set_showmenu(true)
   option_end()

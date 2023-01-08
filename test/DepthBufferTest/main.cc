@@ -56,8 +56,6 @@ LoadImage(Marbas::BufferContext* bufferContext, const std::string& imagePath) {
   auto image = bufferContext->CreateImage(imageCreateInfo);
   bufferContext->UpdateImage(Marbas::UpdateImageInfo{
       .image = image,
-      .srcImageState = Marbas::ImageState::UNDEFINED,
-      .dstImageState = Marbas::ImageState::SHADER_READ,
       .level = 0,
       .xOffset = 0,
       .yOffset = 0,
@@ -77,12 +75,11 @@ CreateDepthBuffer(Marbas::BufferContext* bufferContext, uint32_t width, uint32_t
   imageCreateInfo.height = height;
   imageCreateInfo.width = width;
   imageCreateInfo.imageDesc = Marbas::Image2DDesc();
-  imageCreateInfo.usage = Marbas::ImageUsageFlags::DEPTH;
+  imageCreateInfo.usage = Marbas::ImageUsageFlags::DEPTH_STENCIL;
   imageCreateInfo.mipMapLevel = 1;
   imageCreateInfo.format = Marbas::ImageFormat::DEPTH;
 
   auto* image = bufferContext->CreateImage(imageCreateInfo);
-  bufferContext->ConvertImageState(image, Marbas::ImageState::UNDEFINED, Marbas::ImageState::DEPTH);
 
   return image;
 }
@@ -201,13 +198,16 @@ main(void) {
   // render target desc and blend
   Marbas::RenderTargetDesc renderTargetDesc{
       .colorAttachments = {Marbas::ColorTargetDesc{
-          .isClear = true,
-          .isPresent = true,
+          .initAction = Marbas::AttachmentInitAction::CLEAR,
+          .finalAction = Marbas::AttachmentFinalAction::PRESENT,
+          .usage = Marbas::ImageUsageFlags::COLOR_RENDER_TARGET,
           .format = swapchain->imageFormat,
       }},
       .depthAttachments =
           Marbas::DepthTargetDesc{
-              .isClear = true,
+              .initAction = Marbas::AttachmentInitAction::CLEAR,
+              .finalAction = Marbas::AttachmentFinalAction::DISCARD,
+              .usage = Marbas::ImageUsageFlags::DEPTH_STENCIL,
           },
   };
 

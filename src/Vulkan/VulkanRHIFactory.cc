@@ -332,7 +332,7 @@ VulkanRHIFactory::CreateSwapchain(uint32_t width, uint32_t height) {
     auto* vulkanImageView = new VulkanImageView();
 
     vulkanImage->vkImage = image;
-    vulkanImage->usage = ImageUsageFlags::PRESENT | ImageUsageFlags::COLOR_RENDER_TARGET;
+    vulkanImage->usage = ImageUsageFlags::COLOR_RENDER_TARGET;
     vulkanImage->vkAspect = vk::ImageAspectFlagBits::eColor;
     vulkanImage->mipMapLevel = 1;
     vulkanImage->arrayLayer = 1;

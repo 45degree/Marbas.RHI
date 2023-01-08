@@ -218,20 +218,37 @@ struct MultisampleCreateInfo {
  * graphics pipeline create info struct
  */
 
+enum class AttachmentFinalAction {
+  READ,
+  DISCARD,
+  PRESENT,
+};
+
+enum class AttachmentInitAction {
+  CLEAR,
+  KEEP,
+  DROP,
+};
+
 struct DepthTargetDesc {
-  bool isClear;
+  AttachmentInitAction initAction;
+  AttachmentFinalAction finalAction;
+  uint32_t usage;
   SampleCount sampleCount = SampleCount::BIT1;
 };
 
 struct ColorTargetDesc {
-  bool isClear;
-  bool isPresent;
+  AttachmentInitAction initAction;
+  AttachmentFinalAction finalAction;
+  uint32_t usage;
   SampleCount sampleCount = SampleCount::BIT1;
   ImageFormat format = ImageFormat::RGBA;
 };
 
 struct ResolveTargetDesc {
-  bool isPresent;
+  AttachmentInitAction initAction;
+  AttachmentFinalAction finalAction;
+  uint32_t usage;
   SampleCount sampleCount = SampleCount::BIT1;
   ImageFormat format = ImageFormat::RGBA;
 };

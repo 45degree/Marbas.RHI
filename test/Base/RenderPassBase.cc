@@ -34,8 +34,6 @@ RenderPassBase::LoadImage(Marbas::BufferContext* bufferContext, const std::strin
   auto image = bufferContext->CreateImage(imageCreateInfo);
   bufferContext->UpdateImage(Marbas::UpdateImageInfo{
       .image = image,
-      .srcImageState = Marbas::ImageState::UNDEFINED,
-      .dstImageState = Marbas::ImageState::SHADER_READ,
       .level = 0,
       .xOffset = 0,
       .yOffset = 0,

@@ -25,8 +25,6 @@ namespace Marbas {
 
 struct UpdateImageInfo {
   Image* image;
-  ImageState srcImageState = ImageState::UNDEFINED;
-  ImageState dstImageState;
   uint32_t level;
   int32_t xOffset;
   int32_t yOffset;
@@ -59,9 +57,6 @@ class BufferContext {
 
   virtual void
   UpdateImage(const UpdateImageInfo& updateInfo) = 0;
-
-  virtual void
-  ConvertImageState(Image* image, ImageState srcState, ImageState dstState) = 0;
 
   virtual void
   GenerateMipmap(Image* image, uint32_t mipmapLevel) = 0;

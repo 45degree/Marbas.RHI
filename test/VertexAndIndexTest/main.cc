@@ -37,8 +37,9 @@ main(void) {
   // render target desc and blend
   Marbas::RenderTargetDesc renderTargetDesc = {
       .colorAttachments = {Marbas::ColorTargetDesc{
-          .isClear = true,
-          .isPresent = true,
+          .initAction = Marbas::AttachmentInitAction::CLEAR,
+          .finalAction = Marbas::AttachmentFinalAction::PRESENT,
+          .usage = Marbas::ImageUsageFlags::COLOR_RENDER_TARGET,
           .format = swapchain->imageFormat,
       }},
   };
