@@ -48,12 +48,28 @@ class VulkanBufferContext final : public BufferContext {
   void
   DestroyBuffer(Buffer* buffer) override;
 
+  void
+  GetBufferData(Buffer* buffer, void* data) override;
+
+ public:
+  TexelBuffer*
+  CreateTexelBuffer(Buffer* buffer, ImageFormat format) override;
+
+  void
+  DestroyTexelBuffer(TexelBuffer* texelBuffer) override;
+
  public:
   Image*
   CreateImage(const ImageCreateInfo& createInfo) override;
 
   void
   UpdateImage(const UpdateImageInfo& updateInfo) override;
+
+  void
+  GetImageData(const ImageSubresourceDesc& imageRange, void* data) override;
+
+  uint32_t
+  GetImageSubresourceSize(const ImageSubresourceDesc& imageRange) override;
 
   void
   GenerateMipmap(Image* image, uint32_t mipmapLevel) override;

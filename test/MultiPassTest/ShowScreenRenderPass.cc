@@ -41,7 +41,7 @@ ShowScreenRenderPass::CreateDescirptorSet(ImageView* imageView) {
           .size = 1,
       },
   };
-  m_descriptorPool = m_pipelineContext->CreateDescriptorPool(poolSize);
+  m_descriptorPool = m_pipelineContext->CreateDescriptorPool(poolSize, 1);
 
   m_descritorSet = m_pipelineContext->CreateDescriptorSet(m_descriptorPool, m_descriptorSetLayout);
 

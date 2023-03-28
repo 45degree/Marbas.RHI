@@ -61,7 +61,11 @@ enum class BufferType {
   INDEX_BUFFER,
   UNIFORM_BUFFER,
   STORAGE_BUFFER,
+  UNIFORM_TEXEL_BUFFER,
+  STORAGE_TEXEL_BUFFER,
 };
+
+enum class TexelBufferType {};
 
 struct BufferUsageFlags {
   enum value : uint32_t {
@@ -76,5 +80,7 @@ struct Buffer {
   BufferType bufferType = BufferType::VERTEX_BUFFER;
   uint32_t size = 0;
 };
+
+struct TexelBuffer {};
 
 }  // namespace Marbas

@@ -46,7 +46,10 @@ class PipelineContext {
 
  public:
   virtual Pipeline*
-  CreatePipeline(GraphicsPipeLineCreateInfo& createInfo) = 0;
+  CreatePipeline(const GraphicsPipeLineCreateInfo& createInfo) = 0;
+
+  virtual Pipeline*
+  CreatePipeline(const ComputePipelineCreateInfo& createInfo) = 0;
 
   virtual void
   DestroyPipeline(Pipeline* pipeline) = 0;
@@ -78,7 +81,7 @@ class PipelineContext {
   BindBuffer(const BindBufferInfo& bindBufferInfo) = 0;
 
   virtual DescriptorPool*
-  CreateDescriptorPool(std::span<DescriptorPoolSize> descritorPoolSize) = 0;
+  CreateDescriptorPool(std::span<DescriptorPoolSize> descritorPoolSize, uint32_t maxSets) = 0;
 
   virtual void
   DestroyDescriptorPool(DescriptorPool* descriptorPool) = 0;

@@ -15,6 +15,7 @@
  */
 #include "VulkanPipelineContext.hpp"
 
+#include <iostream>
 #include <optional>
 #include <set>
 #include <shaderc/shaderc.hpp>
@@ -22,9 +23,9 @@
 #include <spirv_cross/spirv_glsl.hpp>
 
 #include "VulkanBuffer.hpp"
+#include "VulkanFormat.hpp"
 #include "VulkanImage.hpp"
 #include "VulkanPipeline.hpp"
-#include "VulkanShaderModule.hpp"
 #include "vulkanUtil.hpp"
 
 namespace Marbas {
@@ -170,9 +171,14 @@ ConvertOpenGLSpirvToVulkanShader(const std::vector<uint32_t>& code, ShaderType s
     glsl.set_decoration(ubo.id, spv::Decoration::DecorationDescriptorSet, 0);
   }
 
+  // ssbo
+  for (const auto& ssbo : resource.storage_buffers) {
+    glsl.set_decoration(ssbo.id, spv::Decoration::DecorationDescriptorSet, 1);
+  }
+
   // sampled image
   for (const auto& image : resource.sampled_images) {
-    glsl.set_decoration(image.id, spv::Decoration::DecorationDescriptorSet, 1);
+    glsl.set_decoration(image.id, spv::Decoration::DecorationDescriptorSet, 2);
   }
 
   spirv_cross::CompilerGLSL::Options options;
@@ -195,6 +201,9 @@ ConvertOpenGLSpirvToVulkanShader(const std::vector<uint32_t>& code, ShaderType s
       break;
     case ShaderType::GEOMETRY_SHADER:
       kind = shaderc_geometry_shader;
+      break;
+    case ShaderType::COMPUTE_SHADER:
+      kind = shaderc_compute_shader;
       break;
   }
 
@@ -386,6 +395,7 @@ VulkanPipelineContext::CreateShaderModule(const std::vector<char>& spirvCode, Sh
 DescriptorSetLayout*
 VulkanPipelineContext::CreateDescriptorSetLayout(const std::vector<DescriptorSetLayoutBinding>& layoutBinding) {
   std::vector<vk::DescriptorSetLayoutBinding> uboBinding;
+  std::vector<vk::DescriptorSetLayoutBinding> ssboBinding;
   std::vector<vk::DescriptorSetLayoutBinding> sampledImageBindind;
   for (const auto& binding : layoutBinding) {
     vk::DescriptorSetLayoutBinding vkLayoutBinding;
@@ -406,6 +416,10 @@ VulkanPipelineContext::CreateDescriptorSetLayout(const std::vector<DescriptorSet
         vkLayoutBinding.setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
         sampledImageBindind.push_back(vkLayoutBinding);
         break;
+      case DescriptorType::STORAGE_BUFFER:
+        vkLayoutBinding.setDescriptorType(vk::DescriptorType::eStorageBuffer);
+        ssboBinding.push_back(vkLayoutBinding);
+        break;
     }
   }
 
@@ -413,7 +427,10 @@ VulkanPipelineContext::CreateDescriptorSetLayout(const std::vector<DescriptorSet
 
   vk::DescriptorSetLayoutCreateInfo createInfo;
   createInfo.setBindings(uboBinding);
-  vulkanDescriptorSetLayout->vkUboLayout = m_device.createDescriptorSetLayout(createInfo);
+  vulkanDescriptorSetLayout->vkBufferLayoutout = m_device.createDescriptorSetLayout(createInfo);
+
+  createInfo.setBindings(ssboBinding);
+  vulkanDescriptorSetLayout->vkSSBOLayout = m_device.createDescriptorSetLayout(createInfo);
 
   createInfo.setBindings(sampledImageBindind);
   vulkanDescriptorSetLayout->vkSampledImageLayout = m_device.createDescriptorSetLayout(createInfo);
@@ -424,14 +441,16 @@ VulkanPipelineContext::CreateDescriptorSetLayout(const std::vector<DescriptorSet
 void
 VulkanPipelineContext::DestroyDescriptorSetLayout(DescriptorSetLayout* descriptorSetLayout) {
   auto* vulkanDescriptorSetLayout = static_cast<VulkanDescriptorSetLayout*>(descriptorSetLayout);
-  m_device.destroyDescriptorSetLayout(vulkanDescriptorSetLayout->vkUboLayout);
+  m_device.destroyDescriptorSetLayout(vulkanDescriptorSetLayout->vkBufferLayoutout);
   m_device.destroyDescriptorSetLayout(vulkanDescriptorSetLayout->vkSampledImageLayout);
+  m_device.destroyDescriptorSetLayout(vulkanDescriptorSetLayout->vkSSBOLayout);
 }
 
 DescriptorPool*
-VulkanPipelineContext::CreateDescriptorPool(std::span<DescriptorPoolSize> descritorPoolSize) {
+VulkanPipelineContext::CreateDescriptorPool(std::span<DescriptorPoolSize> descritorPoolSize, uint32_t maxSets) {
   vk::DescriptorPoolCreateInfo createInfo;
-  createInfo.setMaxSets(200);
+  maxSets = maxSets < 100 ? 100 : maxSets;
+  createInfo.setMaxSets(maxSets * 3);
 
   std::vector<vk::DescriptorPoolSize> poolSizes;
   for (auto& descriptorInfo : descritorPoolSize) {
@@ -467,8 +486,11 @@ VulkanPipelineContext::CreateDescriptorSet(const DescriptorPool* pool, const Des
   auto* vulkanDescriptorSet = new VulkanDescriptorSet();
   auto* vulkanDescriptorSetLayout = static_cast<const VulkanDescriptorSetLayout*>(descriptorLayout);
 
-  std::array descriptorLayouts = {vulkanDescriptorSetLayout->vkUboLayout,
-                                  vulkanDescriptorSetLayout->vkSampledImageLayout};
+  std::array descriptorLayouts = {
+      vulkanDescriptorSetLayout->vkBufferLayoutout,
+      vulkanDescriptorSetLayout->vkSSBOLayout,
+      vulkanDescriptorSetLayout->vkSampledImageLayout,
+  };
 
   vk::DescriptorSetAllocateInfo allocateInfo;
   allocateInfo.setSetLayouts(descriptorLayouts);
@@ -476,10 +498,10 @@ VulkanPipelineContext::CreateDescriptorSet(const DescriptorPool* pool, const Des
   allocateInfo.setDescriptorSetCount(descriptorLayouts.size());
 
   auto vkDescriptorSets = m_device.allocateDescriptorSets(allocateInfo);
-  DLOG_ASSERT(vkDescriptorSets.size() == 2);
 
   vulkanDescriptorSet->uniformBufferSet = vkDescriptorSets[0];
-  vulkanDescriptorSet->sampledImageSet = vkDescriptorSets[1];
+  vulkanDescriptorSet->ssboSet = vkDescriptorSets[1];
+  vulkanDescriptorSet->sampledImageSet = vkDescriptorSets[2];
 
   return vulkanDescriptorSet;
 }
@@ -498,7 +520,7 @@ VulkanPipelineContext::DestroyDescriptorSet(const DescriptorPool* descriptorPool
 
 // graphics pipeline
 Pipeline*
-VulkanPipelineContext::CreatePipeline(GraphicsPipeLineCreateInfo& createInfo) {
+VulkanPipelineContext::CreatePipeline(const GraphicsPipeLineCreateInfo& createInfo) {
   auto* graphicsPipeline = new VulkanPipeline();
   graphicsPipeline->vkRenderPass = CreateRenderPass(createInfo.outputRenderTarget, vk::PipelineBindPoint::eGraphics);
 
@@ -603,6 +625,8 @@ VulkanPipelineContext::CreatePipeline(GraphicsPipeLineCreateInfo& createInfo) {
   vkDepthStencilStateCreateInfo.setDepthWriteEnable(createInfo.depthStencilInfo.depthWriteEnable);
   vkDepthStencilStateCreateInfo.setDepthBoundsTestEnable(createInfo.depthStencilInfo.depthBoundsTestEnable);
   vkDepthStencilStateCreateInfo.setStencilTestEnable(createInfo.depthStencilInfo.stencilTestEnable);
+  vkDepthStencilStateCreateInfo.setMaxDepthBounds(1);
+  vkDepthStencilStateCreateInfo.setMinDepthBounds(-1);
   switch (createInfo.depthStencilInfo.depthCompareOp) {
     case DepthCompareOp::ALWAYS:
       vkDepthStencilStateCreateInfo.setDepthCompareOp(vk::CompareOp::eAlways);
@@ -718,6 +742,33 @@ VulkanPipelineContext::CreatePipeline(GraphicsPipeLineCreateInfo& createInfo) {
   return graphicsPipeline;
 }
 
+Pipeline*
+VulkanPipelineContext::CreatePipeline(const ComputePipelineCreateInfo& createInfo) {
+  vk::ComputePipelineCreateInfo vkCreateInfo;
+
+  vk::PipelineShaderStageCreateInfo shaderStageInfo;
+
+  // convert shader
+  auto module = CreateShaderModule(createInfo.computeShaderStage.code, createInfo.computeShaderStage.stage);
+  shaderStageInfo.setModule(module);
+  shaderStageInfo.setStage(vk::ShaderStageFlagBits::eCompute);
+  shaderStageInfo.setPName(createInfo.computeShaderStage.interName.c_str());
+  vkCreateInfo.setStage(shaderStageInfo);
+
+  auto pipelineLayout = CreatePipelineLayout(static_cast<VulkanDescriptorSetLayout*>(createInfo.layout));
+  vkCreateInfo.setLayout(pipelineLayout);
+
+  auto vkPipeline = m_device.createComputePipeline(nullptr, vkCreateInfo);
+
+  auto* vulkanPipeline = new VulkanPipeline();
+  vulkanPipeline->vkPipeline = vkPipeline.value;
+  vulkanPipeline->vkPipelineLayout = pipelineLayout;
+  vulkanPipeline->shaderModule = {module};
+  vulkanPipeline->pipelineType = PipelineType::COMPUTE;
+
+  return vulkanPipeline;
+}
+
 void
 VulkanPipelineContext::DestroyPipeline(Pipeline* pipeline) {
   if (pipeline == nullptr) return;
@@ -792,7 +843,7 @@ VulkanPipelineContext::CreateRenderPass(const RenderTargetDesc& renderTargetDesc
     reference.setLayout(vk::ImageLayout::eColorAttachmentOptimal);
     colorAttachmentReferences.push_back(reference);
 
-    description.setFormat(ConvertToVulkanFormat(colorTargetDesc.format));
+    description.setFormat(GetVkFormat(colorTargetDesc.format));
     description.setSamples(ConvertToVulkanSampleCount(colorTargetDesc.sampleCount));
 
     SetAttachmentLayout(description, colorTargetDesc.initAction, colorTargetDesc.finalAction, colorTargetDesc.usage);
@@ -807,7 +858,7 @@ VulkanPipelineContext::CreateRenderPass(const RenderTargetDesc& renderTargetDesc
     depthAttachmentReference->setAttachment(attachmentDescriptions.size());
     depthAttachmentReference->setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
 
-    description.setFormat(ConvertToVulkanFormat(ImageFormat::DEPTH));
+    description.setFormat(GetVkFormat(ImageFormat::DEPTH));
     description.setSamples(ConvertToVulkanSampleCount(depthAttachment.sampleCount));
 
     SetAttachmentLayout(description, depthAttachment.initAction, depthAttachment.finalAction, depthAttachment.usage);
@@ -822,7 +873,7 @@ VulkanPipelineContext::CreateRenderPass(const RenderTargetDesc& renderTargetDesc
     reference.setLayout(vk::ImageLayout::eColorAttachmentOptimal);
     resolveAttachmentReference.push_back(reference);
 
-    description.setFormat(ConvertToVulkanFormat(resolveAttachment.format));
+    description.setFormat(GetVkFormat(resolveAttachment.format));
     description.setSamples(ConvertToVulkanSampleCount(resolveAttachment.sampleCount));
     SetAttachmentLayout(description, resolveAttachment.initAction, resolveAttachment.finalAction,
                         resolveAttachment.usage);
@@ -856,7 +907,11 @@ VulkanPipelineContext::CreatePipelineLayout(const VulkanDescriptorSetLayout* des
     return m_device.createPipelineLayout(vkPipelineLayoutCreateInfo);
   }
 
-  std::array vkLayouts = {descriptorSetLayout->vkUboLayout, descriptorSetLayout->vkSampledImageLayout};
+  std::array vkLayouts = {
+      descriptorSetLayout->vkBufferLayoutout,
+      descriptorSetLayout->vkSSBOLayout,
+      descriptorSetLayout->vkSampledImageLayout,
+  };
   vkPipelineLayoutCreateInfo.setSetLayouts(vkLayouts);
   return m_device.createPipelineLayout(vkPipelineLayoutCreateInfo);
 }
@@ -873,16 +928,23 @@ VulkanPipelineContext::BindBuffer(const BindBufferInfo& bindBufferInfo) {
   vkDescriptorBufferInfo.setRange(vulkanBuffer->size);
 
   vk::WriteDescriptorSet vkWriteDescriptorSet;
-  vkWriteDescriptorSet.setDstSet(vulkanDescriptorSet->uniformBufferSet);
   vkWriteDescriptorSet.setDstBinding(bindBufferInfo.bindingPoint);
   vkWriteDescriptorSet.setDescriptorCount(1);
   vkWriteDescriptorSet.setBufferInfo(vkDescriptorBufferInfo);
   vkWriteDescriptorSet.setDstArrayElement(bindBufferInfo.arrayElement);
+  if (vulkanBuffer->bufferType == BufferType::UNIFORM_BUFFER) {
+    vkWriteDescriptorSet.setDstSet(vulkanDescriptorSet->uniformBufferSet);
 
-  if (descriptorType == DescriptorType::UNIFORM_BUFFER) {
-    vkWriteDescriptorSet.setDescriptorType(vk::DescriptorType::eUniformBuffer);
-  } else if (descriptorType == DescriptorType::DYNAMIC_UNIFORM_BUFFER) {
-    vkWriteDescriptorSet.setDescriptorType(vk::DescriptorType::eUniformBufferDynamic);
+    if (descriptorType == DescriptorType::UNIFORM_BUFFER) {
+      vkWriteDescriptorSet.setDescriptorType(vk::DescriptorType::eUniformBuffer);
+    } else if (descriptorType == DescriptorType::DYNAMIC_UNIFORM_BUFFER) {
+      vkWriteDescriptorSet.setDescriptorType(vk::DescriptorType::eUniformBufferDynamic);
+    }
+  } else if (vulkanBuffer->bufferType == BufferType::STORAGE_BUFFER) {
+    vkWriteDescriptorSet.setDstSet(vulkanDescriptorSet->ssboSet);
+    if (descriptorType == DescriptorType::STORAGE_BUFFER) {
+      vkWriteDescriptorSet.setDescriptorType(vk::DescriptorType::eStorageBuffer);
+    }
   }
   m_device.updateDescriptorSets(vkWriteDescriptorSet, nullptr);
 }

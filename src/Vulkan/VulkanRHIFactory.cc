@@ -41,8 +41,36 @@ debugCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT messageSeverity, vk::Debu
   return VK_FALSE;
 }
 
+vk::Device VulkanRHIFactory::m_device;
+vk::PhysicalDevice VulkanRHIFactory::m_physicalDevice;
+#ifndef NDEBUG
+vk::DispatchLoaderDynamic VulkanRHIFactory::m_dispatch;
+vk::DebugUtilsMessengerEXT VulkanRHIFactory::m_debugMessenger;
+#endif
+
+std::optional<uint32_t> VulkanRHIFactory::m_graphicsQueueFamilyIndex;
+std::optional<uint32_t> VulkanRHIFactory::m_presentQueueFamilyIndex;
+std::optional<uint32_t> VulkanRHIFactory::m_transferQueueFamilyIndex;
+std::optional<uint32_t> VulkanRHIFactory::m_computeQueueFamilyIndex;
+
+vk::Queue VulkanRHIFactory::m_graphicsQueue;
+vk::Queue VulkanRHIFactory::m_presentQueue;
+vk::Queue VulkanRHIFactory::m_transferQueue;
+vk::Queue VulkanRHIFactory::m_computeQueue;
+
+vk::Instance VulkanRHIFactory::m_instance;
+vk::SurfaceKHR VulkanRHIFactory::m_surface;
+vk::SurfaceFormatKHR VulkanRHIFactory::m_surfaceFormat;
+vk::SurfaceCapabilitiesKHR VulkanRHIFactory::m_capabilities;
+vk::PresentModeKHR VulkanRHIFactory::m_presentMode;
+
 VulkanRHIFactory::VulkanRHIFactory() { glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API); }
-VulkanRHIFactory::~VulkanRHIFactory() = default;
+VulkanRHIFactory::~VulkanRHIFactory() {
+  // destroy extension
+  for (auto&& [name, extension] : m_extensions) {
+    extension->Destroy();
+  }
+}
 
 void
 VulkanRHIFactory::CreateInstance(GLFWwindow* glfwWindow) {
@@ -284,6 +312,11 @@ VulkanRHIFactory::Init(GLFWwindow* window, uint32_t width, uint32_t height) {
       .width = width,
       .height = height,
   });
+
+  // init extension
+  for (auto&& [name, extension] : m_extensions) {
+    extension->Init(RendererType::VULKAN);
+  }
 }
 
 void

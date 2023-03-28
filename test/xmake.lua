@@ -12,4 +12,7 @@ if has_config("buildTest") then
   includes("MipmapTest")
   includes("MsaaTest")
   includes("MultiPassTest")
+  includes("GetImageDataTest")
+  includes("ComputePipelineTest")
+  includes("ExtensionTest")
 end

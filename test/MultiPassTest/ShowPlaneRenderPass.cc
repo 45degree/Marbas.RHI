@@ -151,7 +151,7 @@ ShowPlaneRenderPass::CreateDescriptor() {
           .size = 1,
       },
   };
-  m_descritporPool = m_pipelineContext->CreateDescriptorPool(descriptorSize);
+  m_descritporPool = m_pipelineContext->CreateDescriptorPool(descriptorSize, 1);
 
   m_descriptorSet = m_pipelineContext->CreateDescriptorSet(m_descritporPool, m_descriptorSetLayout);
 }

@@ -107,6 +107,9 @@ class CommandBuffer {
   DrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset,
               uint32_t firstInstance) = 0;
 
+  virtual void
+  Dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) = 0;
+
  public:
   virtual void
   InsertBufferBarrier(const std::vector<BufferBarrier>& barrier) = 0;

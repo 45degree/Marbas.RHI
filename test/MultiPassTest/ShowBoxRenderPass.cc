@@ -155,7 +155,7 @@ ShowBoxRenderPass::CreateDescriptorSet() {
           .size = 1,
       },
   };
-  m_descriptorPool = m_pipelineContext->CreateDescriptorPool(descriptorSize);
+  m_descriptorPool = m_pipelineContext->CreateDescriptorPool(descriptorSize, 1);
 
   m_descriptorSet = m_pipelineContext->CreateDescriptorSet(m_descriptorPool, m_descriptorSetLayout);
   m_pipelineContext->BindImage(BindImageInfo{

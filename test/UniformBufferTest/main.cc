@@ -71,7 +71,7 @@ main(void) {
       .type = Marbas::DescriptorType::UNIFORM_BUFFER,
       .size = 1,
   }};
-  auto* descriptorPool = pipelineContext->CreateDescriptorPool(descriptorPoolSizes);
+  auto* descriptorPool = pipelineContext->CreateDescriptorPool(descriptorPoolSizes, 1);
   auto* descriptorSetLayout = pipelineContext->CreateDescriptorSetLayout({layoutBinding});
 
   // create descriptorSet

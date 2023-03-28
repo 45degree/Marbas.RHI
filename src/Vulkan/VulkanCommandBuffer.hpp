@@ -98,6 +98,11 @@ class VulkanCommandBuffer final : public CommandBuffer {
     m_commandBuffer.drawIndexed(indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
   }
 
+  void
+  Dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) override {
+    m_commandBuffer.dispatch(groupCountX, groupCountY, groupCountZ);
+  }
+
  public:
   void
   Submit(std::span<Semaphore*> waitSemaphore, std::span<Semaphore*> signalSemaphore, Fence* fence) override;

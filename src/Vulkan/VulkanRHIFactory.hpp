@@ -27,7 +27,7 @@ namespace Marbas {
 class VulkanRHIFactory final : public RHIFactory {
  public:
   VulkanRHIFactory();
-  virtual ~VulkanRHIFactory();
+  ~VulkanRHIFactory() override;
 
  public:
   std::vector<SampleCount>
@@ -88,29 +88,45 @@ class VulkanRHIFactory final : public RHIFactory {
   void
   DestroySwapchain();
 
+ public:
+  static vk::Device
+  GetVkDevice() {
+    return m_device;
+  }
+
+  static vk::PhysicalDevice
+  GetVkPhysicalDevice() {
+    return m_physicalDevice;
+  }
+
+  static vk::Queue
+  GetGraphicsQueue() {
+    return m_graphicsQueue;
+  }
+
  private:
-  vk::Device m_device;
-  vk::PhysicalDevice m_physicalDevice;
+  static vk::Device m_device;
+  static vk::PhysicalDevice m_physicalDevice;
 #ifndef NDEBUG
-  vk::DispatchLoaderDynamic m_dispatch;
-  vk::DebugUtilsMessengerEXT m_debugMessenger;
+  static vk::DispatchLoaderDynamic m_dispatch;
+  static vk::DebugUtilsMessengerEXT m_debugMessenger;
 #endif
 
-  std::optional<uint32_t> m_graphicsQueueFamilyIndex = std::nullopt;
-  std::optional<uint32_t> m_presentQueueFamilyIndex = std::nullopt;
-  std::optional<uint32_t> m_transferQueueFamilyIndex = std::nullopt;
-  std::optional<uint32_t> m_computeQueueFamilyIndex = std::nullopt;
+  static std::optional<uint32_t> m_graphicsQueueFamilyIndex;
+  static std::optional<uint32_t> m_presentQueueFamilyIndex;
+  static std::optional<uint32_t> m_transferQueueFamilyIndex;
+  static std::optional<uint32_t> m_computeQueueFamilyIndex;
 
-  vk::Queue m_graphicsQueue;
-  vk::Queue m_presentQueue;
-  vk::Queue m_transferQueue;
-  vk::Queue m_computeQueue;
+  static vk::Queue m_graphicsQueue;
+  static vk::Queue m_presentQueue;
+  static vk::Queue m_transferQueue;
+  static vk::Queue m_computeQueue;
 
-  vk::Instance m_instance;
-  vk::SurfaceKHR m_surface;
-  vk::SurfaceFormatKHR m_surfaceFormat;
-  vk::SurfaceCapabilitiesKHR m_capabilities;
-  vk::PresentModeKHR m_presentMode;
+  static vk::Instance m_instance;
+  static vk::SurfaceKHR m_surface;
+  static vk::SurfaceFormatKHR m_surfaceFormat;
+  static vk::SurfaceCapabilitiesKHR m_capabilities;
+  static vk::PresentModeKHR m_presentMode;
 
   VulkanSwapchain m_swapChain = {};
 };

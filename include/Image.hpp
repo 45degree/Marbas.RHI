@@ -27,8 +27,6 @@ struct ImageUsageFlags {
   enum value : uint32_t {
     SHADER_READ = 1 << 0,
     COLOR_RENDER_TARGET = 1 << 1,
-    TRANSFER_SRC = 1 << 2,
-    TRANSFER_DST = 1 << 3,
     DEPTH_STENCIL = 1 << 4,
   };
 };
@@ -70,7 +68,6 @@ struct ImageCreateInfo {
   SampleCount sampleCount = SampleCount::BIT1;
   uint32_t mipMapLevel = 1;
   uint32_t usage = ImageUsageFlags::SHADER_READ | ImageUsageFlags::COLOR_RENDER_TARGET;
-  // ImageState initState = ImageState::UNDEFINED;
   std::variant<CubeMapImageDesc, CubeMapArrayImageDesc, Image2DDesc, Image2DArrayDesc> imageDesc = Image2DDesc{};
 };
 
@@ -83,6 +80,28 @@ struct Image {
   uint32_t usage = ImageUsageFlags::SHADER_READ | ImageUsageFlags::COLOR_RENDER_TARGET;
   uint32_t arrayLayer = 1;
   SampleCount sampleCount = SampleCount::BIT1;
+
+  uint32_t
+  GetHeight(uint32_t mipmapLevel) {
+    return (mipmapLevel < this->mipMapLevel) ? std::max(1U, height >> mipmapLevel) : 0;
+  }
+
+  uint32_t
+  GetWidth(uint32_t mipmapLevel) {
+    return (mipmapLevel < this->mipMapLevel) ? std::max(1U, width >> mipmapLevel) : 0;
+  }
+
+  uint32_t
+  GetDepth(uint32_t mipmapLevel) {
+    return (mipmapLevel < this->mipMapLevel) ? std::max(1U, depth >> mipmapLevel) : 0;
+  }
+};
+
+struct ImageSubresourceDesc {
+  Image* image;
+  uint32_t baseArrayLayer;
+  uint32_t layerCount;
+  uint32_t mipmapLevel;
 };
 
 struct ImageViewCreateInfo {

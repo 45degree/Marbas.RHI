@@ -27,36 +27,6 @@
 
 namespace Marbas {
 
-// TODO:
-FORCE_INLINE vk::Format
-ConvertToVulkanFormat(ImageFormat format) {
-  switch (format) {
-    case ImageFormat::RED:
-      return vk::Format::eR8Unorm;
-    case ImageFormat::RG:
-      return vk::Format::eR8G8Unorm;
-    case ImageFormat::RGBA:
-      return vk::Format::eR8G8B8A8Unorm;
-    case ImageFormat::BGRA:
-      return vk::Format::eB8G8R8A8Unorm;
-    case ImageFormat::R32F:
-      return vk::Format::eR32Sfloat;
-    case ImageFormat::RG16F:
-      return vk::Format::eR16G16Sfloat;
-    case ImageFormat::RG32F:
-      return vk::Format::eR32G32Sfloat;
-    case ImageFormat::RGBA16F:
-      return vk::Format::eR16G16B16A16Sfloat;
-    case ImageFormat::RGBA32F:
-      return vk::Format::eR32G32B32A32Sfloat;
-    case ImageFormat::DEPTH:
-      return vk::Format::eD32SfloatS8Uint;
-    case ImageFormat::RGBA_SRGB:
-      return vk::Format::eR8G8B8A8Srgb;
-  }
-  return vk::Format::eR8G8B8A8Unorm;
-}
-
 FORCE_INLINE vk::Format
 ConvertToVulkanFormat(ElementType type) {
   switch (type) {
@@ -93,12 +63,6 @@ GetDefaultImageLayoutFromUsage(uint32_t usage) {
 FORCE_INLINE vk::AccessFlags
 ConvertToVulkanImageAccess(uint32_t usage) {
   vk::AccessFlags flags;
-  if (usage & ImageUsageFlags::TRANSFER_SRC) {
-    flags |= vk::AccessFlagBits::eTransferRead;
-  }
-  if (usage & ImageUsageFlags::TRANSFER_DST) {
-    flags |= vk::AccessFlagBits::eTransferWrite;
-  }
   if (usage & ImageUsageFlags::SHADER_READ) {
     flags |= vk::AccessFlagBits::eShaderRead;
   }
@@ -107,49 +71,6 @@ ConvertToVulkanImageAccess(uint32_t usage) {
   }
   if (usage & ImageUsageFlags::COLOR_RENDER_TARGET) {
     flags |= vk::AccessFlagBits::eColorAttachmentWrite;
-  }
-
-  return flags;
-}
-
-FORCE_INLINE vk::AccessFlags
-ConvertToVulkanBufferAccess(uint32_t usage, const Buffer& buffer) {
-  vk::AccessFlags flags;
-  if (usage & BufferUsageFlags::TRANSFER_SRC) {
-    flags |= vk::AccessFlagBits::eTransferRead;
-  }
-  if (usage & BufferUsageFlags::TRANSFER_DST) {
-    flags |= vk::AccessFlagBits::eTransferWrite;
-  }
-
-  if (usage & BufferUsageFlags::READ) {
-    switch (buffer.bufferType) {
-      case BufferType::VERTEX_BUFFER:
-        flags |= vk::AccessFlagBits::eVertexAttributeRead;
-        break;
-      case BufferType::INDEX_BUFFER:
-        flags |= vk::AccessFlagBits::eIndexRead;
-        break;
-      case BufferType::UNIFORM_BUFFER:
-        flags |= vk::AccessFlagBits::eUniformRead;
-        break;
-      case BufferType::STORAGE_BUFFER:
-        flags |= vk::AccessFlagBits::eShaderRead;
-        break;
-    }
-  }
-
-  if (usage & BufferUsageFlags::WRITE) {
-    switch (buffer.bufferType) {
-      case BufferType::VERTEX_BUFFER:
-      case BufferType::INDEX_BUFFER:
-      case BufferType::UNIFORM_BUFFER:
-        flags |= vk::AccessFlagBits::eMemoryWrite;
-        break;
-      case BufferType::STORAGE_BUFFER:
-        flags |= vk::AccessFlagBits::eShaderWrite;
-        break;
-    }
   }
 
   return flags;
@@ -167,12 +88,8 @@ ConvertToVulkanImageUsage(uint32_t usage) {
   if (usage & ImageUsageFlags::SHADER_READ) {
     flags |= vk::ImageUsageFlagBits::eSampled;
   }
-  if (usage & ImageUsageFlags::TRANSFER_SRC) {
-    flags |= vk::ImageUsageFlagBits::eTransferSrc;
-  }
-  if (usage & ImageUsageFlags::TRANSFER_DST) {
-    flags |= vk::ImageUsageFlagBits::eTransferDst;
-  }
+  flags |= vk::ImageUsageFlagBits::eTransferSrc;
+  flags |= vk::ImageUsageFlagBits::eTransferDst;
   return flags;
 }
 
@@ -185,6 +102,8 @@ ConvertToVulkanDescriptorType(DescriptorType type) {
       return vk::DescriptorType::eUniformBufferDynamic;
     case DescriptorType::IMAGE:
       return vk::DescriptorType::eCombinedImageSampler;
+    case DescriptorType::STORAGE_BUFFER:
+      return vk::DescriptorType::eStorageBuffer;
   }
   DLOG_ASSERT(false);
 }

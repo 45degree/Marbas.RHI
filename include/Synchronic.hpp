@@ -38,8 +38,6 @@ struct BufferBarrier {
 };
 
 struct ImageBarrier {
-  uint32_t waitUsage = ImageUsageFlags::TRANSFER_SRC;
-  uint32_t dstUsage = ImageUsageFlags::TRANSFER_DST;
   Image* image;
 };
 

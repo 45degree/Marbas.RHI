@@ -1,5 +1,4 @@
 #define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <stb_image.h>
 
 #include <chrono>
@@ -63,8 +62,7 @@ LoadImage(Marbas::BufferContext* bufferContext, const std::string& imagePath) {
   imageCreateInfo.mipMapLevel = 2;
   imageCreateInfo.format = Marbas::ImageFormat::RGBA;
   imageCreateInfo.imageDesc = desc;
-  imageCreateInfo.usage = Marbas::ImageUsageFlags::SHADER_READ | Marbas::ImageUsageFlags::TRANSFER_DST |
-                          Marbas::ImageUsageFlags::TRANSFER_SRC;
+  imageCreateInfo.usage = Marbas::ImageUsageFlags::SHADER_READ;
 
   auto image = bufferContext->CreateImage(imageCreateInfo);
   bufferContext->UpdateImage(Marbas::UpdateImageInfo{
@@ -189,7 +187,7 @@ main(void) {
           .size = 1,
       },
   };
-  auto* descriptorPool = pipelineContext->CreateDescriptorPool(descriptorPoolSizes);
+  auto* descriptorPool = pipelineContext->CreateDescriptorPool(descriptorPoolSizes, 100);
   auto* descriptorSetLayout = pipelineContext->CreateDescriptorSetLayout(layoutBindings);
 
   // create descriptorSet

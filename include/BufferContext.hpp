@@ -51,12 +51,34 @@ class BufferContext {
   virtual void
   DestroyBuffer(Buffer* buffer) = 0;
 
+  virtual void
+  GetBufferData(Buffer* buffer, void* data) = 0;
+
+ public:
+  /**
+   * @brief
+   *
+   * @param buffer
+   * @return
+   */
+  virtual TexelBuffer*
+  CreateTexelBuffer(Buffer* buffer, ImageFormat format) = 0;
+
+  virtual void
+  DestroyTexelBuffer(TexelBuffer* texelBuffer) = 0;
+
  public:
   virtual Image*
   CreateImage(const ImageCreateInfo& createInfo) = 0;
 
   virtual void
   UpdateImage(const UpdateImageInfo& updateInfo) = 0;
+
+  virtual void
+  GetImageData(const ImageSubresourceDesc& imageRange, void* data) = 0;
+
+  virtual uint32_t
+  GetImageSubresourceSize(const ImageSubresourceDesc& imageRange) = 0;
 
   virtual void
   GenerateMipmap(Image* image, uint32_t mipmapLevel) = 0;

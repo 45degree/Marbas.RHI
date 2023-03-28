@@ -28,11 +28,13 @@ struct VulkanDescriptorPool final : public DescriptorPool {
 
 struct VulkanDescriptorSet final : public DescriptorSet {
   vk::DescriptorSet uniformBufferSet;
+  vk::DescriptorSet ssboSet;
   vk::DescriptorSet sampledImageSet;
 };
 
 struct VulkanDescriptorSetLayout final : public DescriptorSetLayout {
-  vk::DescriptorSetLayout vkUboLayout;
+  vk::DescriptorSetLayout vkBufferLayoutout;
+  vk::DescriptorSetLayout vkSSBOLayout;
   vk::DescriptorSetLayout vkSampledImageLayout;
 };
 

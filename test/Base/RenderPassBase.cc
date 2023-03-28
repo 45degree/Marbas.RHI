@@ -28,8 +28,7 @@ RenderPassBase::LoadImage(Marbas::BufferContext* bufferContext, const std::strin
   imageCreateInfo.mipMapLevel = mipLevels;
   imageCreateInfo.format = Marbas::ImageFormat::RGBA;
   imageCreateInfo.imageDesc = desc;
-  imageCreateInfo.usage = Marbas::ImageUsageFlags::SHADER_READ | Marbas::ImageUsageFlags::TRANSFER_DST |
-                          Marbas::ImageUsageFlags::TRANSFER_SRC;
+  imageCreateInfo.usage = Marbas::ImageUsageFlags::SHADER_READ;
 
   auto image = bufferContext->CreateImage(imageCreateInfo);
   bufferContext->UpdateImage(Marbas::UpdateImageInfo{

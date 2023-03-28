@@ -30,7 +30,10 @@ class VulkanPipelineContext final : public PipelineContext {
 
  public:
   Pipeline*
-  CreatePipeline(GraphicsPipeLineCreateInfo& createInfo) override;
+  CreatePipeline(const GraphicsPipeLineCreateInfo& createInfo) override;
+
+  Pipeline*
+  CreatePipeline(const ComputePipelineCreateInfo& createInfo) override;
 
   void
   DestroyPipeline(Pipeline* pipeline) override;
@@ -62,7 +65,7 @@ class VulkanPipelineContext final : public PipelineContext {
   BindBuffer(const BindBufferInfo& bindBufferInfo) override;
 
   DescriptorPool*
-  CreateDescriptorPool(std::span<DescriptorPoolSize> descritorPoolSize) override;
+  CreateDescriptorPool(std::span<DescriptorPoolSize> descritorPoolSize, uint32_t maxSets) override;
 
   void
   DestroyDescriptorPool(DescriptorPool* descriptorPool) override;

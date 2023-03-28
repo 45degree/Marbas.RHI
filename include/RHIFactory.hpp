@@ -17,6 +17,8 @@
 
 #include <memory>
 #include <span>
+#include <type_traits>
+#include <unordered_map>
 
 #include "BufferContext.hpp"
 #include "GLFW/glfw3.h"
@@ -33,6 +35,32 @@ enum class RendererType {
 };
 
 class RHIFactory {
+  struct ExtensionInterface {
+    virtual void
+    Init(RendererType type) = 0;
+
+    virtual void
+    Destroy() = 0;
+  };
+
+  template <typename T>
+  struct ExtensionPlugin : public ExtensionInterface {
+    using Context = typename T::ContextInterface;
+    std::unique_ptr<Context> m_member;
+
+    void
+    Init(RendererType type) override {
+      if (type == RendererType::VULKAN) {
+        m_member = T::CreateVulkanContext();
+      }
+    }
+
+    void
+    Destroy() override {
+      m_member = nullptr;
+    }
+  };
+
  public:
   RHIFactory() = default;
   virtual ~RHIFactory() = default;
@@ -100,9 +128,28 @@ class RHIFactory {
   }
 
  public:
+  template <typename Extension>
+  void
+  Registry() {
+    m_extensions.insert({Extension::name, std::make_unique<ExtensionPlugin<Extension>>()});
+  }
+
+  template <typename Extension>
+  typename Extension::ContextInterface*
+  GetContext() {
+    if (m_extensions.find(Extension::name) == m_extensions.end()) {
+      return nullptr;
+    }
+    auto* extension = static_cast<ExtensionPlugin<Extension>*>(m_extensions[Extension::name].get());
+    return extension->m_member.get();
+  }
+
+ public:
   static std::unique_ptr<RHIFactory>
   CreateInstance(const RendererType& rendererTyoe);
 
+ protected:
+  std::unordered_map<std::string_view, std::unique_ptr<ExtensionInterface>> m_extensions;
   std::unique_ptr<PipelineContext> m_pipelineContext = nullptr;
   std::unique_ptr<BufferContext> m_bufferContext = nullptr;
   std::unique_ptr<ImguiContext> m_imguiContext = nullptr;

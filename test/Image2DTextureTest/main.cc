@@ -45,7 +45,7 @@ LoadImage(Marbas::BufferContext* bufferContext, const std::string& imagePath) {
   imageCreateInfo.mipMapLevel = 1;
   imageCreateInfo.format = Marbas::ImageFormat::RGBA;
   imageCreateInfo.imageDesc = desc;
-  imageCreateInfo.usage = Marbas::ImageUsageFlags::SHADER_READ | Marbas::ImageUsageFlags::TRANSFER_DST;
+  imageCreateInfo.usage = Marbas::ImageUsageFlags::SHADER_READ;
 
   auto image = bufferContext->CreateImage(imageCreateInfo);
   bufferContext->UpdateImage(Marbas::UpdateImageInfo{
@@ -144,7 +144,7 @@ main(void) {
           .size = 1,
       },
   };
-  auto* descriptorPool = pipelineContext->CreateDescriptorPool(descriptorPoolSizes);
+  auto* descriptorPool = pipelineContext->CreateDescriptorPool(descriptorPoolSizes, 1);
   auto* descriptorSetLayout = pipelineContext->CreateDescriptorSetLayout(layoutBindings);
 
   // create descriptorSet

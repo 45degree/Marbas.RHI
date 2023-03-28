@@ -26,7 +26,6 @@
 #include "Buffer.hpp"
 #include "DescriptorSet.hpp"
 #include "Sampler.hpp"
-#include "ShaderModule.hpp"
 
 namespace Marbas {
 
@@ -198,6 +197,7 @@ enum class ShaderType {
   VERTEX_SHADER,
   FRAGMENT_SHADER,
   GEOMETRY_SHADER,
+  COMPUTE_SHADER,
 };
 
 struct ShaderStageCreateInfo {
@@ -301,6 +301,15 @@ struct FrameBuffer {
   uint32_t height = 800;
   uint32_t width = 600;
   uint32_t layerCount = 1;
+};
+
+/**
+ * compute pipeline create struct
+ */
+
+struct ComputePipelineCreateInfo {
+  ShaderStageCreateInfo computeShaderStage;
+  DescriptorSetLayout* layout = nullptr;
 };
 
 }  // namespace Marbas

@@ -29,13 +29,8 @@ enum class DescriptorType {
   UNIFORM_BUFFER,
   DYNAMIC_UNIFORM_BUFFER,
   IMAGE,
+  STORAGE_BUFFER,
 };
-
-// enum class DescriptorVisible {
-//   ALL,
-//   VERTEX_SHADER,
-//   FRAGMENT_SHADER,
-// };
 
 struct DescriptorSetLayoutBinding {
   uint16_t bindingPoint = 0;

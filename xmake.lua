@@ -17,12 +17,6 @@ option("SupportVulkan")
 option_end()
 
 if is_host("windows") then
-  option("SupportDirectX12")
-    set_default(true)
-    set_category("Marbas Render Hardware Interface")
-    set_description("add directx12 support")
-  option_end()
-
   option("Vulkan_SDK_Path")
     add_deps("SupportVulkan")
     set_category("Marbas Render Hardware Interface")
@@ -59,13 +53,11 @@ rule("UseVulkan")
     else
       local vulkanIncludePath = path.join('$(Vulkan_SDK_Path)', 'include')
       local vulkanLibPath = path.join('$(Vulkan_SDK_Path)', 'lib')
-      local vulkanBinPath = path.join('$(Vulkan_SDK_Path)', 'bin')
 
       -- copy the vulkan header and libary
       local tmpVulkanDir = "$(buildir)/vulkan";
       local tmpVulkanIncludeDir = path.join(tmpVulkanDir, "include/")
       local tmpVukanLibDir = path.join(tmpVulkanDir, "lib")
-      local tmpVukanBinDir = path.join(tmpVulkanDir, "bin")
       if os.exists(tmpVulkanDir) then
         os.rm(tmpVulkanDir);
       end
@@ -83,26 +75,17 @@ rule("UseVulkan")
   end)
 rule_end()
 
-rule("UseDirectX12")
-  on_load(function(target)
-    if not is_plat("windows") then
-      return
-    end
-    target:add('links', 'd3d12')
-    target:add('links', 'dxgi')
-  end)
-rule_end()
-
 target("Marbas.RHI")
   set_kind("static")
   set_languages("c11", "cxx20")
 
   add_includedirs("include", { public = true })
-  add_includedirs("src", { public = false })
+  add_includedirs("src")
   add_files("include/**.cc")
 
   if is_plat("windows") then
     add_undefines("CreateSemaphore");
+    add_defines("NOMINMAX")
   end
 
   if has_config("SupportVulkan") then
@@ -111,11 +94,7 @@ target("Marbas.RHI")
     add_files("src/Vulkan/**.cc")
   end
 
-  if has_config("use directx12") then
-    add_rules("UseDirectX12")
-    add_defines("USE_D3D12", 'NOMINMAX')
-    add_files('src/DirectX12/**.cc')
-  end
+  -- add_rules("rhi-ktxloader")
 
   add_deps("imgui-docking")
   add_packages("glfw", "glog", "shaderc", "gtest", "stb", "fmt", "spirv-cross")
@@ -123,3 +102,4 @@ target_end()
 
 includes("test")
 includes("3rdParty")
+-- includes("extensions/ktx")

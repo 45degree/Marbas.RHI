@@ -31,4 +31,8 @@ struct VulkanBuffer final : public Buffer {
   std::optional<vk::DeviceMemory> stageBufferMemory = std::nullopt;
 };
 
+struct VulkanTexelBuffer final : public TexelBuffer {
+  vk::BufferView vkBufferView;
+};
+
 }  // namespace Marbas

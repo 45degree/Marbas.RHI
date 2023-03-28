@@ -35,12 +35,6 @@ RHIFactory::CreateInstance(const RendererType& rendererTyoe) {
   }
 #endif
 
-#ifdef USE_D3D12
-  if (rendererTyoe == RendererType::DirectX12) {
-    return std::unique_ptr<RHIFactory>(new DirectX12RHIFactory());
-  }
-#endif
-
   DLOG_ASSERT(false);
   return nullptr;
 }
