@@ -169,8 +169,8 @@ VulkanImguiContext::~VulkanImguiContext() {
     return;
   });
 
-  vkDestroyRenderPass(m_device, m_renderPass, nullptr);
-  vkDestroyDescriptorPool(m_device, m_descriptorPool, nullptr);
+  m_device.destroyRenderPass(m_renderPass);
+  m_device.destroyDescriptorPool(m_descriptorPool);
 }
 
 void
@@ -202,8 +202,7 @@ VulkanImguiContext::Resize(uint32_t width, uint32_t height) {
 
 void
 VulkanImguiContext::ClearUp() {
-  auto err = vkDeviceWaitIdle(m_device);
-  DLOG_ASSERT(err == VK_SUCCESS);
+  m_device.waitIdle();
   ImGui_ImplVulkan_Shutdown();
   ImGui_ImplGlfw_Shutdown();
   ImGui::DestroyContext();
@@ -231,6 +230,11 @@ VulkanImguiContext::SetUpImguiBackend(GLFWwindow* windows) {
   CreateWindowCommandBuffer();
 
   ImGui_ImplGlfw_InitForVulkan(windows, true);
+  ImGui_ImplVulkan_LoadFunctions(
+      [](const char* function_name, void* vulkan_instance) {
+        return static_cast<vk::Instance>(reinterpret_cast<VkInstance>(vulkan_instance)).getProcAddr(function_name);
+      },
+      m_instance);
   ImGui_ImplVulkan_InitInfo init_info = {};
   init_info.Instance = m_instance;
   init_info.PhysicalDevice = m_physicalDevice;

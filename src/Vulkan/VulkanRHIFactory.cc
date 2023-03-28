@@ -22,9 +22,10 @@
 #include "VulkanImage.hpp"
 #include "VulkanImguiContext.hpp"
 #include "VulkanPipelineContext.hpp"
-#include "VulkanRHIFactory.hpp"
 #include "VulkanSynchronic.hpp"
 #include "common.hpp"
+
+VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE;
 
 namespace Marbas {
 
@@ -159,7 +160,11 @@ VulkanRHIFactory::CreateInstance(GLFWwindow* glfwWindow) {
 
 void
 VulkanRHIFactory::Init(GLFWwindow* window, uint32_t width, uint32_t height) {
+  vk::DynamicLoader dl;
+  auto vkGetInstanceProcAddr = dl.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
+  VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
   CreateInstance(window);
+  VULKAN_HPP_DEFAULT_DISPATCHER.init(m_instance);
 
   // set surface KHR
   VkSurfaceKHR surface;
@@ -255,6 +260,7 @@ VulkanRHIFactory::Init(GLFWwindow* window, uint32_t width, uint32_t height) {
   // create device and queue
   deviceCreateInfo.setQueueCreateInfos(queueCreateInfos);
   m_device = m_physicalDevice.createDevice(deviceCreateInfo);
+  VULKAN_HPP_DEFAULT_DISPATCHER.init(m_device);
 
   m_graphicsQueue = m_device.getQueue(*m_graphicsQueueFamilyIndex, 0);
   m_presentQueue = m_device.getQueue(*m_presentQueueFamilyIndex, 0);
