@@ -9,12 +9,13 @@ add_requires('gtest 1.11.0')
 add_requires('stb 2021.09.10')
 add_requires('fmt 9.1.0')
 add_requires('spirv-cross c77b09b57c27837dc2d41aa371ed3d236ce9ce47')
+add_requires('abseil 20220623.0')
 
-option('SupportVulkan')
-set_default(true)
-set_category('Marbas Render Hardware Interface')
-set_description('add vulkan support')
-option_end()
+option('SupportVulkan', function()
+  set_default(true)
+  set_category('Marbas Render Hardware Interface')
+  set_description('add vulkan support')
+end)
 
 option('buildTest', function()
   set_default(false)
@@ -28,6 +29,7 @@ end
 
 if has_config('SupportVulkan') then
   add_requires('vulkan-hpp v1.3.244')
+  add_requires('vulkan-headers 1.3.239+0')
   add_requires('shaderc v2022.2')
 end
 
@@ -52,7 +54,7 @@ target('Marbas.RHI', function()
   end
 
   add_deps('imgui-docking')
-  add_packages('glfw', 'glog', 'shaderc', 'gtest', 'stb', 'fmt', 'spirv-cross')
+  add_packages('glfw', 'glog', 'shaderc', 'gtest', 'stb', 'fmt', 'spirv-cross', 'abseil')
 end)
 
 includes('test')

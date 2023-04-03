@@ -24,7 +24,7 @@
 namespace Marbas {
 
 struct BindBufferInfo final {
-  DescriptorSet* descriptorSet;
+  uintptr_t descriptorSet;
   DescriptorType descriptorType;
   uint16_t bindingPoint;
   Buffer* buffer;
@@ -33,10 +33,10 @@ struct BindBufferInfo final {
 };
 
 struct BindImageInfo final {
-  DescriptorSet* descriptorSet;
+  uintptr_t descriptorSet;
   uint16_t bindingPoint;
   ImageView* imageView;
-  Sampler* sampler;
+  uintptr_t sampler;
 };
 
 class PipelineContext {
@@ -45,46 +45,34 @@ class PipelineContext {
   virtual ~PipelineContext() = default;
 
  public:
-  virtual Pipeline*
+  virtual uintptr_t
   CreatePipeline(const GraphicsPipeLineCreateInfo& createInfo) = 0;
 
-  virtual Pipeline*
+  virtual uintptr_t
   CreatePipeline(const ComputePipelineCreateInfo& createInfo) = 0;
 
   virtual void
-  DestroyPipeline(Pipeline* pipeline) = 0;
+  DestroyPipeline(uintptr_t pipeline) = 0;
 
  public:
-  virtual Sampler*
+  virtual uintptr_t
   CreateSampler(const SamplerCreateInfo& createInfo) = 0;
 
   virtual void
-  DestroySampler(Sampler* sampler) = 0;
+  DestroySampler(uintptr_t sampler) = 0;
 
  public:
-  virtual DescriptorSetLayout*
-  CreateDescriptorSetLayout(const std::vector<DescriptorSetLayoutBinding>& layoutBinding) = 0;
+  virtual uintptr_t
+  CreateDescriptorSet(const DescriptorSetArgument& arguement) = 0;
 
   virtual void
-  DestroyDescriptorSetLayout(DescriptorSetLayout* descriptorSetLayout) = 0;
-
-  virtual DescriptorSet*
-  CreateDescriptorSet(const DescriptorPool* pool, const DescriptorSetLayout* descriptorLayout) = 0;
-
-  virtual void
-  DestroyDescriptorSet(const DescriptorPool* pool, DescriptorSet* descriptorSet) = 0;
+  DestroyDescriptorSet(uintptr_t descriptorSet) = 0;
 
   virtual void
   BindImage(const BindImageInfo& bindImageInfo) = 0;
 
   virtual void
   BindBuffer(const BindBufferInfo& bindBufferInfo) = 0;
-
-  virtual DescriptorPool*
-  CreateDescriptorPool(std::span<DescriptorPoolSize> descritorPoolSize, uint32_t maxSets) = 0;
-
-  virtual void
-  DestroyDescriptorPool(DescriptorPool* descriptorPool) = 0;
 
  public:
   virtual FrameBuffer*

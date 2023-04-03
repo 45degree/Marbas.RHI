@@ -19,6 +19,7 @@
 #include <vulkan/vulkan.hpp>
 
 #include "BufferContext.hpp"
+#include "VulkanPipelineContext.hpp"
 
 namespace Marbas {
 
@@ -31,6 +32,7 @@ struct VulkanBufferContextCreateInfo final {
   vk::Queue graphicsQueue;
   vk::Queue computeQueue;
   vk::Queue transferQueue;
+  VulkanPipelineContext* pipelineCtx;
 };
 
 class VulkanBufferContext final : public BufferContext {
@@ -84,17 +86,17 @@ class VulkanBufferContext final : public BufferContext {
   DestroyImageView(ImageView* imageView) override;
 
  public:
-  CommandPool*
-  CreateCommandPool(CommandBufferUsage usage) override;
+  GraphicsCommandBuffer*
+  CreateGraphicsCommandBuffer() override;
+
+  ComputeCommandBuffer*
+  CreateComputeCommandBuffer() override;
 
   void
-  DestroyCommandPool(CommandPool* commandPool) override;
-
-  CommandBuffer*
-  CreateCommandBuffer(CommandPool* commandPool) override;
+  DestroyCommandBuffer(GraphicsCommandBuffer* commandBuffer) override;
 
   void
-  DestroyCommandBuffer(CommandPool* commandPool, CommandBuffer* commandBuffer) override;
+  DestroyCommandBuffer(ComputeCommandBuffer* commandBuffer) override;
 
  private:
   uint32_t
@@ -116,6 +118,8 @@ class VulkanBufferContext final : public BufferContext {
   ConvertImageState(Image* image, vk::ImageLayout srcLayout, vk::ImageLayout dstLayout);
 
  private:
+  VulkanPipelineContext* m_pipelineCtx;
+
   uint32_t m_graphicsQueueIndex;
   uint32_t m_computeQueueIndex;
   uint32_t m_transfermQueueIndex;
@@ -127,6 +131,8 @@ class VulkanBufferContext final : public BufferContext {
   vk::PhysicalDevice m_physicalDevice;
 
   vk::CommandPool m_temporaryCommandPool;
+  vk::CommandPool m_graphicsCommandPool;
+  vk::CommandPool m_computeCommandPool;
 };
 
 }  // namespace Marbas

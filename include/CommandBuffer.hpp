@@ -24,15 +24,15 @@
 
 namespace Marbas {
 
-enum class CommandBufferUsage {
-  GRAPHICS,
-  COMPUTE,
-  TRANSFER,
-};
-
-struct CommandPool {
-  CommandBufferUsage usage = CommandBufferUsage::GRAPHICS;
-};
+// enum class CommandBufferUsage {
+//   GRAPHICS,
+//   COMPUTE,
+//   TRANSFER,
+// };
+//
+// struct CommandPool {
+//   CommandBufferUsage usage = CommandBufferUsage::GRAPHICS;
+// };
 
 struct ClearValue {
   explicit ClearValue(const std::array<float, 4>& colorValue) { clearValue = colorValue; }
@@ -53,16 +53,9 @@ struct ClearValue {
   std::variant<std::array<float, 4>, std::array<float, 2>> clearValue;
 };
 
-class CommandBuffer {
+class GraphicsCommandBuffer {
  public:
-  virtual void
-  BindDescriptorSet(const Pipeline* pipeline, DescriptorSet* descriptors) = 0;
-
-  virtual void
-  BindVertexBuffer(Buffer* buffer) = 0;
-
-  virtual void
-  BindIndexBuffer(Buffer* buffer) = 0;
+  virtual ~GraphicsCommandBuffer() = default;
 
  public:
   virtual void
@@ -72,16 +65,28 @@ class CommandBuffer {
   End() = 0;
 
   virtual void
-  BeginPipeline(Pipeline* pipeline, FrameBuffer* frameBuffer, const std::vector<ClearValue>& clearColor) = 0;
+  Submit(std::span<Semaphore*> waitSemaphore, std::span<Semaphore*> signalSemaphore, Fence* fence) = 0;
 
+  virtual void
+  BeginPipeline(uintptr_t pipeline, FrameBuffer* frameBuffer, const std::vector<ClearValue>& clearColor) = 0;
+
+  virtual void
+  EndPipeline(uintptr_t pipeline) = 0;
+
+  virtual void
+  BindDescriptorSet(uintptr_t pipeline, const std::vector<uintptr_t>& sets) = 0;
+
+ public:
   virtual void
   SetViewports(std::span<ViewportInfo> viewportInfos) = 0;
 
   virtual void
   SetScissors(std::span<ScissorInfo> scissorInfos) = 0;
+  virtual void
+  BindVertexBuffer(Buffer* buffer) = 0;
 
   virtual void
-  EndPipeline(Pipeline* pipeline) = 0;
+  BindIndexBuffer(Buffer* buffer) = 0;
 
   /**
    * @brief Draw primitives
@@ -106,23 +111,34 @@ class CommandBuffer {
   virtual void
   DrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset,
               uint32_t firstInstance) = 0;
+};
 
-  virtual void
-  Dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) = 0;
+class ComputeCommandBuffer {
+ public:
+  virtual ~ComputeCommandBuffer() = default;
 
  public:
   virtual void
-  InsertBufferBarrier(const std::vector<BufferBarrier>& barrier) = 0;
+  Begin() = 0;
 
   virtual void
-  InsertImageBarrier(const std::vector<ImageBarrier>& barriers) = 0;
+  End() = 0;
 
-  // virtual void
-  // TransformImageState(Image* image, ImageState srcState, ImageState dstState) = 0;
-
- public:
   virtual void
   Submit(std::span<Semaphore*> waitSemaphore, std::span<Semaphore*> signalSemaphore, Fence* fence) = 0;
+
+  virtual void
+  BeginPipeline(uintptr_t pipeline) = 0;
+
+  virtual void
+  EndPipeline(uintptr_t pipeline) = 0;
+
+  virtual void
+  BindDescriptorSet(uintptr_t pipeline, const std::vector<uintptr_t>& sets) = 0;
+
+ public:
+  virtual void
+  Dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) = 0;
 };
 
 }  // namespace Marbas

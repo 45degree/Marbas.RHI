@@ -12,18 +12,16 @@ class ShowBoxRenderPass final : public RenderPassBase {
     m_bufferContext->DestroyImageView(m_textureView);
     m_pipelineContext->DestroySampler(m_sampler);
     m_pipelineContext->DestroyPipeline(m_pipeline);
-    m_pipelineContext->DestroyDescriptorSetLayout(m_descriptorSetLayout);
-    m_pipelineContext->DestroyDescriptorPool(m_descriptorPool);
   }
 
  public:
   void
-  RecordCommand(CommandBuffer* commandBuffer, uint32_t frameIndex) override;
+  RecordCommand(GraphicsCommandBuffer* commandBuffer, uint32_t frameIndex) override;
 
-  Pipeline*
+  uintptr_t
   CreatePipeline() override;
 
-  DescriptorSetLayout*
+  void
   CreateDescriptorSetLayout();
 
   void
@@ -35,16 +33,15 @@ class ShowBoxRenderPass final : public RenderPassBase {
   std::string m_texturePath = "container.jpg";
   Image* m_texture = nullptr;
   ImageView* m_textureView = nullptr;
-  Sampler* m_sampler = nullptr;
+  uintptr_t m_sampler;
 
   std::vector<char> m_vertexShaderModule;
   std::vector<char> m_fragmentShaderModule;
 
   Buffer* m_vertexBuffer = nullptr;
   Buffer* m_uniformBuffer = nullptr;
-  DescriptorSetLayout* m_descriptorSetLayout = nullptr;
-  DescriptorPool* m_descriptorPool = nullptr;
-  DescriptorSet* m_descriptorSet = nullptr;
+  DescriptorSetArgument m_argument;
+  uintptr_t m_descriptorSet;
 };
 
 }  // namespace Marbas

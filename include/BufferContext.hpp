@@ -93,17 +93,17 @@ class BufferContext {
   DestroyImageView(ImageView* imageView) = 0;
 
  public:
-  virtual CommandPool*
-  CreateCommandPool(CommandBufferUsage usage) = 0;
+  virtual GraphicsCommandBuffer*
+  CreateGraphicsCommandBuffer() = 0;
+
+  virtual ComputeCommandBuffer*
+  CreateComputeCommandBuffer() = 0;
 
   virtual void
-  DestroyCommandPool(CommandPool* commandPool) = 0;
-
-  virtual CommandBuffer*
-  CreateCommandBuffer(CommandPool* commandPool) = 0;
+  DestroyCommandBuffer(GraphicsCommandBuffer* commandBuffer) = 0;
 
   virtual void
-  DestroyCommandBuffer(CommandPool* commandPool, CommandBuffer* commandBuffer) = 0;
+  DestroyCommandBuffer(ComputeCommandBuffer* commandBuffer) = 0;
 };
 
 }  // namespace Marbas

@@ -77,14 +77,13 @@ ShowBoxRenderPass::ShowBoxRenderPass(RHIFactory* rhiFactory) : RenderPassBase(rh
       .borderColor = Marbas::BorderColor::IntOpaqueBlack,
   });
 
+  CreateDescriptorSetLayout();
   m_pipeline = CreatePipeline();
   CreateDescriptorSet();
 }
 
-Pipeline*
+uintptr_t
 ShowBoxRenderPass::CreatePipeline() {
-  m_descriptorSetLayout = CreateDescriptorSetLayout();
-
   // create shader
   m_vertexShaderModule = CreateShaderModule("showBox.vert.glsl.spv");
   m_fragmentShaderModule = CreateShaderModule("showBox.frag.glsl.spv");
@@ -123,44 +122,26 @@ ShowBoxRenderPass::CreatePipeline() {
       .usage = ImageUsageFlags::DEPTH_STENCIL,
       .sampleCount = Marbas::SampleCount::BIT1,
   };
-  createInfo.layout = m_descriptorSetLayout;
+  createInfo.layout = {m_argument};
   // createInfo.rasterizationInfo.depthCilpEnable = false;
 
   return m_pipelineContext->CreatePipeline(createInfo);
 }
 
-DescriptorSetLayout*
+void
 ShowBoxRenderPass::CreateDescriptorSetLayout() {
-  std::vector<Marbas::DescriptorSetLayoutBinding> showBoxPipelinelayoutBinding;
-  showBoxPipelinelayoutBinding.push_back(Marbas::DescriptorSetLayoutBinding{
-      .bindingPoint = 0,
-      .descriptorType = Marbas::DescriptorType::UNIFORM_BUFFER,
-  });
-  showBoxPipelinelayoutBinding.push_back(Marbas::DescriptorSetLayoutBinding{
-      .bindingPoint = 0,
-      .descriptorType = Marbas::DescriptorType::IMAGE,
-  });
-  return m_pipelineContext->CreateDescriptorSetLayout(showBoxPipelinelayoutBinding);
+  Marbas::DescriptorSetArgument argument;
+  argument.Bind(0, Marbas::DescriptorType::UNIFORM_BUFFER);
+  argument.Bind(1, Marbas::DescriptorType::IMAGE);
+  m_argument = std::move(argument);
 }
 
 void
 ShowBoxRenderPass::CreateDescriptorSet() {
-  std::vector<Marbas::DescriptorPoolSize> descriptorSize = {
-      Marbas::DescriptorPoolSize{
-          .type = Marbas::DescriptorType::UNIFORM_BUFFER,
-          .size = 1,
-      },
-      Marbas::DescriptorPoolSize{
-          .type = Marbas::DescriptorType::IMAGE,
-          .size = 1,
-      },
-  };
-  m_descriptorPool = m_pipelineContext->CreateDescriptorPool(descriptorSize, 1);
-
-  m_descriptorSet = m_pipelineContext->CreateDescriptorSet(m_descriptorPool, m_descriptorSetLayout);
+  m_descriptorSet = m_pipelineContext->CreateDescriptorSet(m_argument);
   m_pipelineContext->BindImage(BindImageInfo{
       .descriptorSet = m_descriptorSet,
-      .bindingPoint = 0,
+      .bindingPoint = 1,
       .imageView = m_textureView,
       .sampler = m_sampler,
   });
@@ -175,7 +156,7 @@ ShowBoxRenderPass::CreateDescriptorSet() {
 }
 
 void
-ShowBoxRenderPass::RecordCommand(CommandBuffer* commandBuffer, uint32_t frameIndex) {
+ShowBoxRenderPass::RecordCommand(GraphicsCommandBuffer* commandBuffer, uint32_t frameIndex) {
   auto* frameBuffer = m_frameBuffers[frameIndex];
   const auto& height = frameBuffer->height;
   const auto& width = frameBuffer->width;
@@ -199,7 +180,7 @@ ShowBoxRenderPass::RecordCommand(CommandBuffer* commandBuffer, uint32_t frameInd
   commandBuffer->SetViewports({&viewportInfo, 1});
   commandBuffer->SetScissors({&scissorInfo, 1});
   commandBuffer->BindVertexBuffer(m_vertexBuffer);
-  commandBuffer->BindDescriptorSet(m_pipeline, m_descriptorSet);
+  commandBuffer->BindDescriptorSet(m_pipeline, {m_descriptorSet});
   commandBuffer->Draw(m_model.m_vertices.size(), 1, 0, 0);
   commandBuffer->EndPipeline(m_pipeline);
   commandBuffer->End();

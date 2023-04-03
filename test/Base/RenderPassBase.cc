@@ -50,8 +50,7 @@ RenderPassBase::LoadImage(Marbas::BufferContext* bufferContext, const std::strin
 
 RenderPassBase::RenderPassBase(RHIFactory* rhiFactory)
     : m_bufferContext(rhiFactory->GetBufferContext()), m_pipelineContext(rhiFactory->GetPipelineContext()) {
-  m_commandPool = m_bufferContext->CreateCommandPool(CommandBufferUsage::GRAPHICS);
-  m_commandBuffer = m_bufferContext->CreateCommandBuffer(m_commandPool);
+  m_commandBuffer = m_bufferContext->CreateGraphicsCommandBuffer();
 }
 
 void
@@ -64,7 +63,7 @@ RenderPassBase::Render(std::span<Semaphore*> waitSemaphore, std::span<Semaphore*
 void
 RenderPassBase::CreateFrameBuffer(std::vector<FrameBufferCreateInfo>& frameBufferCreateInfos) {
   for (auto& frameBufferCreateInfo : frameBufferCreateInfos) {
-    frameBufferCreateInfo.pieline = m_pipeline;
+    frameBufferCreateInfo.pipeline = m_pipeline;
     m_frameBuffers.push_back(m_pipelineContext->CreateFrameBuffer(frameBufferCreateInfo));
   }
 }

@@ -86,8 +86,7 @@ main(void) {
   }
 
   // create commandBuffer
-  auto commandPool = bufferContext->CreateCommandPool(Marbas::CommandBufferUsage::TRANSFER);
-  auto* commandBuffer = bufferContext->CreateCommandBuffer(commandPool);
+  auto* commandBuffer = bufferContext->CreateGraphicsCommandBuffer();
 
   {
     Marbas::ShowBoxRenderPass showBoxRenderPass(factory.get());
@@ -137,8 +136,7 @@ main(void) {
   bufferContext->DestroyImageView(imageView);
   bufferContext->DestroyImage(depthBuffer);
   bufferContext->DestroyImageView(depthBufferView);
-  bufferContext->DestroyCommandBuffer(commandPool, commandBuffer);
-  bufferContext->DestroyCommandPool(commandPool);
+  bufferContext->DestroyCommandBuffer(commandBuffer);
 
   factory->Quit();
 }

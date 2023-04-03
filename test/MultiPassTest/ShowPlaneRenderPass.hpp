@@ -11,9 +11,9 @@ class ShowPlaneRenderPass final : public RenderPassBase {
 
  public:
   void
-  RecordCommand(CommandBuffer* commandBuffer, uint32_t frameIndex) override;
+  RecordCommand(GraphicsCommandBuffer* commandBuffer, uint32_t frameIndex) override;
 
-  Pipeline*
+  uintptr_t
   CreatePipeline() override;
 
  private:
@@ -37,10 +37,9 @@ class ShowPlaneRenderPass final : public RenderPassBase {
 
   Image* m_texture;
   ImageView* m_textureView;
-  Sampler* m_sampler;
-  DescriptorSetLayout* m_descriptorSetLayout = nullptr;
-  DescriptorPool* m_descritporPool = nullptr;
-  DescriptorSet* m_descriptorSet = nullptr;
+  DescriptorSetArgument m_argument;
+  uintptr_t m_sampler;
+  uintptr_t m_descriptorSet;
 
   std::string m_texturePath = "metal.png";
 };

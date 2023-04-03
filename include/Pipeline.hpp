@@ -25,6 +25,7 @@
 
 #include "Buffer.hpp"
 #include "DescriptorSet.hpp"
+#include "Image.hpp"
 #include "Sampler.hpp"
 
 namespace Marbas {
@@ -164,8 +165,8 @@ struct ViewportInfo {
 };
 
 struct ScissorInfo {
-  int32_t x = 0;
-  int32_t y = 0;
+  uint32_t x = 0;
+  uint32_t y = 0;
   uint32_t width = 800;
   uint32_t height = 600;
 };
@@ -261,7 +262,7 @@ struct RenderTargetDesc {
 
 struct GraphicsPipeLineCreateInfo {
   InputLayoutDesc vertexInputLayout = {};
-  DescriptorSetLayout* layout = nullptr;
+  std::vector<DescriptorSetArgument> layout;
   std::vector<ShaderStageCreateInfo> shaderStageCreateInfo = {};
   InputAssemblyStateCreateInfo inputAssemblyState = {};
   RasterizationCreateInfo rasterizationInfo = {};
@@ -282,15 +283,11 @@ struct RasterizationDesc {
   bool multisampleEnable = false;
 };
 
-struct Pipeline {
-  PipelineType pipelineType = PipelineType::GRAPHICS;
-};
-
 struct FrameBufferCreateInfo {
   uint32_t height = 800;
   uint32_t width = 600;
   uint32_t layer = 1;
-  Pipeline* pieline = nullptr;
+  uintptr_t pipeline;
   struct Attachment {
     std::vector<ImageView*> colorAttachments;
     ImageView* depthAttachment = nullptr;
@@ -309,7 +306,7 @@ struct FrameBuffer {
 
 struct ComputePipelineCreateInfo {
   ShaderStageCreateInfo computeShaderStage;
-  DescriptorSetLayout* layout = nullptr;
+  std::vector<DescriptorSetArgument> layout;
 };
 
 }  // namespace Marbas

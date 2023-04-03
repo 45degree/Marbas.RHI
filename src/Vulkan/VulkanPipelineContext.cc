@@ -161,57 +161,6 @@ ConvertToVulkanSamplerAddressMode(const SamplerAddressMode& samplerAddressMode) 
   }
 }
 
-static std::vector<uint32_t>
-ConvertOpenGLSpirvToVulkanShader(const std::vector<uint32_t>& code, ShaderType shaderType) {
-  spirv_cross::CompilerGLSL glsl(code);
-  auto resource = glsl.get_shader_resources();
-
-  // ubo
-  for (const auto& ubo : resource.uniform_buffers) {
-    glsl.set_decoration(ubo.id, spv::Decoration::DecorationDescriptorSet, 0);
-  }
-
-  // ssbo
-  for (const auto& ssbo : resource.storage_buffers) {
-    glsl.set_decoration(ssbo.id, spv::Decoration::DecorationDescriptorSet, 1);
-  }
-
-  // sampled image
-  for (const auto& image : resource.sampled_images) {
-    glsl.set_decoration(image.id, spv::Decoration::DecorationDescriptorSet, 2);
-  }
-
-  spirv_cross::CompilerGLSL::Options options;
-  options.version = 450;
-  options.es = false;
-  options.vulkan_semantics = true;
-  glsl.set_common_options(options);
-
-  auto vulkanShaderSrc = glsl.compile();
-
-  shaderc::Compiler compiler;
-  shaderc::CompileOptions compileOptions;
-  shaderc_shader_kind kind;
-  switch (shaderType) {
-    case ShaderType::VERTEX_SHADER:
-      kind = shaderc_glsl_vertex_shader;
-      break;
-    case ShaderType::FRAGMENT_SHADER:
-      kind = shaderc_fragment_shader;
-      break;
-    case ShaderType::GEOMETRY_SHADER:
-      kind = shaderc_geometry_shader;
-      break;
-    case ShaderType::COMPUTE_SHADER:
-      kind = shaderc_compute_shader;
-      break;
-  }
-
-  auto module = compiler.CompileGlslToSpv(vulkanShaderSrc, kind, "vulkan_shader_src", compileOptions);
-
-  return {module.begin(), module.end()};
-}
-
 static void
 SetAttachmentLayout(vk::AttachmentDescription& description, AttachmentInitAction initAction,
                     AttachmentFinalAction finalAction, uint32_t usage) {
@@ -302,7 +251,7 @@ SetAttachmentLayout(vk::AttachmentDescription& description, AttachmentInitAction
   }
 }
 
-Sampler*
+uintptr_t
 VulkanPipelineContext::CreateSampler(const SamplerCreateInfo& createInfo) {
   vk::SamplerCreateInfo vkCreateInfo;
   SetFilterForSamplerCreateInfo(createInfo.filter, vkCreateInfo);
@@ -364,154 +313,107 @@ VulkanPipelineContext::CreateSampler(const SamplerCreateInfo& createInfo) {
   }
 
   auto sampler = m_device.createSampler(vkCreateInfo);
+  m_samplers.insert(sampler);
 
-  auto* vulkanSampler = new VulkanSampler();
-  vulkanSampler->vkSampler = sampler;
-
-  return vulkanSampler;
+  return reinterpret_cast<uintptr_t>(static_cast<VkSampler>(sampler));
 }
 
 void
-VulkanPipelineContext::DestroySampler(Sampler* sampler) {
-  if (sampler == nullptr) return;
+VulkanPipelineContext::DestroySampler(uintptr_t sampler) {
+  auto vkSampler = static_cast<vk::Sampler>(reinterpret_cast<VkSampler>(sampler));
 
-  auto* vulkanSampler = static_cast<VulkanSampler*>(sampler);
-  m_device.destroySampler(vulkanSampler->vkSampler);
+  auto iter = m_samplers.find(vkSampler);
+  if (iter == m_samplers.end()) return;
 
-  delete vulkanSampler;
+  m_samplers.erase(iter);
+  m_device.destroySampler(vkSampler);
 }
 
 vk::ShaderModule
 VulkanPipelineContext::CreateShaderModule(const std::vector<char>& spirvCode, ShaderType type) {
-  std::vector<uint32_t> code(std::ceil(spirvCode.size() / sizeof(uint32_t)));
+  std::vector<uint32_t> code(std::ceil(spirvCode.size() / sizeof(uint32_t)), 0);
   std::memcpy(code.data(), spirvCode.data(), spirvCode.size());
-  auto newCode = ConvertOpenGLSpirvToVulkanShader(code, type);
 
   vk::ShaderModuleCreateInfo createInfo;
-  createInfo.setCode(newCode);
+  createInfo.setCode(code);
   return m_device.createShaderModule(createInfo);
 }
 
-DescriptorSetLayout*
-VulkanPipelineContext::CreateDescriptorSetLayout(const std::vector<DescriptorSetLayoutBinding>& layoutBinding) {
-  std::vector<vk::DescriptorSetLayoutBinding> uboBinding;
-  std::vector<vk::DescriptorSetLayoutBinding> ssboBinding;
-  std::vector<vk::DescriptorSetLayoutBinding> sampledImageBindind;
-  for (const auto& binding : layoutBinding) {
-    vk::DescriptorSetLayoutBinding vkLayoutBinding;
-    vkLayoutBinding.setBinding(binding.bindingPoint);
-    vkLayoutBinding.setDescriptorCount(1);
-    vkLayoutBinding.setStageFlags(vk::ShaderStageFlagBits::eAll);
+vk::DescriptorSetLayout
+VulkanPipelineContext::CreateDescriptorSetLayout(const DescriptorSetArgument& layoutBinding) {
+  if (m_descriptorSetLayoutCache.find(layoutBinding) != m_descriptorSetLayoutCache.end()) {
+    // the descriptorSetLayout has been create
+    auto vkLayout = m_descriptorSetLayoutCache.at(layoutBinding);
+    m_descriptorSetLayoutCount[vkLayout]++;
+    return vkLayout;
+  }
 
-    switch (binding.descriptorType) {
+  // create the descriptorSetLayout and insert it
+  std::vector<vk::DescriptorSetLayoutBinding> vkBindings;
+  for (const auto& [bingingPoint, type] : layoutBinding.m_bindingInfo) {
+    vk::DescriptorSetLayoutBinding binding;
+    binding.setBinding(bingingPoint);
+
+    switch (type) {
       case DescriptorType::UNIFORM_BUFFER:
-        vkLayoutBinding.setDescriptorType(vk::DescriptorType::eUniformBuffer);
-        uboBinding.push_back(vkLayoutBinding);
+        binding.setDescriptorType(vk::DescriptorType::eUniformBuffer);
         break;
       case DescriptorType::DYNAMIC_UNIFORM_BUFFER:
-        vkLayoutBinding.setDescriptorType(vk::DescriptorType::eUniformBufferDynamic);
-        uboBinding.push_back(vkLayoutBinding);
+        binding.setDescriptorType(vk::DescriptorType::eUniformBufferDynamic);
         break;
       case DescriptorType::IMAGE:
-        vkLayoutBinding.setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
-        sampledImageBindind.push_back(vkLayoutBinding);
+        binding.setDescriptorType(vk::DescriptorType::eCombinedImageSampler);
         break;
       case DescriptorType::STORAGE_BUFFER:
-        vkLayoutBinding.setDescriptorType(vk::DescriptorType::eStorageBuffer);
-        ssboBinding.push_back(vkLayoutBinding);
+        binding.setDescriptorType(vk::DescriptorType::eStorageBuffer);
         break;
     }
+    binding.setDescriptorCount(1);
+    binding.setStageFlags(vk::ShaderStageFlagBits::eAll);
+    vkBindings.push_back(binding);
   }
-
-  auto* vulkanDescriptorSetLayout = new VulkanDescriptorSetLayout();
 
   vk::DescriptorSetLayoutCreateInfo createInfo;
-  createInfo.setBindings(uboBinding);
-  vulkanDescriptorSetLayout->vkBufferLayoutout = m_device.createDescriptorSetLayout(createInfo);
+  createInfo.setBindings(vkBindings);
+  auto vkLayout = m_device.createDescriptorSetLayout(createInfo);
 
-  createInfo.setBindings(ssboBinding);
-  vulkanDescriptorSetLayout->vkSSBOLayout = m_device.createDescriptorSetLayout(createInfo);
-
-  createInfo.setBindings(sampledImageBindind);
-  vulkanDescriptorSetLayout->vkSampledImageLayout = m_device.createDescriptorSetLayout(createInfo);
-
-  return vulkanDescriptorSetLayout;
+  m_descriptorSetLayoutCount[vkLayout] = 1;
+  m_descriptorSetLayoutCache.insert_or_assign(layoutBinding, vkLayout);
+  return vkLayout;
 }
 
 void
-VulkanPipelineContext::DestroyDescriptorSetLayout(DescriptorSetLayout* descriptorSetLayout) {
-  auto* vulkanDescriptorSetLayout = static_cast<VulkanDescriptorSetLayout*>(descriptorSetLayout);
-  m_device.destroyDescriptorSetLayout(vulkanDescriptorSetLayout->vkBufferLayoutout);
-  m_device.destroyDescriptorSetLayout(vulkanDescriptorSetLayout->vkSampledImageLayout);
-  m_device.destroyDescriptorSetLayout(vulkanDescriptorSetLayout->vkSSBOLayout);
-}
+VulkanPipelineContext::DestroyDescriptorSetLayout(const vk::DescriptorSetLayout& layout) {
+  m_descriptorSetLayoutCount[layout]--;
+  if (m_descriptorSetLayoutCount.at(layout) == 0) {
+    // delete the descriptorSetLayout
+    auto iter = std::find_if(m_descriptorSetLayoutCache.begin(), m_descriptorSetLayoutCache.end(), [&](auto& cache) {
+      auto vkLayout = cache.second;
+      return vkLayout == layout;
+    });
 
-DescriptorPool*
-VulkanPipelineContext::CreateDescriptorPool(std::span<DescriptorPoolSize> descritorPoolSize, uint32_t maxSets) {
-  vk::DescriptorPoolCreateInfo createInfo;
-  maxSets = maxSets < 100 ? 100 : maxSets;
-  createInfo.setMaxSets(maxSets * 3);
-
-  std::vector<vk::DescriptorPoolSize> poolSizes;
-  for (auto& descriptorInfo : descritorPoolSize) {
-    vk::DescriptorPoolSize poolSize;
-    poolSize.setDescriptorCount(descriptorInfo.size);
-    poolSize.setType(ConvertToVulkanDescriptorType(descriptorInfo.type));
-
-    poolSizes.push_back(poolSize);
+    m_descriptorSetLayoutCache.erase(iter);
+    m_descriptorSetLayoutCount.erase(layout);
+    m_device.destroyDescriptorSetLayout(layout);
   }
-  createInfo.setPoolSizes(poolSizes);
+}
 
-  auto vkDescriptorPool = m_device.createDescriptorPool(createInfo);
+uintptr_t
+VulkanPipelineContext::CreateDescriptorSet(const DescriptorSetArgument& argument) {
+  auto vkLayout = CreateDescriptorSetLayout(argument);
 
-  auto* descriptorPool = new VulkanDescriptorPool();
-  descriptorPool->vkDescriptorPool = vkDescriptorPool;
-
-  return descriptorPool;
+  auto vkSet = m_descriptorAllocate.Allocate(vkLayout);
+  m_descriptorSets.insert_or_assign(vkSet, vkLayout);
+  return reinterpret_cast<uintptr_t>(static_cast<VkDescriptorSet>(vkSet));
 }
 
 void
-VulkanPipelineContext::DestroyDescriptorPool(DescriptorPool* descriptorPool) {
-  if (descriptorPool == nullptr) return;
+VulkanPipelineContext::DestroyDescriptorSet(uintptr_t set) {
+  auto vkSet = static_cast<vk::DescriptorSet>(reinterpret_cast<VkDescriptorSet>(set));
 
-  auto* vulkanDescriptorPool = static_cast<VulkanDescriptorPool*>(descriptorPool);
-
-  m_device.destroyDescriptorPool(vulkanDescriptorPool->vkDescriptorPool);
-
-  delete vulkanDescriptorPool;
-}
-
-DescriptorSet*
-VulkanPipelineContext::CreateDescriptorSet(const DescriptorPool* pool, const DescriptorSetLayout* descriptorLayout) {
-  auto* vulkanDescriptorSet = new VulkanDescriptorSet();
-  auto* vulkanDescriptorSetLayout = static_cast<const VulkanDescriptorSetLayout*>(descriptorLayout);
-
-  std::array descriptorLayouts = {
-      vulkanDescriptorSetLayout->vkBufferLayoutout,
-      vulkanDescriptorSetLayout->vkSSBOLayout,
-      vulkanDescriptorSetLayout->vkSampledImageLayout,
-  };
-
-  vk::DescriptorSetAllocateInfo allocateInfo;
-  allocateInfo.setSetLayouts(descriptorLayouts);
-  allocateInfo.setDescriptorPool(static_cast<const VulkanDescriptorPool*>(pool)->vkDescriptorPool);
-  allocateInfo.setDescriptorSetCount(descriptorLayouts.size());
-
-  auto vkDescriptorSets = m_device.allocateDescriptorSets(allocateInfo);
-
-  vulkanDescriptorSet->uniformBufferSet = vkDescriptorSets[0];
-  vulkanDescriptorSet->ssboSet = vkDescriptorSets[1];
-  vulkanDescriptorSet->sampledImageSet = vkDescriptorSets[2];
-
-  return vulkanDescriptorSet;
-}
-
-void
-VulkanPipelineContext::DestroyDescriptorSet(const DescriptorPool* descriptorPool, DescriptorSet* descriptorSet) {
-  if (descriptorPool == nullptr || descriptorSet == nullptr) return;
-
-  auto* vulkanDescriptorSet = static_cast<VulkanDescriptorSet*>(descriptorSet);
-  delete vulkanDescriptorSet;
+  m_descriptorAllocate.Delete(vkSet);
+  DestroyDescriptorSetLayout(m_descriptorSets[vkSet]);
+  m_descriptorSets.erase(vkSet);
 }
 
 /**
@@ -519,14 +421,14 @@ VulkanPipelineContext::DestroyDescriptorSet(const DescriptorPool* descriptorPool
  */
 
 // graphics pipeline
-Pipeline*
+uintptr_t
 VulkanPipelineContext::CreatePipeline(const GraphicsPipeLineCreateInfo& createInfo) {
-  auto* graphicsPipeline = new VulkanPipeline();
-  graphicsPipeline->vkRenderPass = CreateRenderPass(createInfo.outputRenderTarget, vk::PipelineBindPoint::eGraphics);
+  // auto* graphicsPipeline = new VulkanPipeline();
+  auto vkRenderPass = CreateRenderPass(createInfo.outputRenderTarget, vk::PipelineBindPoint::eGraphics);
 
   // render pass
   vk::GraphicsPipelineCreateInfo vkCreateInfo;
-  vkCreateInfo.setRenderPass(graphicsPipeline->vkRenderPass);
+  vkCreateInfo.setRenderPass(vkRenderPass);
 
   // input state
   vk::PipelineVertexInputStateCreateInfo vkVertexInputStateCreateInfo;
@@ -566,12 +468,13 @@ VulkanPipelineContext::CreatePipeline(const GraphicsPipeLineCreateInfo& createIn
 
   // shader stage
   std::vector<vk::PipelineShaderStageCreateInfo> vkShaderStageCreateInfos;
+  std::vector<vk::ShaderModule> shaderModules;
   for (auto& shaderStageCreateInfo : createInfo.shaderStageCreateInfo) {
     vk::PipelineShaderStageCreateInfo info;
 
     // convert shader
     auto module = CreateShaderModule(shaderStageCreateInfo.code, shaderStageCreateInfo.stage);
-    graphicsPipeline->shaderModule.push_back(module);
+    shaderModules.push_back(module);
     info.setModule(module);
     if (shaderStageCreateInfo.stage == ShaderType::VERTEX_SHADER) {
       info.setStage(vk::ShaderStageFlagBits::eVertex);
@@ -728,21 +631,29 @@ VulkanPipelineContext::CreatePipeline(const GraphicsPipeLineCreateInfo& createIn
   vkCreateInfo.setPMultisampleState(&vkMultisampleStateCreateInfo);
 
   // layout
-  auto* vulkanDescriptorSetLayout = static_cast<VulkanDescriptorSetLayout*>(createInfo.layout);
-  auto vkPipelineLayout = CreatePipelineLayout(vulkanDescriptorSetLayout);
+  std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
+  for (auto& argument : createInfo.layout) {
+    auto vkDescriptorSet = CreateDescriptorSetLayout(argument);
+    descriptorSetLayouts.push_back(vkDescriptorSet);
+  }
+  auto vkPipelineLayout = CreatePipelineLayout(descriptorSetLayouts);
   vkCreateInfo.setLayout(vkPipelineLayout);
 
-  auto result = m_device.createGraphicsPipeline(nullptr, vkCreateInfo);
-  if (result.result != vk::Result::eSuccess) {
+  auto graphicsPipeline = m_device.createGraphicsPipeline(nullptr, vkCreateInfo);
+  if (graphicsPipeline.result != vk::Result::eSuccess) {
     throw std::runtime_error("failed to create the vulkan graphics pipepine");
   }
-  graphicsPipeline->vkPipeline = result.value;
-  graphicsPipeline->pipelineType = PipelineType::GRAPHICS;
-  graphicsPipeline->vkPipelineLayout = vkPipelineLayout;
-  return graphicsPipeline;
+
+  VulkanGraphicsPipelineInfo graphicsPipelineInfo;
+  graphicsPipelineInfo.shaderModule = shaderModules;
+  graphicsPipelineInfo.vkPipelineLayout = vkPipelineLayout;
+  graphicsPipelineInfo.vkRenderPass = vkRenderPass;
+  m_graphicsPipeline[graphicsPipeline.value] = std::move(graphicsPipelineInfo);
+
+  return reinterpret_cast<uintptr_t>(static_cast<VkPipeline>(graphicsPipeline.value));
 }
 
-Pipeline*
+uintptr_t
 VulkanPipelineContext::CreatePipeline(const ComputePipelineCreateInfo& createInfo) {
   vk::ComputePipelineCreateInfo vkCreateInfo;
 
@@ -755,39 +666,66 @@ VulkanPipelineContext::CreatePipeline(const ComputePipelineCreateInfo& createInf
   shaderStageInfo.setPName(createInfo.computeShaderStage.interName.c_str());
   vkCreateInfo.setStage(shaderStageInfo);
 
-  auto pipelineLayout = CreatePipelineLayout(static_cast<VulkanDescriptorSetLayout*>(createInfo.layout));
-  vkCreateInfo.setLayout(pipelineLayout);
+  // layout
+  std::vector<vk::DescriptorSetLayout> descriptorSetLayouts;
+  for (auto& argument : createInfo.layout) {
+    auto vkDescriptorSet = CreateDescriptorSetLayout(argument);
+    descriptorSetLayouts.push_back(vkDescriptorSet);
+  }
+  auto vkPipelineLayout = CreatePipelineLayout(descriptorSetLayouts);
+  vkCreateInfo.setLayout(vkPipelineLayout);
 
   auto vkPipeline = m_device.createComputePipeline(nullptr, vkCreateInfo);
 
-  auto* vulkanPipeline = new VulkanPipeline();
-  vulkanPipeline->vkPipeline = vkPipeline.value;
-  vulkanPipeline->vkPipelineLayout = pipelineLayout;
-  vulkanPipeline->shaderModule = {module};
-  vulkanPipeline->pipelineType = PipelineType::COMPUTE;
+  VulkanComputePipelineInfo computePipelineInfo;
+  computePipelineInfo.vkPipelineLayout = vkPipelineLayout;
+  computePipelineInfo.shaderModule = {module};
 
-  return vulkanPipeline;
+  m_computePipeline[vkPipeline.value] = std::move(computePipelineInfo);
+
+  return reinterpret_cast<uintptr_t>(static_cast<VkPipeline>(vkPipeline.value));
 }
 
 void
-VulkanPipelineContext::DestroyPipeline(Pipeline* pipeline) {
-  if (pipeline == nullptr) return;
+VulkanPipelineContext::DestroyPipeline(uintptr_t pipeline) {
+  auto vkPipeline = static_cast<vk::Pipeline>(reinterpret_cast<VkPipeline>(pipeline));
+  m_device.destroyPipeline(vkPipeline);
 
-  auto* vulkanPipeline = static_cast<VulkanPipeline*>(pipeline);
-  m_device.destroyRenderPass(vulkanPipeline->vkRenderPass);
-  m_device.destroyPipeline(vulkanPipeline->vkPipeline);
-  m_device.destroyPipelineLayout(vulkanPipeline->vkPipelineLayout);
-  for (auto& module : vulkanPipeline->shaderModule) {
-    m_device.destroyShaderModule(module);
+  vk::PipelineLayout pipelineLayout;
+  std::vector<vk::ShaderModule> modules;
+  if (auto iter = m_graphicsPipeline.find(vkPipeline); iter != m_graphicsPipeline.end()) {
+    auto& pipelineInfo = iter->second;
+    m_device.destroyRenderPass(pipelineInfo.vkRenderPass);
+    for (auto& vkModule : pipelineInfo.shaderModule) {
+      m_device.destroyShaderModule(vkModule);
+    }
+
+    pipelineLayout = pipelineInfo.vkPipelineLayout;
+
+    m_graphicsPipeline.erase(vkPipeline);
+
+  } else if (auto iter = m_computePipeline.find(vkPipeline); iter != m_computePipeline.end()) {
+    auto& pipelineInfo = iter->second;
+    pipelineLayout = pipelineInfo.vkPipelineLayout;
+
+    for (auto& vkModule : pipelineInfo.shaderModule) {
+      m_device.destroyShaderModule(vkModule);
+    }
+
+    m_computePipeline.erase(vkPipeline);
   }
 
-  delete vulkanPipeline;
+  DestroyPipelineLayout(pipelineLayout);
 }
 
 FrameBuffer*
 VulkanPipelineContext::CreateFrameBuffer(const FrameBufferCreateInfo& createInfo) {
-  auto* vulkanPipeline = static_cast<VulkanPipeline*>(createInfo.pieline);
-  auto vkRenderPass = vulkanPipeline->vkRenderPass;
+  auto vkPipeline = static_cast<vk::Pipeline>(reinterpret_cast<VkPipeline>(createInfo.pipeline));
+  if (m_graphicsPipeline.find(vkPipeline) == m_graphicsPipeline.end()) {
+    LOG(ERROR) << "can't find pipeline for create framebuffer";
+    return nullptr;
+  }
+  auto vkRenderPass = m_graphicsPipeline[vkPipeline].vkRenderPass;
 
   vk::FramebufferCreateInfo vkFramebufferCreateInfo;
   std::vector<vk::ImageView> vkAttachments;
@@ -901,24 +839,55 @@ VulkanPipelineContext::CreateRenderPass(const RenderTargetDesc& renderTargetDesc
 }
 
 vk::PipelineLayout
-VulkanPipelineContext::CreatePipelineLayout(const VulkanDescriptorSetLayout* descriptorSetLayout) {
-  vk::PipelineLayoutCreateInfo vkPipelineLayoutCreateInfo;
-  if (descriptorSetLayout == nullptr) {
-    return m_device.createPipelineLayout(vkPipelineLayoutCreateInfo);
+VulkanPipelineContext::CreatePipelineLayout(const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts) {
+  if (m_pipelineLayoutCache.find(descriptorSetLayouts) != m_pipelineLayoutCache.end()) {
+    // pipeline layout has been created
+    auto vkLayout = m_pipelineLayoutCache.at(descriptorSetLayouts);
+    m_pipelineLayoutCount[vkLayout]++;
+    return vkLayout;
   }
 
-  std::array vkLayouts = {
-      descriptorSetLayout->vkBufferLayoutout,
-      descriptorSetLayout->vkSSBOLayout,
-      descriptorSetLayout->vkSampledImageLayout,
-  };
-  vkPipelineLayoutCreateInfo.setSetLayouts(vkLayouts);
-  return m_device.createPipelineLayout(vkPipelineLayoutCreateInfo);
+  // create the new pipeline layout
+  vk::PipelineLayoutCreateInfo vkPipelineLayoutCreateInfo;
+  vkPipelineLayoutCreateInfo.setSetLayouts(descriptorSetLayouts);
+
+  auto vkLayout = m_device.createPipelineLayout(vkPipelineLayoutCreateInfo);
+  m_pipelineLayoutCache.insert_or_assign(descriptorSetLayouts, vkLayout);
+  m_pipelineLayoutCount[vkLayout]++;
+
+  return vkLayout;
+}
+
+void
+VulkanPipelineContext::DestroyPipelineLayout(const vk::PipelineLayout& layout) {
+  m_pipelineLayoutCount[layout]--;
+  if (m_pipelineLayoutCount.at(layout) == 0) {
+    // delete the descriptorSetLayout
+    auto iter = std::find_if(m_pipelineLayoutCache.begin(), m_pipelineLayoutCache.end(), [&](auto& cache) {
+      auto vkLayout = cache.second;
+      return vkLayout == layout;
+    });
+
+    for (auto descriptorSetLayout : iter->first) {
+      DestroyDescriptorSetLayout(descriptorSetLayout);
+    }
+
+    m_pipelineLayoutCache.erase(iter);
+    m_pipelineLayoutCount.erase(layout);
+    m_device.destroyPipelineLayout(layout);
+  }
 }
 
 void
 VulkanPipelineContext::BindBuffer(const BindBufferInfo& bindBufferInfo) {
-  auto* vulkanDescriptorSet = static_cast<VulkanDescriptorSet*>(bindBufferInfo.descriptorSet);
+  auto descriptorSet = bindBufferInfo.descriptorSet;
+  auto vkDescriptorSet = static_cast<vk::DescriptorSet>(reinterpret_cast<VkDescriptorSet>(descriptorSet));
+  if (m_descriptorSets.find(vkDescriptorSet) == m_descriptorSets.end()) {
+    constexpr static std::string_view errMsg = "can't find descriptorSet";
+    LOG(ERROR) << errMsg;
+    throw std::runtime_error(errMsg.data());
+  }
+
   auto* vulkanBuffer = static_cast<VulkanBuffer*>(bindBufferInfo.buffer);
   const auto& descriptorType = bindBufferInfo.descriptorType;
 
@@ -932,31 +901,39 @@ VulkanPipelineContext::BindBuffer(const BindBufferInfo& bindBufferInfo) {
   vkWriteDescriptorSet.setDescriptorCount(1);
   vkWriteDescriptorSet.setBufferInfo(vkDescriptorBufferInfo);
   vkWriteDescriptorSet.setDstArrayElement(bindBufferInfo.arrayElement);
-  if (vulkanBuffer->bufferType == BufferType::UNIFORM_BUFFER) {
-    vkWriteDescriptorSet.setDstSet(vulkanDescriptorSet->uniformBufferSet);
+  vkWriteDescriptorSet.setDstSet(vkDescriptorSet);
 
-    if (descriptorType == DescriptorType::UNIFORM_BUFFER) {
+  switch (descriptorType) {
+    case DescriptorType::UNIFORM_BUFFER:
       vkWriteDescriptorSet.setDescriptorType(vk::DescriptorType::eUniformBuffer);
-    } else if (descriptorType == DescriptorType::DYNAMIC_UNIFORM_BUFFER) {
+      break;
+    case DescriptorType::DYNAMIC_UNIFORM_BUFFER:
       vkWriteDescriptorSet.setDescriptorType(vk::DescriptorType::eUniformBufferDynamic);
-    }
-  } else if (vulkanBuffer->bufferType == BufferType::STORAGE_BUFFER) {
-    vkWriteDescriptorSet.setDstSet(vulkanDescriptorSet->ssboSet);
-    if (descriptorType == DescriptorType::STORAGE_BUFFER) {
+      break;
+    case DescriptorType::IMAGE:
+      LOG(ERROR) << "can't bind image when binding buffer";
+      return;
+    case DescriptorType::STORAGE_BUFFER:
       vkWriteDescriptorSet.setDescriptorType(vk::DescriptorType::eStorageBuffer);
-    }
+      break;
   }
+
   m_device.updateDescriptorSets(vkWriteDescriptorSet, nullptr);
 }
 
 void
 VulkanPipelineContext::BindImage(const BindImageInfo& bindImageInfo) {
-  auto* vulkanDescriptorSet = static_cast<VulkanDescriptorSet*>(bindImageInfo.descriptorSet);
-  auto* vulkanImageView = static_cast<VulkanImageView*>(bindImageInfo.imageView);
-  auto* vulkanSampler = static_cast<VulkanSampler*>(bindImageInfo.sampler);
+  auto descriptorSet = bindImageInfo.descriptorSet;
+  auto vkDescriptorSet = static_cast<vk::DescriptorSet>(reinterpret_cast<VkDescriptorSet>(descriptorSet));
+  if (m_descriptorSets.find(vkDescriptorSet) == m_descriptorSets.end()) {
+    constexpr static std::string_view errMsg = "can't find descriptorSet";
+    LOG(ERROR) << errMsg;
+    throw std::runtime_error(errMsg.data());
+  }
 
+  auto* vulkanImageView = static_cast<VulkanImageView*>(bindImageInfo.imageView);
   const auto& vkImageView = vulkanImageView->vkImageView;
-  const auto& vkSampler = vulkanSampler->vkSampler;
+  auto vkSampler = static_cast<vk::Sampler>(reinterpret_cast<VkSampler>(bindImageInfo.sampler));
 
   vk::DescriptorImageInfo vkDescriptorImageInfo;
   vkDescriptorImageInfo.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
@@ -964,7 +941,7 @@ VulkanPipelineContext::BindImage(const BindImageInfo& bindImageInfo) {
   vkDescriptorImageInfo.setSampler(vkSampler);
 
   vk::WriteDescriptorSet vkWriteDescriptorSet;
-  vkWriteDescriptorSet.setDstSet(vulkanDescriptorSet->sampledImageSet);
+  vkWriteDescriptorSet.setDstSet(vkDescriptorSet);
   vkWriteDescriptorSet.setDstBinding(bindImageInfo.bindingPoint);
   vkWriteDescriptorSet.setDescriptorCount(1);
   vkWriteDescriptorSet.setDescriptorType(vk::DescriptorType::eCombinedImageSampler);

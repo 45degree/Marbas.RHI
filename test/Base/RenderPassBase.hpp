@@ -18,15 +18,13 @@ class RenderPassBase {
     for (const auto& frameBuffer : m_frameBuffers) {
       m_pipelineContext->DestroyFrameBuffer(frameBuffer);
     }
-    m_bufferContext->DestroyCommandBuffer(m_commandPool, m_commandBuffer);
-    m_bufferContext->DestroyCommandPool(m_commandPool);
   }
 
  public:
   virtual void
-  RecordCommand(CommandBuffer* commandBuffer, uint32_t frameIndex) = 0;
+  RecordCommand(GraphicsCommandBuffer* commandBuffer, uint32_t frameIndex) = 0;
 
-  virtual Pipeline*
+  virtual uintptr_t
   CreatePipeline() = 0;
 
   void
@@ -47,9 +45,8 @@ class RenderPassBase {
   CreateShaderModule(const std::string& shaderPath);
 
  protected:
-  Pipeline* m_pipeline = nullptr;
-  CommandPool* m_commandPool = nullptr;
-  CommandBuffer* m_commandBuffer = nullptr;
+  uintptr_t m_pipeline;
+  GraphicsCommandBuffer* m_commandBuffer = nullptr;
   std::vector<FrameBuffer*> m_frameBuffers;
   BufferContext* m_bufferContext = nullptr;
   PipelineContext* m_pipelineContext = nullptr;

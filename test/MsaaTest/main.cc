@@ -153,7 +153,7 @@ main(void) {
       .layerCount = 1,
   });
 
-  auto* sampler = pipelineContext->CreateSampler(Marbas::SamplerCreateInfo{
+  auto sampler = pipelineContext->CreateSampler(Marbas::SamplerCreateInfo{
       .filter = Marbas::Filter::MIN_MAG_MIP_LINEAR,
       .addressU = Marbas::SamplerAddressMode::WRAP,
       .addressV = Marbas::SamplerAddressMode::WRAP,
@@ -175,23 +175,11 @@ main(void) {
       bufferContext->CreateBuffer(Marbas::BufferType::UNIFORM_BUFFER, &ubo, sizeof(UniformBufferObject), true);
 
   // create descriptor pool
-  std::vector<Marbas::DescriptorSetLayoutBinding> layoutBindings{
-      {
-          .bindingPoint = 0,
-          .descriptorType = Marbas::DescriptorType::UNIFORM_BUFFER,
-      },
-  };
-  std::array descriptorPoolSizes = {
-      Marbas::DescriptorPoolSize{
-          .type = Marbas::DescriptorType::UNIFORM_BUFFER,
-          .size = 1,
-      },
-  };
-  auto* descriptorPool = pipelineContext->CreateDescriptorPool(descriptorPoolSizes, 100);
-  auto* descriptorSetLayout = pipelineContext->CreateDescriptorSetLayout(layoutBindings);
+  Marbas::DescriptorSetArgument argument;
+  argument.Bind(0, Marbas::DescriptorType::UNIFORM_BUFFER);
 
   // create descriptorSet
-  auto* descriptorSet = pipelineContext->CreateDescriptorSet(descriptorPool, descriptorSetLayout);
+  auto descriptorSet = pipelineContext->CreateDescriptorSet(argument);
   pipelineContext->BindBuffer(Marbas::BindBufferInfo{
       .descriptorSet = descriptorSet,
       .descriptorType = Marbas::DescriptorType::UNIFORM_BUFFER,
@@ -279,7 +267,7 @@ main(void) {
   pipelineCreateInfo.shaderStageCreateInfo = shaderStageCreateInfos;
   pipelineCreateInfo.rasterizationInfo.frontFace = Marbas::FrontFace::CCW;
   pipelineCreateInfo.multisampleCreateInfo.rasterizationSamples = Marbas::SampleCount::BIT8;
-  pipelineCreateInfo.layout = descriptorSetLayout;
+  pipelineCreateInfo.layout = {argument};
   pipelineCreateInfo.depthStencilInfo.depthTestEnable = true;
   pipelineCreateInfo.depthStencilInfo.stencilTestEnable = false;
   pipelineCreateInfo.depthStencilInfo.depthBoundsTestEnable = false;
@@ -287,7 +275,7 @@ main(void) {
   pipelineCreateInfo.inputAssemblyState.topology = Marbas::PrimitiveTopology::TRIANGLE;
   pipelineCreateInfo.blendInfo.attachments.push_back(renderTargetBlendAttachment);
 
-  auto* pipeline = pipelineContext->CreatePipeline(pipelineCreateInfo);
+  auto pipeline = pipelineContext->CreatePipeline(pipelineCreateInfo);
 
   // frame buffer
   std::vector<Marbas::FrameBuffer*> frameBuffers;
@@ -296,7 +284,7 @@ main(void) {
     createInfo.height = height;
     createInfo.width = width;
     createInfo.layer = 1;
-    createInfo.pieline = pipeline;
+    createInfo.pipeline = pipeline;
     createInfo.attachments.colorAttachments = {colorAttachmentView};
     createInfo.attachments.depthAttachment = depthBufferView;
     createInfo.attachments.resolveAttachments = {swapchain->imageViews[i]};
@@ -309,8 +297,7 @@ main(void) {
 
   // command buffer
   auto imageCount = swapchain->imageViews.size();
-  auto* commandPool = bufferContext->CreateCommandPool(Marbas::CommandBufferUsage::GRAPHICS);
-  auto* commandBuffer = bufferContext->CreateCommandBuffer(commandPool);
+  auto* commandBuffer = bufferContext->CreateGraphicsCommandBuffer();
   std::vector<Marbas::Semaphore*> aviableSemaphore;
   std::vector<Marbas::Semaphore*> waitSemaphore;
   for (int i = 0; i < imageCount; i++) {
@@ -366,7 +353,7 @@ main(void) {
       createInfo.height = height;
       createInfo.width = width;
       createInfo.layer = 1;
-      createInfo.pieline = pipeline;
+      createInfo.pipeline = pipeline;
 
       createInfo.attachments.colorAttachments = {colorAttachmentView};
       createInfo.attachments.depthAttachment = depthBufferView;
@@ -423,7 +410,7 @@ main(void) {
     commandBuffer->SetViewports(viewportInfos);
     commandBuffer->SetScissors(scissorInfos);
     commandBuffer->BindVertexBuffer(vertexBuffer);
-    commandBuffer->BindDescriptorSet(pipeline, descriptorSet);
+    commandBuffer->BindDescriptorSet(pipeline, {descriptorSet});
     commandBuffer->Draw(vertices.size(), 1, 0, 0);
     commandBuffer->EndPipeline(pipeline);
     commandBuffer->End();
@@ -445,14 +432,11 @@ main(void) {
     pipelineContext->DestroyFrameBuffer(framebuffer);
   }
   pipelineContext->DestroyPipeline(pipeline);
-  pipelineContext->DestroyDescriptorSetLayout(descriptorSetLayout);
-  pipelineContext->DestroyDescriptorPool(descriptorPool);
   pipelineContext->DestroySampler(sampler);
 
   bufferContext->DestroyBuffer(uniformbuffer);
   bufferContext->DestroyBuffer(vertexBuffer);
-  bufferContext->DestroyCommandBuffer(commandPool, commandBuffer);
-  bufferContext->DestroyCommandPool(commandPool);
+  bufferContext->DestroyCommandBuffer(commandBuffer);
   bufferContext->DestroyImage(depthBuffer);
   bufferContext->DestroyImage(colorAttachImage);
   bufferContext->DestroyImageView(depthBufferView);

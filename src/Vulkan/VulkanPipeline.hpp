@@ -23,15 +23,15 @@
 
 namespace Marbas {
 
-struct VulkanSampler final : public Sampler {
-  vk::Sampler vkSampler;
-};
-
-struct VulkanPipeline final : public Pipeline {
+struct VulkanGraphicsPipelineInfo final {
   std::vector<vk::ShaderModule> shaderModule;
   vk::PipelineLayout vkPipelineLayout;
-  vk::Pipeline vkPipeline;
   vk::RenderPass vkRenderPass;
+};
+
+struct VulkanComputePipelineInfo final {
+  std::vector<vk::ShaderModule> shaderModule;
+  vk::PipelineLayout vkPipelineLayout;
 };
 
 struct VulkanFrameBuffer final : public FrameBuffer {

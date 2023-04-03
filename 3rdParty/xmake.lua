@@ -18,6 +18,7 @@ target('imgui-docking', function()
     -- add_rules("UseVulkan")
     add_defines('VK_NO_PROTOTYPES')
     add_files('imgui/backends/imgui_impl_vulkan.cpp')
+    add_packages('vulkan-headers')
   end
 
   add_packages('glfw')

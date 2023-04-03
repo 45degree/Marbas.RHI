@@ -17,11 +17,7 @@
 #pragma once
 
 #include <cstdint>
-#include <vector>
-
-#include "Buffer.hpp"
-#include "Image.hpp"
-#include "Sampler.hpp"
+#include <map>
 
 namespace Marbas {
 
@@ -32,23 +28,34 @@ enum class DescriptorType {
   STORAGE_BUFFER,
 };
 
-struct DescriptorSetLayoutBinding {
-  uint16_t bindingPoint = 0;
-  DescriptorType descriptorType = DescriptorType::UNIFORM_BUFFER;
+class DescriptorSetArgument final {
+ public:
+  DescriptorSetArgument() = default;
+  DescriptorSetArgument(const DescriptorSetArgument& obj) = default;
+  DescriptorSetArgument(DescriptorSetArgument&& obj) noexcept : m_bindingInfo(std::move(obj.m_bindingInfo)) {}
+
+  DescriptorSetArgument&
+  operator=(const DescriptorSetArgument& obj) = default;
+
+  DescriptorSetArgument&
+  operator=(DescriptorSetArgument&& obj) noexcept {
+    m_bindingInfo = std::move(obj.m_bindingInfo);
+    return *this;
+  }
+
+ public:
+  void
+  Bind(uint16_t bindingPoint, DescriptorType type) {
+    m_bindingInfo.insert_or_assign(bindingPoint, type);
+  }
+
+  bool
+  operator==(const DescriptorSetArgument& obj) const {
+    return obj.m_bindingInfo == m_bindingInfo;
+  }
+
+ public:
+  std::map<uint16_t, DescriptorType> m_bindingInfo;
 };
-
-struct DescriptorSetLayout {};
-
-/**
- * Descritor Pool
- */
-
-struct DescriptorPoolSize {
-  DescriptorType type;
-  uint32_t size;
-};
-
-struct DescriptorPool {};
-struct DescriptorSet {};
 
 }  // namespace Marbas

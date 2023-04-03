@@ -16,69 +16,122 @@
 
 #pragma once
 
+#include <absl/container/flat_hash_map.h>
+#include <absl/container/flat_hash_set.h>
+
 #include <vulkan/vulkan.hpp>
 
 #include "PipelineContext.hpp"
-#include "VulkanDescriptor.hpp"
+#include "VulkanDescriptorAllocate.hpp"
 #include "VulkanPipeline.hpp"
+
+template <>
+struct std::hash<Marbas::DescriptorSetArgument> {
+  size_t
+  operator()(const Marbas::DescriptorSetArgument& argument) const {
+    absl::Hash<std::map<uint16_t, Marbas::DescriptorType>> hash;
+    return hash(argument.m_bindingInfo);
+  }
+};
+
+template <>
+struct std::hash<vk::Sampler> {
+  size_t
+  operator()(const vk::Sampler& sampler) const {
+    return absl::Hash<VkSampler>()(static_cast<VkSampler>(sampler));
+  }
+};
+
+template <>
+struct std::hash<vk::Pipeline> {
+  size_t
+  operator()(const vk::Pipeline& sampler) const {
+    return absl::Hash<VkPipeline>()(static_cast<VkPipeline>(sampler));
+  }
+};
+
+template <>
+struct std::hash<vk::DescriptorSet> {
+  size_t
+  operator()(const vk::DescriptorSet& set) const {
+    return absl::Hash<VkDescriptorSet>()(static_cast<VkDescriptorSet>(set));
+  }
+};
+
+template <>
+struct std::hash<vk::PipelineLayout> {
+  size_t
+  operator()(const vk::PipelineLayout& layout) const {
+    return absl::Hash<VkPipelineLayout>()(static_cast<VkPipelineLayout>(layout));
+  }
+};
+
+template <>
+struct std::hash<vk::DescriptorSetLayout> {
+  size_t
+  operator()(const vk::DescriptorSetLayout& layout) const {
+    return absl::Hash<VkDescriptorSetLayout>()(static_cast<VkDescriptorSetLayout>(layout));
+  }
+};
 
 namespace Marbas {
 
 class VulkanPipelineContext final : public PipelineContext {
- public:
-  explicit VulkanPipelineContext(vk::Device device) : PipelineContext(), m_device(device) {}
+  friend class VulkanGraphicsCommandBuffer;
+  friend class VulkanComputeCommandBuffer;
 
  public:
-  Pipeline*
+  explicit VulkanPipelineContext(vk::Device device)
+      : PipelineContext(), m_device(device), m_descriptorAllocate(device) {}
+  ~VulkanPipelineContext() override {
+    // destroy pipeline
+    for (auto [pipeline, pipelineInfo] : m_computePipeline) {
+      DestroyPipeline(reinterpret_cast<uintptr_t>(static_cast<VkPipeline>(pipeline)));
+    }
+    for (auto [pipeline, pipelineInfo] : m_graphicsPipeline) {
+      DestroyPipeline(reinterpret_cast<uintptr_t>(static_cast<VkPipeline>(pipeline)));
+    }
+
+    m_descriptorAllocate.CleanUp();
+
+    for (auto&& [argument, setLayout] : m_descriptorSetLayoutCache) {
+      m_device.destroyDescriptorSetLayout(setLayout);
+    }
+
+    for (auto&& [argument, pipelineLayout] : m_pipelineLayoutCache) {
+      m_device.destroyPipelineLayout(pipelineLayout);
+    }
+  }
+
+ public:
+  uintptr_t
   CreatePipeline(const GraphicsPipeLineCreateInfo& createInfo) override;
 
-  Pipeline*
+  uintptr_t
   CreatePipeline(const ComputePipelineCreateInfo& createInfo) override;
 
   void
-  DestroyPipeline(Pipeline* pipeline) override;
+  DestroyPipeline(uintptr_t pipeline) override;
 
  public:
-  Sampler*
+  uintptr_t
   CreateSampler(const SamplerCreateInfo& createInfo) override;
 
   void
-  DestroySampler(Sampler* sampler) override;
+  DestroySampler(uintptr_t sampler) override;
 
  public:
-  DescriptorSetLayout*
-  CreateDescriptorSetLayout(const std::vector<DescriptorSetLayoutBinding>& layoutBinding) override;
+  uintptr_t
+  CreateDescriptorSet(const DescriptorSetArgument& argument) override;
 
   void
-  DestroyDescriptorSetLayout(DescriptorSetLayout* descriptorSetLayout) override;
-
-  DescriptorSet*
-  CreateDescriptorSet(const DescriptorPool* pool, const DescriptorSetLayout* descriptorLayout) override;
-
-  void
-  DestroyDescriptorSet(const DescriptorPool* pool, DescriptorSet* descriptorSet) override;
+  DestroyDescriptorSet(uintptr_t descriptorSet) override;
 
   void
   BindImage(const BindImageInfo& bindImageInfo) override;
 
   void
   BindBuffer(const BindBufferInfo& bindBufferInfo) override;
-
-  DescriptorPool*
-  CreateDescriptorPool(std::span<DescriptorPoolSize> descritorPoolSize, uint32_t maxSets) override;
-
-  void
-  DestroyDescriptorPool(DescriptorPool* descriptorPool) override;
-
- private:
-  vk::RenderPass
-  CreateRenderPass(const RenderTargetDesc& renderTargetDesc, const vk::PipelineBindPoint& pipelineType);
-
-  vk::PipelineLayout
-  CreatePipelineLayout(const VulkanDescriptorSetLayout* descriptorSetLayout);
-
-  vk::ShaderModule
-  CreateShaderModule(const std::vector<char>& spirvCode, ShaderType type);
 
  public:
   FrameBuffer*
@@ -88,7 +141,38 @@ class VulkanPipelineContext final : public PipelineContext {
   DestroyFrameBuffer(FrameBuffer* frameBuffer) override;
 
  private:
+  vk::RenderPass
+  CreateRenderPass(const RenderTargetDesc& renderTargetDesc, const vk::PipelineBindPoint& pipelineType);
+
+  vk::ShaderModule
+  CreateShaderModule(const std::vector<char>& spirvCode, ShaderType type);
+
+  vk::PipelineLayout
+  CreatePipelineLayout(const std::vector<vk::DescriptorSetLayout>& descriptorSetLayout);
+
+  void
+  DestroyPipelineLayout(const vk::PipelineLayout& layout);
+
+  vk::DescriptorSetLayout
+  CreateDescriptorSetLayout(const DescriptorSetArgument& argument);
+
+  void
+  DestroyDescriptorSetLayout(const vk::DescriptorSetLayout& layout);
+
+ private:
   vk::Device m_device;
+  RHI::VulkanDescriptorAllocate m_descriptorAllocate;
+
+  absl::flat_hash_set<vk::Sampler> m_samplers;
+  absl::flat_hash_map<vk::Pipeline, VulkanGraphicsPipelineInfo> m_graphicsPipeline;
+  absl::flat_hash_map<vk::Pipeline, VulkanComputePipelineInfo> m_computePipeline;
+  absl::flat_hash_map<vk::DescriptorSet, vk::DescriptorSetLayout> m_descriptorSets;
+
+  // cache
+  absl::flat_hash_map<vk::DescriptorSetLayout, int> m_descriptorSetLayoutCount;
+  absl::flat_hash_map<DescriptorSetArgument, vk::DescriptorSetLayout> m_descriptorSetLayoutCache;
+  absl::flat_hash_map<vk::PipelineLayout, int> m_pipelineLayoutCount;
+  absl::flat_hash_map<std::vector<vk::DescriptorSetLayout>, vk::PipelineLayout> m_pipelineLayoutCache;
 };
 
 }  // namespace Marbas

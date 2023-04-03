@@ -17,8 +17,7 @@ main(void) {
   auto bufferCtx = factory->GetBufferContext();
   auto pipelineCtx = factory->GetPipelineContext();
 
-  auto commandPool = bufferCtx->CreateCommandPool(Marbas::CommandBufferUsage::COMPUTE);
-  auto commandBuffer = bufferCtx->CreateCommandBuffer(commandPool);
+  auto commandBuffer = bufferCtx->CreateComputeCommandBuffer();
 
   // create ssbo
   std::array<int, 5> ssboData = {1, 2, 3, 4, 5};
@@ -35,15 +34,9 @@ main(void) {
   shaderStageCreateInfo.code = content;
 
   // create descriptor set
-  std::vector<Marbas::DescriptorPoolSize> descriptorPoolSize = {
-      {Marbas::DescriptorType::STORAGE_BUFFER, 1},
-  };
-  std::vector<Marbas::DescriptorSetLayoutBinding> descriptorSetBindings{
-      {.bindingPoint = 0, .descriptorType = Marbas::DescriptorType::STORAGE_BUFFER},
-  };
-  auto descriptorSetLayout = pipelineCtx->CreateDescriptorSetLayout(descriptorSetBindings);
-  auto descriptorPool = pipelineCtx->CreateDescriptorPool(descriptorPoolSize, 1);
-  auto descriptorSet = pipelineCtx->CreateDescriptorSet(descriptorPool, descriptorSetLayout);
+  Marbas::DescriptorSetArgument argument;
+  argument.Bind(0, Marbas::DescriptorType::STORAGE_BUFFER);
+  auto descriptorSet = pipelineCtx->CreateDescriptorSet(argument);
 
   pipelineCtx->BindBuffer(Marbas::BindBufferInfo{
       .descriptorSet = descriptorSet,
@@ -57,15 +50,15 @@ main(void) {
   // create pipeline
   auto pipeline = pipelineCtx->CreatePipeline(Marbas::ComputePipelineCreateInfo{
       .computeShaderStage = shaderStageCreateInfo,
-      .layout = descriptorSetLayout,
+      .layout = {argument},
   });
 
   auto* fence = factory->CreateFence();
   factory->ResetFence(fence);
 
   commandBuffer->Begin();
-  commandBuffer->BeginPipeline(pipeline, nullptr, {});
-  commandBuffer->BindDescriptorSet(pipeline, descriptorSet);
+  commandBuffer->BeginPipeline(pipeline);
+  commandBuffer->BindDescriptorSet(pipeline, {descriptorSet});
   commandBuffer->Dispatch(1, 1, 1);
   commandBuffer->EndPipeline(pipeline);
   commandBuffer->End();

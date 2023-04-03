@@ -11,9 +11,9 @@ class ShowScreenRenderPass final : public RenderPassBase {
 
  public:
   void
-  RecordCommand(CommandBuffer* commandBuffer, uint32_t frameIndex) override;
+  RecordCommand(GraphicsCommandBuffer* commandBuffer, uint32_t frameIndex) override;
 
-  Pipeline*
+  uintptr_t
   CreatePipeline() override;
 
   void
@@ -22,10 +22,9 @@ class ShowScreenRenderPass final : public RenderPassBase {
  private:
   std::vector<char> m_vertexShaderModule;
   std::vector<char> m_fragmentShaderModule;
-  Sampler* m_sampler = nullptr;
-  DescriptorPool* m_descriptorPool = nullptr;
-  DescriptorSet* m_descritorSet = nullptr;
-  DescriptorSetLayout* m_descriptorSetLayout = nullptr;
+  uintptr_t m_sampler;
+  uintptr_t m_descritorSet;
+  DescriptorSetArgument m_argument;
 };
 
 }  // namespace Marbas

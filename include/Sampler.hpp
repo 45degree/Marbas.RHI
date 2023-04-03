@@ -93,6 +93,4 @@ struct SamplerCreateInfo {
   BorderColor borderColor;
 };
 
-class Sampler {};
-
 }  // namespace Marbas

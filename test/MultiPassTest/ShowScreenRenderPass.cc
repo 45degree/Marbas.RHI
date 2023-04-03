@@ -9,8 +9,6 @@ ShowScreenRenderPass::ShowScreenRenderPass(RHIFactory* rhiFactory, ImageView* im
 }
 
 ShowScreenRenderPass::~ShowScreenRenderPass() {
-  m_pipelineContext->DestroyDescriptorSetLayout(m_descriptorSetLayout);
-  m_pipelineContext->DestroyDescriptorPool(m_descriptorPool);
   m_pipelineContext->DestroyPipeline(m_pipeline);
   m_pipelineContext->DestroySampler(m_sampler);
 }
@@ -29,21 +27,9 @@ ShowScreenRenderPass::CreateDescirptorSet(ImageView* imageView) {
       .borderColor = Marbas::BorderColor::IntOpaqueBlack,
   });
 
-  std::vector<DescriptorSetLayoutBinding> bindings = {DescriptorSetLayoutBinding{
-      .bindingPoint = 0,
-      .descriptorType = DescriptorType::IMAGE,
-  }};
-  m_descriptorSetLayout = m_pipelineContext->CreateDescriptorSetLayout(bindings);
+  m_argument.Bind(0, DescriptorType::IMAGE);
 
-  std::vector<DescriptorPoolSize> poolSize{
-      DescriptorPoolSize{
-          .type = DescriptorType::IMAGE,
-          .size = 1,
-      },
-  };
-  m_descriptorPool = m_pipelineContext->CreateDescriptorPool(poolSize, 1);
-
-  m_descritorSet = m_pipelineContext->CreateDescriptorSet(m_descriptorPool, m_descriptorSetLayout);
+  m_descritorSet = m_pipelineContext->CreateDescriptorSet(m_argument);
 
   m_pipelineContext->BindImage(BindImageInfo{
       .descriptorSet = m_descritorSet,
@@ -53,7 +39,7 @@ ShowScreenRenderPass::CreateDescirptorSet(ImageView* imageView) {
   });
 }
 
-Pipeline*
+uintptr_t
 ShowScreenRenderPass::CreatePipeline() {
   m_vertexShaderModule = CreateShaderModule("showBoxScreen.vert.glsl.spv");
   m_fragmentShaderModule = CreateShaderModule("showBoxScreen.frag.glsl.spv");
@@ -81,7 +67,7 @@ ShowScreenRenderPass::CreatePipeline() {
   };
   createInfo.shaderStageCreateInfo = shaderStageCreateInfos;
   createInfo.depthStencilInfo.depthTestEnable = false;
-  createInfo.layout = m_descriptorSetLayout;
+  createInfo.layout = {m_argument};
   createInfo.multisampleCreateInfo.rasterizationSamples = SampleCount::BIT1;
   createInfo.outputRenderTarget.colorAttachments = {ColorTargetDesc{
       .initAction = AttachmentInitAction::CLEAR,
@@ -97,7 +83,7 @@ ShowScreenRenderPass::CreatePipeline() {
 }
 
 void
-ShowScreenRenderPass::RecordCommand(CommandBuffer* commandBuffer, uint32_t frameIndex) {
+ShowScreenRenderPass::RecordCommand(GraphicsCommandBuffer* commandBuffer, uint32_t frameIndex) {
   auto* frameBuffer = m_frameBuffers[frameIndex];
   const auto& height = frameBuffer->height;
   const auto& width = frameBuffer->width;
@@ -119,7 +105,7 @@ ShowScreenRenderPass::RecordCommand(CommandBuffer* commandBuffer, uint32_t frame
   commandBuffer->BeginPipeline(m_pipeline, m_frameBuffers[frameIndex], {{0, 0, 0, 1}});
   commandBuffer->SetViewports({&viewportInfo, 1});
   commandBuffer->SetScissors({&scissorInfo, 1});
-  commandBuffer->BindDescriptorSet(m_pipeline, m_descritorSet);
+  commandBuffer->BindDescriptorSet(m_pipeline, {m_descritorSet});
   commandBuffer->Draw(6, 1, 0, 0);
   commandBuffer->EndPipeline(m_pipeline);
   commandBuffer->End();

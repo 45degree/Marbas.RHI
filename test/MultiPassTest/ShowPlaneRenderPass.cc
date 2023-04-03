@@ -30,7 +30,7 @@ ShowPlaneRenderPass::ShowPlaneRenderPass(RHIFactory* rhiFactory) : RenderPassBas
   });
   m_pipelineContext->BindImage(BindImageInfo{
       .descriptorSet = m_descriptorSet,
-      .bindingPoint = 0,
+      .bindingPoint = 1,
       .imageView = m_textureView,
       .sampler = m_sampler,
   });
@@ -45,13 +45,11 @@ ShowPlaneRenderPass::~ShowPlaneRenderPass() {
   m_bufferContext->DestroyBuffer(m_uniformBuffer);
   m_bufferContext->DestroyBuffer(m_vertexBuffer);
 
-  m_pipelineContext->DestroyDescriptorSetLayout(m_descriptorSetLayout);
-  m_pipelineContext->DestroyDescriptorPool(m_descritporPool);
   m_pipelineContext->DestroyPipeline(m_pipeline);
   m_pipelineContext->DestroySampler(m_sampler);
 }
 
-Pipeline*
+uintptr_t
 ShowPlaneRenderPass::CreatePipeline() {
   std::vector shaderCreateInfos = {
       ShaderStageCreateInfo{
@@ -91,13 +89,13 @@ ShowPlaneRenderPass::CreatePipeline() {
       .usage = ImageUsageFlags::DEPTH_STENCIL,
       .sampleCount = Marbas::SampleCount::BIT1,
   };
-  createInfo.layout = m_descriptorSetLayout;
+  createInfo.layout = {m_argument};
 
   return m_pipelineContext->CreatePipeline(createInfo);
 }
 
 void
-ShowPlaneRenderPass::RecordCommand(CommandBuffer* commandBuffer, uint32_t frameIndex) {
+ShowPlaneRenderPass::RecordCommand(GraphicsCommandBuffer* commandBuffer, uint32_t frameIndex) {
   auto* frameBuffer = m_frameBuffers[frameIndex];
   const auto& height = frameBuffer->height;
   const auto& width = frameBuffer->width;
@@ -121,7 +119,7 @@ ShowPlaneRenderPass::RecordCommand(CommandBuffer* commandBuffer, uint32_t frameI
   commandBuffer->SetViewports({&viewportInfo, 1});
   commandBuffer->SetScissors({&scissorInfo, 1});
   commandBuffer->BindVertexBuffer(m_vertexBuffer);
-  commandBuffer->BindDescriptorSet(m_pipeline, m_descriptorSet);
+  commandBuffer->BindDescriptorSet(m_pipeline, {m_descriptorSet});
   commandBuffer->Draw(m_model.m_vertices.size(), 1, 0, 0);
   commandBuffer->EndPipeline(m_pipeline);
   commandBuffer->End();
@@ -129,31 +127,12 @@ ShowPlaneRenderPass::RecordCommand(CommandBuffer* commandBuffer, uint32_t frameI
 
 void
 ShowPlaneRenderPass::CreateDescriptor() {
-  std::vector bindings = {
-      DescriptorSetLayoutBinding{
-          .bindingPoint = 0,
-          .descriptorType = DescriptorType::UNIFORM_BUFFER,
-      },
-      DescriptorSetLayoutBinding{
-          .bindingPoint = 0,
-          .descriptorType = DescriptorType::IMAGE,
-      },
-  };
-  m_descriptorSetLayout = m_pipelineContext->CreateDescriptorSetLayout(bindings);
+  Marbas::DescriptorSetArgument argument;
+  argument.Bind(0, DescriptorType::UNIFORM_BUFFER);
+  argument.Bind(1, DescriptorType::IMAGE);
+  m_argument = std::move(argument);
 
-  std::array descriptorSize = {
-      DescriptorPoolSize{
-          .type = DescriptorType::UNIFORM_BUFFER,
-          .size = 1,
-      },
-      DescriptorPoolSize{
-          .type = DescriptorType::IMAGE,
-          .size = 1,
-      },
-  };
-  m_descritporPool = m_pipelineContext->CreateDescriptorPool(descriptorSize, 1);
-
-  m_descriptorSet = m_pipelineContext->CreateDescriptorSet(m_descritporPool, m_descriptorSetLayout);
+  m_descriptorSet = m_pipelineContext->CreateDescriptorSet(m_argument);
 }
 
 void

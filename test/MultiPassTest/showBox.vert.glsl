@@ -5,7 +5,7 @@ layout (location = 1) in vec2 aTexCoords;
 
 layout (location = 0) out vec2 TexCoords;
 
-layout(std140, binding = 0) uniform Matrices {
+layout(std140, binding = 0, set = 0) uniform Matrices {
   mat4 model;
   mat4 view;
   mat4 projection;

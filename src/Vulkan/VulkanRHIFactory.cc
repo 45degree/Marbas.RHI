@@ -297,7 +297,7 @@ VulkanRHIFactory::Init(GLFWwindow* window, uint32_t width, uint32_t height) {
   }
   CreateSwapchain(width, height);
 
-  m_pipelineContext = std::make_unique<VulkanPipelineContext>(m_device);
+  auto pipelineContext = std::make_unique<VulkanPipelineContext>(m_device);
   m_bufferContext = std::make_unique<VulkanBufferContext>(VulkanBufferContextCreateInfo{
       .device = m_device,
       .physicalDevice = m_physicalDevice,
@@ -307,6 +307,7 @@ VulkanRHIFactory::Init(GLFWwindow* window, uint32_t width, uint32_t height) {
       .graphicsQueue = m_graphicsQueue,
       .computeQueue = m_computeQueue,
       .transferQueue = m_transferQueue,
+      .pipelineCtx = pipelineContext.get(),
   });
   m_imguiContext = std::make_unique<VulkanImguiContext>(VulkanImguiCreateInfo{
       .glfwWindow = window,
@@ -318,6 +319,7 @@ VulkanRHIFactory::Init(GLFWwindow* window, uint32_t width, uint32_t height) {
       .width = width,
       .height = height,
   });
+  m_pipelineContext = std::move(pipelineContext);
 
   // init extension
   for (auto&& [name, extension] : m_extensions) {

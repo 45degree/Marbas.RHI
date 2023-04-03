@@ -104,7 +104,7 @@ main(void) {
   pipelineCreateInfo.inputAssemblyState.topology = Marbas::PrimitiveTopology::TRIANGLE;
   pipelineCreateInfo.blendInfo.attachments.push_back(renderTargetBlendAttachment);
 
-  auto* pipeline = pipelineContext->CreatePipeline(pipelineCreateInfo);
+  auto pipeline = pipelineContext->CreatePipeline(pipelineCreateInfo);
 
   // frame buffer
   std::vector<Marbas::FrameBuffer*> frameBuffers;
@@ -113,7 +113,7 @@ main(void) {
     createInfo.height = height;
     createInfo.width = width;
     createInfo.layer = 1;
-    createInfo.pieline = pipeline;
+    createInfo.pipeline = pipeline;
     createInfo.attachments.colorAttachments = {swapchain->imageViews[i]};
     frameBuffers.push_back(pipelineContext->CreateFrameBuffer(createInfo));
   }
@@ -126,8 +126,7 @@ main(void) {
 
   // command buffer
   auto imageCount = swapchain->imageViews.size();
-  auto* commandPool = bufferContext->CreateCommandPool(Marbas::CommandBufferUsage::GRAPHICS);
-  auto* commandBuffer = bufferContext->CreateCommandBuffer(commandPool);
+  auto* commandBuffer = bufferContext->CreateGraphicsCommandBuffer();
   std::vector<Marbas::Semaphore*> aviableSemaphore;
   std::vector<Marbas::Semaphore*> waitSemaphore;
   for (int i = 0; i < imageCount; i++) {
@@ -148,7 +147,7 @@ main(void) {
       createInfo.height = height;
       createInfo.width = width;
       createInfo.layer = 1;
-      createInfo.pieline = pipeline;
+      createInfo.pipeline = pipeline;
       createInfo.attachments.colorAttachments = {swapchain->imageViews[i]};
       frameBuffers[i] = pipelineContext->CreateFrameBuffer(createInfo);
     }
@@ -219,8 +218,7 @@ main(void) {
 
   bufferContext->DestroyBuffer(vertexBuffer);
   bufferContext->DestroyBuffer(indexBuffer);
-  bufferContext->DestroyCommandBuffer(commandPool, commandBuffer);
-  bufferContext->DestroyCommandPool(commandPool);
+  bufferContext->DestroyCommandBuffer(commandBuffer);
 
   factory->DestroyFence(fence);
   for (auto* semaphore : waitSemaphore) {

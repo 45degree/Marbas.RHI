@@ -20,7 +20,6 @@
 
 #include "Buffer.hpp"
 #include "VulkanBuffer.hpp"
-#include "VulkanDescriptor.hpp"
 #include "VulkanImage.hpp"
 #include "VulkanPipeline.hpp"
 #include "VulkanSynchronic.hpp"
@@ -78,158 +77,152 @@ ConvertToVulkanBufferAccess(uint32_t usage, const Buffer& buffer) {
   return flags;
 }
 
+// void
+// VulkanCommandBuffer::InsertBufferBarrier(const std::vector<BufferBarrier>& barriers) {
+//   std::vector<vk::BufferMemoryBarrier> bufferMemoryBarrier;
+//   for (const auto& bufferBarrier : barriers) {
+//     vk::BufferMemoryBarrier vulkanBufferBarrier;
+//     const auto* buffer = bufferBarrier.buffer;
+//     auto vkBuffer = static_cast<const VulkanBuffer*>(buffer)->vkBuffer;
+//     const auto& srcUsage = bufferBarrier.waitUsage;
+//     const auto& dstUsage = bufferBarrier.dstUsage;
+//     const auto& size = buffer->size;
+//     vulkanBufferBarrier.setBuffer(vkBuffer);
+//     vulkanBufferBarrier.setOffset(0);
+//     vulkanBufferBarrier.setSize(size);
+//     vulkanBufferBarrier.setSrcQueueFamilyIndex(m_queueFamily);
+//     vulkanBufferBarrier.setDstQueueFamilyIndex(m_queueFamily);
+//     vulkanBufferBarrier.setSrcAccessMask(ConvertToVulkanBufferAccess(srcUsage, *buffer));
+//     vulkanBufferBarrier.setDstAccessMask(ConvertToVulkanBufferAccess(dstUsage, *buffer));
+//
+//     bufferMemoryBarrier.push_back(vulkanBufferBarrier);
+//   }
+//
+//   m_commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eNone, vk::PipelineStageFlagBits::eNone,
+//                                   vk::DependencyFlagBits::eByRegion, nullptr, bufferMemoryBarrier, nullptr);
+// }
+//
+// void
+// VulkanCommandBuffer::InsertImageBarrier(const std::vector<ImageBarrier>& barriers) {
+//   std::vector<vk::ImageMemoryBarrier> imageMemoryBarrier;
+//
+//   for (const auto& imageBarrier : barriers) {
+//     vk::ImageMemoryBarrier vulkanImageBarrier;
+//     const auto* vulkanImage = static_cast<const VulkanImage*>(imageBarrier.image);
+//     vulkanImageBarrier.setImage(vulkanImage->vkImage);
+//     vulkanImageBarrier.setDstQueueFamilyIndex(m_queueFamily);
+//     vulkanImageBarrier.setSrcQueueFamilyIndex(m_queueFamily);
+//     vulkanImageBarrier.setSrcAccessMask(vk::AccessFlagBits::eTransferRead);
+//     vulkanImageBarrier.setDstAccessMask(vk::AccessFlagBits::eTransferWrite);
+//     vulkanImageBarrier.setOldLayout(vk::ImageLayout::eGeneral);
+//     vulkanImageBarrier.setNewLayout(vk::ImageLayout::eGeneral);
+//
+//     vk::ImageSubresourceRange range;
+//     range.setAspectMask(vulkanImage->vkAspect);
+//     range.setBaseArrayLayer(0);
+//     range.setBaseMipLevel(0);
+//     range.setLayerCount(vulkanImage->arrayLayer);
+//     range.setLevelCount(vulkanImage->mipMapLevel);
+//     vulkanImageBarrier.setSubresourceRange(range);
+//
+//     imageMemoryBarrier.push_back(vulkanImageBarrier);
+//   }
+//   m_commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eNone, vk::PipelineStageFlagBits::eNone,
+//                                   vk::DependencyFlagBits::eByRegion, nullptr, nullptr, imageMemoryBarrier);
+// }
+
 void
-VulkanCommandBuffer::InsertBufferBarrier(const std::vector<BufferBarrier>& barriers) {
-  std::vector<vk::BufferMemoryBarrier> bufferMemoryBarrier;
-  for (const auto& bufferBarrier : barriers) {
-    vk::BufferMemoryBarrier vulkanBufferBarrier;
-    const auto* buffer = bufferBarrier.buffer;
-    auto vkBuffer = static_cast<const VulkanBuffer*>(buffer)->vkBuffer;
-    const auto& srcUsage = bufferBarrier.waitUsage;
-    const auto& dstUsage = bufferBarrier.dstUsage;
-    const auto& size = buffer->size;
-    vulkanBufferBarrier.setBuffer(vkBuffer);
-    vulkanBufferBarrier.setOffset(0);
-    vulkanBufferBarrier.setSize(size);
-    vulkanBufferBarrier.setSrcQueueFamilyIndex(m_queueFamily);
-    vulkanBufferBarrier.setDstQueueFamilyIndex(m_queueFamily);
-    vulkanBufferBarrier.setSrcAccessMask(ConvertToVulkanBufferAccess(srcUsage, *buffer));
-    vulkanBufferBarrier.setDstAccessMask(ConvertToVulkanBufferAccess(dstUsage, *buffer));
-
-    bufferMemoryBarrier.push_back(vulkanBufferBarrier);
-  }
-
-  m_commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eNone, vk::PipelineStageFlagBits::eNone,
-                                  vk::DependencyFlagBits::eByRegion, nullptr, bufferMemoryBarrier, nullptr);
-}
-
-void
-VulkanCommandBuffer::InsertImageBarrier(const std::vector<ImageBarrier>& barriers) {
-  std::vector<vk::ImageMemoryBarrier> imageMemoryBarrier;
-
-  for (const auto& imageBarrier : barriers) {
-    vk::ImageMemoryBarrier vulkanImageBarrier;
-    const auto* vulkanImage = static_cast<const VulkanImage*>(imageBarrier.image);
-    vulkanImageBarrier.setImage(vulkanImage->vkImage);
-    vulkanImageBarrier.setDstQueueFamilyIndex(m_queueFamily);
-    vulkanImageBarrier.setSrcQueueFamilyIndex(m_queueFamily);
-    vulkanImageBarrier.setSrcAccessMask(vk::AccessFlagBits::eTransferRead);
-    vulkanImageBarrier.setDstAccessMask(vk::AccessFlagBits::eTransferWrite);
-    vulkanImageBarrier.setOldLayout(vk::ImageLayout::eGeneral);
-    vulkanImageBarrier.setNewLayout(vk::ImageLayout::eGeneral);
-
-    vk::ImageSubresourceRange range;
-    range.setAspectMask(vulkanImage->vkAspect);
-    range.setBaseArrayLayer(0);
-    range.setBaseMipLevel(0);
-    range.setLayerCount(vulkanImage->arrayLayer);
-    range.setLevelCount(vulkanImage->mipMapLevel);
-    vulkanImageBarrier.setSubresourceRange(range);
-
-    imageMemoryBarrier.push_back(vulkanImageBarrier);
-  }
-  m_commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eNone, vk::PipelineStageFlagBits::eNone,
-                                  vk::DependencyFlagBits::eByRegion, nullptr, nullptr, imageMemoryBarrier);
-}
-
-void
-VulkanCommandBuffer::BindDescriptorSet(const Pipeline* pipeline, DescriptorSet* descriptors) {
-  const auto* vulkanPipeline = static_cast<const VulkanPipeline*>(pipeline);
-  auto* vulkanDescriptorSet = static_cast<VulkanDescriptorSet*>(descriptors);
+VulkanGraphicsCommandBuffer::BindDescriptorSet(uintptr_t pipeline, const std::vector<uintptr_t>& sets) {
+  const auto vkPipeline = static_cast<vk::Pipeline>(reinterpret_cast<VkPipeline>(pipeline));
+  vk::PipelineLayout vkPipelineLayout;
   vk::PipelineBindPoint vkPipelineBindPoint;
-  if (vulkanPipeline->pipelineType == PipelineType::GRAPHICS) {
+  if (m_pipelineCtx->m_graphicsPipeline.find(vkPipeline) != m_pipelineCtx->m_graphicsPipeline.end()) {
+    vkPipelineLayout = m_pipelineCtx->m_graphicsPipeline[vkPipeline].vkPipelineLayout;
     vkPipelineBindPoint = vk::PipelineBindPoint::eGraphics;
-  } else if (vulkanPipeline->pipelineType == PipelineType::COMPUTE) {
-    vkPipelineBindPoint = vk::PipelineBindPoint::eCompute;
+  } else {
+    constexpr static std::string_view errMsg = "can't find pipeline in graphics pipeline cache";
+    LOG(ERROR) << errMsg;
+    throw std::runtime_error(errMsg.data());
   }
 
   std::vector<vk::DescriptorSet> vkDescriptorSets;
-  vkDescriptorSets.push_back(vulkanDescriptorSet->uniformBufferSet);
-  vkDescriptorSets.push_back(vulkanDescriptorSet->ssboSet);
-  vkDescriptorSets.push_back(vulkanDescriptorSet->sampledImageSet);
+  vkDescriptorSets.reserve(sets.size());
+  for (auto set : sets) {
+    vkDescriptorSets.emplace_back(reinterpret_cast<VkDescriptorSet>(set));
+  }
 
-  m_commandBuffer.bindDescriptorSets(vkPipelineBindPoint, vulkanPipeline->vkPipelineLayout, 0, vkDescriptorSets,
-                                     nullptr);
+  m_commandBuffer.bindDescriptorSets(vkPipelineBindPoint, vkPipelineLayout, 0, vkDescriptorSets, nullptr);
 }
 
 void
-VulkanCommandBuffer::BindVertexBuffer(Buffer* buffer) {
+VulkanGraphicsCommandBuffer::BindVertexBuffer(Buffer* buffer) {
   auto* vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
   auto& vkBuffer = vulkanBuffer->vkBuffer;
   m_commandBuffer.bindVertexBuffers(0, vkBuffer, static_cast<vk::DeviceSize>(0));
 }
 
 void
-VulkanCommandBuffer::BindIndexBuffer(Buffer* buffer) {
+VulkanGraphicsCommandBuffer::BindIndexBuffer(Buffer* buffer) {
   auto* vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
   auto& vkBuffer = vulkanBuffer->vkBuffer;
   m_commandBuffer.bindIndexBuffer(vkBuffer, 0, vk::IndexType::eUint32);
 }
 
 void
-VulkanCommandBuffer::Begin() {
+VulkanGraphicsCommandBuffer::Begin() {
   vk::CommandBufferBeginInfo vkBeginInfo;
   vkBeginInfo.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
   m_commandBuffer.begin(vkBeginInfo);
 }
 
 void
-VulkanCommandBuffer::End() {
+VulkanGraphicsCommandBuffer::End() {
   m_commandBuffer.end();
 }
 
 void
-VulkanCommandBuffer::BeginPipeline(Pipeline* pipeline, FrameBuffer* frameBuffer,
-                                   const std::vector<ClearValue>& clearValues) {
-  auto* vulkanPipeline = static_cast<VulkanPipeline*>(pipeline);
-  auto vkPipeline = vulkanPipeline->vkPipeline;
-  if (pipeline->pipelineType == PipelineType::GRAPHICS) {
-    auto* vulkanFrameBuffer = static_cast<VulkanFrameBuffer*>(frameBuffer);
-    auto vkRenderPass = vulkanPipeline->vkRenderPass;
-    auto vkFramebuffer = vulkanFrameBuffer->vkFrameBuffer;
-    const auto& height = frameBuffer->height;
-    const auto& width = frameBuffer->width;
+VulkanGraphicsCommandBuffer::BeginPipeline(uintptr_t pipeline, FrameBuffer* frameBuffer,
+                                           const std::vector<ClearValue>& clearValues) {
+  auto vkPipeline = static_cast<vk::Pipeline>(reinterpret_cast<VkPipeline>(pipeline));
+  auto vkRenderPass = m_pipelineCtx->m_graphicsPipeline[vkPipeline].vkRenderPass;
+  auto* vulkanFrameBuffer = static_cast<VulkanFrameBuffer*>(frameBuffer);
+  auto vkFramebuffer = vulkanFrameBuffer->vkFrameBuffer;
 
-    vk::RenderPassBeginInfo vkRenderPassBeginInfo;
-    std::vector<vk::ClearValue> vkClearValues;
+  const auto& height = frameBuffer->height;
+  const auto& width = frameBuffer->width;
 
-    for (const auto& clearValue : clearValues) {
-      // clang-format off
-      std::visit([&](auto&& value) {
-        using T = std::decay_t<decltype(value)>;
-        if constexpr (std::is_same_v<T, std::array<float, 4>>) {
-          vkClearValues.emplace_back(vk::ClearColorValue(value));
-        } else if constexpr (std::is_same_v<T, std::array<float, 2>>) {
-          vkClearValues.emplace_back(vk::ClearDepthStencilValue(value[0], value[1]));
-        }
-      },clearValue.clearValue);
-      // lcnag-format on
-    }
+  vk::RenderPassBeginInfo vkRenderPassBeginInfo;
+  std::vector<vk::ClearValue> vkClearValues;
 
-    vkRenderPassBeginInfo.setRenderPass(vkRenderPass);
-    vkRenderPassBeginInfo.setFramebuffer(vkFramebuffer);
-    vkRenderPassBeginInfo.setRenderArea(vk::Rect2D(vk::Offset2D(0, 0), vk::Extent2D(width, height)));
-    vkRenderPassBeginInfo.setClearValues(vkClearValues);
-
-    m_commandBuffer.beginRenderPass(vkRenderPassBeginInfo, vk::SubpassContents::eInline);
+  for (const auto& clearValue : clearValues) {
+    // clang-format off
+    std::visit([&](auto&& value) {
+      using T = std::decay_t<decltype(value)>;
+      if constexpr (std::is_same_v<T, std::array<float, 4>>) {
+        vkClearValues.emplace_back(vk::ClearColorValue(value));
+      } else if constexpr (std::is_same_v<T, std::array<float, 2>>) {
+        vkClearValues.emplace_back(vk::ClearDepthStencilValue(value[0], value[1]));
+      }
+    },clearValue.clearValue);
+    // lcnag-format on
   }
 
-  if (vulkanPipeline->pipelineType == PipelineType::GRAPHICS) {
-    m_commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, vkPipeline);
-  } else if (vulkanPipeline->pipelineType == PipelineType::COMPUTE) {
-    m_commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, vkPipeline);
-  }
+  vkRenderPassBeginInfo.setRenderPass(vkRenderPass);
+  vkRenderPassBeginInfo.setFramebuffer(vkFramebuffer);
+  vkRenderPassBeginInfo.setRenderArea(vk::Rect2D(vk::Offset2D(0, 0), vk::Extent2D(width, height)));
+  vkRenderPassBeginInfo.setClearValues(vkClearValues);
+
+  m_commandBuffer.beginRenderPass(vkRenderPassBeginInfo, vk::SubpassContents::eInline);
+  m_commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, vkPipeline);
 }
 
 void
-VulkanCommandBuffer::EndPipeline(Pipeline* pipeline) {
-  if(pipeline->pipelineType == PipelineType::GRAPHICS) {
-    m_commandBuffer.endRenderPass();
-  }
+VulkanGraphicsCommandBuffer::EndPipeline(uintptr_t pipeline) {
+  m_commandBuffer.endRenderPass();
 }
 
 void
-VulkanCommandBuffer::SetViewports(std::span<ViewportInfo> viewportInfos) {
+VulkanGraphicsCommandBuffer::SetViewports(std::span<ViewportInfo> viewportInfos) {
   std::vector<vk::Viewport> vkViewports;
   std::transform(viewportInfos.begin(), viewportInfos.end(), std::back_inserter(vkViewports), [](auto& viewportInfo) {
     vk::Viewport vkViewport;
@@ -246,7 +239,7 @@ VulkanCommandBuffer::SetViewports(std::span<ViewportInfo> viewportInfos) {
 }
 
 void
-VulkanCommandBuffer::SetScissors(std::span<ScissorInfo> scissorInfos) {
+VulkanGraphicsCommandBuffer::SetScissors(std::span<ScissorInfo> scissorInfos) {
   std::vector<vk::Rect2D> vkScissors;
   std::transform(scissorInfos.begin(), scissorInfos.end(), std::back_inserter(vkScissors), [](auto& scissorInfo) {
     vk::Rect2D scissor;
@@ -258,7 +251,7 @@ VulkanCommandBuffer::SetScissors(std::span<ScissorInfo> scissorInfos) {
 }
 
 void
-VulkanCommandBuffer::Submit(std::span<Semaphore*> waitSemaphore, std::span<Semaphore*> signalSemaphore, Fence* fence) {
+VulkanGraphicsCommandBuffer::Submit(std::span<Semaphore*> waitSemaphore, std::span<Semaphore*> signalSemaphore, Fence* fence) {
   std::vector<vk::Semaphore> vkWaitSemaphore, vkSignalSemaphore;
   std::transform(waitSemaphore.begin(), waitSemaphore.end(), std::back_inserter(vkWaitSemaphore),
                  [](auto* semaphore) ->vk::Semaphore {
@@ -284,6 +277,98 @@ VulkanCommandBuffer::Submit(std::span<Semaphore*> waitSemaphore, std::span<Semap
   } else {
     m_queue.submit(vkSubmitInfo);
   }
+}
+
+void
+VulkanGraphicsCommandBuffer::Draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) {
+  m_commandBuffer.draw(vertexCount, instanceCount, firstVertex, firstInstance);
+}
+
+void
+VulkanGraphicsCommandBuffer::DrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance) {
+  m_commandBuffer.drawIndexed(indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
+}
+
+/**
+ * compute command buffer
+ */
+void
+VulkanComputeCommandBuffer::Begin() {
+  vk::CommandBufferBeginInfo vkBeginInfo;
+  vkBeginInfo.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+  m_commandBuffer.begin(vkBeginInfo);
+}
+
+void
+VulkanComputeCommandBuffer::End() {
+  m_commandBuffer.end();
+}
+
+void
+VulkanComputeCommandBuffer::BeginPipeline(uintptr_t pipeline) {
+  auto vkPipeline = static_cast<vk::Pipeline>(reinterpret_cast<VkPipeline>(pipeline));
+  m_commandBuffer.bindPipeline(vk::PipelineBindPoint::eCompute, vkPipeline);
+}
+
+void
+VulkanComputeCommandBuffer::EndPipeline(uintptr_t pipeline) {}
+
+void
+VulkanComputeCommandBuffer::Submit(std::span<Semaphore*> waitSemaphore, std::span<Semaphore*> signalSemaphore, Fence* fence) {
+  std::vector<vk::Semaphore> vkWaitSemaphore, vkSignalSemaphore;
+  std::transform(waitSemaphore.begin(), waitSemaphore.end(), std::back_inserter(vkWaitSemaphore),
+                 [](auto* semaphore) ->vk::Semaphore {
+                   if(semaphore == nullptr) return nullptr;
+                   return static_cast<VulkanSemaphore*>(semaphore)->semaphore;
+                 });
+  std::transform(signalSemaphore.begin(), signalSemaphore.end(), std::back_inserter(vkSignalSemaphore),
+                 [](auto* semaphore) ->vk::Semaphore { 
+                   if(semaphore == nullptr) return nullptr;
+                   return static_cast<VulkanSemaphore*>(semaphore)->semaphore; 
+                 });
+
+  vk::SubmitInfo vkSubmitInfo;
+  vk::PipelineStageFlags waitDstStage = vk::PipelineStageFlagBits::eAllCommands;
+  vkSubmitInfo.setWaitDstStageMask(waitDstStage);
+  vkSubmitInfo.setSignalSemaphores(vkSignalSemaphore);
+  vkSubmitInfo.setWaitSemaphores(vkWaitSemaphore);
+  vkSubmitInfo.setCommandBuffers(m_commandBuffer);
+
+  auto* vulkanFence = static_cast<VulkanFence*>(fence);
+  if (vulkanFence != nullptr) {
+    m_queue.submit(vkSubmitInfo, vulkanFence->m_fence);
+  } else {
+    m_queue.submit(vkSubmitInfo);
+  }
+}
+
+void
+VulkanComputeCommandBuffer::BindDescriptorSet(uintptr_t pipeline, const std::vector<uintptr_t> &sets) {
+  auto vkPipeline = static_cast<vk::Pipeline>(reinterpret_cast<VkPipeline>(pipeline));
+
+  vk::PipelineLayout vkPipelineLayout;
+  vk::PipelineBindPoint vkPipelineBindPoint;
+  if (m_pipelineCtx->m_computePipeline.find(vkPipeline) != m_pipelineCtx->m_computePipeline.end()) {
+    vkPipelineLayout = m_pipelineCtx->m_computePipeline[vkPipeline].vkPipelineLayout;
+    vkPipelineBindPoint = vk::PipelineBindPoint::eCompute;
+  } else {
+    constexpr static std::string_view errMsg = "can't find pipeline in compute pipeline cache";
+    LOG(ERROR) << errMsg;
+    throw std::runtime_error(errMsg.data());
+  }
+
+  std::vector<vk::DescriptorSet> vkDescriptorSets;
+  vkDescriptorSets.reserve(sets.size());
+  for (auto set : sets) {
+    vkDescriptorSets.emplace_back(reinterpret_cast<VkDescriptorSet>(set));
+  }
+
+  m_commandBuffer.bindDescriptorSets(vkPipelineBindPoint, vkPipelineLayout, 0, vkDescriptorSets, nullptr);
+}
+
+void
+VulkanComputeCommandBuffer::Dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) {
+  m_commandBuffer.dispatch(groupCountX, groupCountY, groupCountZ);
 }
 
 }  // namespace Marbas

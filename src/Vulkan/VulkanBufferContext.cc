@@ -82,14 +82,25 @@ VulkanBufferContext::VulkanBufferContext(const VulkanBufferContextCreateInfo& cr
       m_transfermQueueIndex(createInfo.transfermQueueIndex),
       m_computeQueue(createInfo.computeQueue),
       m_graphicsQueue(createInfo.graphicsQueue),
-      m_transferQueue(createInfo.transferQueue) {
+      m_transferQueue(createInfo.transferQueue),
+      m_pipelineCtx(createInfo.pipelineCtx) {
   vk::CommandPoolCreateInfo vkCommandPoolCreateInfo;
   vkCommandPoolCreateInfo.setQueueFamilyIndex(m_transfermQueueIndex);
   vkCommandPoolCreateInfo.setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
   m_temporaryCommandPool = m_device.createCommandPool(vkCommandPoolCreateInfo);
+
+  vkCommandPoolCreateInfo.setQueueFamilyIndex(m_graphicsQueueIndex);
+  m_graphicsCommandPool = m_device.createCommandPool(vkCommandPoolCreateInfo);
+
+  vkCommandPoolCreateInfo.setQueueFamilyIndex(m_computeQueueIndex);
+  m_computeCommandPool = m_device.createCommandPool(vkCommandPoolCreateInfo);
 }
 
-VulkanBufferContext::~VulkanBufferContext() { m_device.destroyCommandPool(m_temporaryCommandPool); }
+VulkanBufferContext::~VulkanBufferContext() {
+  m_device.destroyCommandPool(m_temporaryCommandPool);
+  m_device.destroyCommandPool(m_graphicsCommandPool);
+  m_device.destroyCommandPool(m_computeCommandPool);
+}
 
 Buffer*
 VulkanBufferContext::CreateBuffer(BufferType bufferType, const void* data, uint32_t size, bool isStatic) {
@@ -661,74 +672,60 @@ VulkanBufferContext::DestroyImageView(ImageView* imageView) {
   delete vulkanImageView;
 }
 
-CommandPool*
-VulkanBufferContext::CreateCommandPool(CommandBufferUsage usage) {
-  auto* vulkanCommandPool = new VulkanCommandPool();
-
-  vk::CommandPoolCreateInfo vkCommandPoolCreateInfo;
-  if (usage == CommandBufferUsage::GRAPHICS) {
-    vkCommandPoolCreateInfo.setQueueFamilyIndex(m_graphicsQueueIndex);
-  } else if (usage == CommandBufferUsage::COMPUTE) {
-    vkCommandPoolCreateInfo.setQueueFamilyIndex(m_computeQueueIndex);
-  } else if (usage == CommandBufferUsage::TRANSFER) {
-    vkCommandPoolCreateInfo.setQueueFamilyIndex(m_transfermQueueIndex);
-  }
-
-  // TODO: how to set flags?
-  vkCommandPoolCreateInfo.setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
-
-  vulkanCommandPool->vkCommandPool = m_device.createCommandPool(vkCommandPoolCreateInfo);
-  vulkanCommandPool->usage = usage;
-
-  return vulkanCommandPool;
-}
-
-void
-VulkanBufferContext::DestroyCommandPool(CommandPool* commandPool) {
-  if (commandPool == nullptr) return;
-
-  auto* vulkanCommandPool = static_cast<VulkanCommandPool*>(commandPool);
-  m_device.destroyCommandPool(vulkanCommandPool->vkCommandPool);
-
-  delete vulkanCommandPool;
-}
-
-CommandBuffer*
-VulkanBufferContext::CreateCommandBuffer(CommandPool* commandPool) {
-  auto* vulkanCommandPool = static_cast<VulkanCommandPool*>(commandPool);
-
+GraphicsCommandBuffer*
+VulkanBufferContext::CreateGraphicsCommandBuffer() {
   vk::CommandBufferAllocateInfo vkCommandBufferAllocateInfo;
   vkCommandBufferAllocateInfo.setCommandBufferCount(1);
-  vkCommandBufferAllocateInfo.setCommandPool(vulkanCommandPool->vkCommandPool);
+  vkCommandBufferAllocateInfo.setCommandPool(m_graphicsCommandPool);
   vkCommandBufferAllocateInfo.setLevel(vk::CommandBufferLevel::ePrimary);
 
   auto result = m_device.allocateCommandBuffers(vkCommandBufferAllocateInfo);
 
   uint32_t queueFamilyIndex = 0;
   vk::Queue queue;
-  if (vulkanCommandPool->usage == CommandBufferUsage::GRAPHICS) {
-    queueFamilyIndex = m_graphicsQueueIndex;
-    queue = m_graphicsQueue;
-  } else if (vulkanCommandPool->usage == CommandBufferUsage::COMPUTE) {
-    queueFamilyIndex = m_computeQueueIndex;
-    queue = m_computeQueue;
-  } else if (vulkanCommandPool->usage == CommandBufferUsage::TRANSFER) {
-    queueFamilyIndex = m_transfermQueueIndex;
-    queue = m_transferQueue;
-  }
+  queueFamilyIndex = m_graphicsQueueIndex;
+  queue = m_graphicsQueue;
 
-  auto* vulkanCommandBuffer = new VulkanCommandBuffer(m_device, result[0], queueFamilyIndex, queue);
+  auto* vulkanCommandBuffer = new VulkanGraphicsCommandBuffer(m_pipelineCtx, result[0], queue);
+
+  return vulkanCommandBuffer;
+}
+
+ComputeCommandBuffer*
+VulkanBufferContext::CreateComputeCommandBuffer() {
+  vk::CommandBufferAllocateInfo vkCommandBufferAllocateInfo;
+  vkCommandBufferAllocateInfo.setCommandBufferCount(1);
+  vkCommandBufferAllocateInfo.setCommandPool(m_computeCommandPool);
+  vkCommandBufferAllocateInfo.setLevel(vk::CommandBufferLevel::ePrimary);
+
+  auto result = m_device.allocateCommandBuffers(vkCommandBufferAllocateInfo);
+
+  uint32_t queueFamilyIndex = 0;
+  vk::Queue queue;
+  queueFamilyIndex = m_computeQueueIndex;
+  queue = m_computeQueue;
+
+  auto* vulkanCommandBuffer = new VulkanComputeCommandBuffer(m_pipelineCtx, result[0], queue);
 
   return vulkanCommandBuffer;
 }
 
 void
-VulkanBufferContext::DestroyCommandBuffer(CommandPool* commandPool, CommandBuffer* commandBuffer) {
-  if (commandPool == nullptr || commandBuffer == nullptr) return;
+VulkanBufferContext::DestroyCommandBuffer(ComputeCommandBuffer* commandBuffer) {
+  if (commandBuffer == nullptr) return;
 
-  auto* vulkanCommandBuffer = static_cast<VulkanCommandBuffer*>(commandBuffer);
-  auto* vulkanCommandPool = static_cast<VulkanCommandPool*>(commandPool);
-  m_device.freeCommandBuffers(vulkanCommandPool->vkCommandPool, vulkanCommandBuffer->m_commandBuffer);
+  auto* vulkanCommandBuffer = static_cast<VulkanComputeCommandBuffer*>(commandBuffer);
+  m_device.freeCommandBuffers(m_computeCommandPool, vulkanCommandBuffer->m_commandBuffer);
+
+  delete vulkanCommandBuffer;
+}
+
+void
+VulkanBufferContext::DestroyCommandBuffer(GraphicsCommandBuffer* commandBuffer) {
+  if (commandBuffer == nullptr) return;
+
+  auto* vulkanCommandBuffer = static_cast<VulkanGraphicsCommandBuffer*>(commandBuffer);
+  m_device.freeCommandBuffers(m_graphicsCommandPool, vulkanCommandBuffer->m_commandBuffer);
 
   delete vulkanCommandBuffer;
 }
