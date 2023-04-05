@@ -18,6 +18,8 @@
 
 #include <array>
 #include <cstdint>
+#include <filesystem>
+#include <fstream>
 #include <optional>
 #include <span>
 #include <string>
@@ -205,6 +207,12 @@ struct ShaderStageCreateInfo {
   ShaderType stage = ShaderType::VERTEX_SHADER;
   std::vector<char> code;
   std::string interName = "main";
+
+  ShaderStageCreateInfo(const std::filesystem::path& spirvPath, ShaderType stage, const std::string& interName = "main")
+      : stage(stage), interName(interName) {
+    std::ifstream file(spirvPath, std::ios::binary);
+    code = std::vector<char>((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+  }
 };
 
 /**
@@ -294,6 +302,7 @@ struct FrameBufferCreateInfo {
     std::vector<ImageView*> resolveAttachments;
   } attachments;
 };
+
 struct FrameBuffer {
   uint32_t height = 800;
   uint32_t width = 600;

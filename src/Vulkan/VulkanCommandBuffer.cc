@@ -251,18 +251,19 @@ VulkanGraphicsCommandBuffer::SetScissors(std::span<ScissorInfo> scissorInfos) {
 }
 
 void
-VulkanGraphicsCommandBuffer::Submit(std::span<Semaphore*> waitSemaphore, std::span<Semaphore*> signalSemaphore, Fence* fence) {
+VulkanGraphicsCommandBuffer::Submit(std::span<Semaphore*> waitSemaphores, std::span<Semaphore*> signalSemaphores, Fence* fence) {
   std::vector<vk::Semaphore> vkWaitSemaphore, vkSignalSemaphore;
-  std::transform(waitSemaphore.begin(), waitSemaphore.end(), std::back_inserter(vkWaitSemaphore),
-                 [](auto* semaphore) ->vk::Semaphore {
-                   if(semaphore == nullptr) return nullptr;
-                   return static_cast<VulkanSemaphore*>(semaphore)->semaphore;
-                 });
-  std::transform(signalSemaphore.begin(), signalSemaphore.end(), std::back_inserter(vkSignalSemaphore),
-                 [](auto* semaphore) ->vk::Semaphore { 
-                   if(semaphore == nullptr) return nullptr;
-                   return static_cast<VulkanSemaphore*>(semaphore)->semaphore; 
-                 });
+  for(auto* semaphore : waitSemaphores) {
+    if(semaphore != nullptr) {
+      vkWaitSemaphore.push_back(static_cast<VulkanSemaphore*>(semaphore)->semaphore);
+    }
+  }
+
+  for(auto* semaphore : signalSemaphores) {
+    if(semaphore != nullptr) {
+      vkSignalSemaphore.push_back(static_cast<VulkanSemaphore*>(semaphore)->semaphore);
+    }
+  }
 
   vk::SubmitInfo vkSubmitInfo;
   vk::PipelineStageFlags waitDstStage = vk::PipelineStageFlagBits::eAllCommands;
