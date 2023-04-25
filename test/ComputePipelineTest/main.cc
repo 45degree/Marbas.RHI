@@ -28,10 +28,7 @@ main(void) {
   std::fstream file("compute.comp.glsl.spv", std::ios::in | std::ios::binary);
   std::vector<char> content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 
-  Marbas::ShaderStageCreateInfo shaderStageCreateInfo;
-  shaderStageCreateInfo.stage = Marbas::ShaderType::COMPUTE_SHADER;
-  shaderStageCreateInfo.interName = "main";
-  shaderStageCreateInfo.code = content;
+  Marbas::ShaderStageCreateInfo shaderStageCreateInfo("compute.comp.glsl.spv", Marbas::ShaderType::COMPUTE_SHADER);
 
   // create descriptor set
   Marbas::DescriptorSetArgument argument;

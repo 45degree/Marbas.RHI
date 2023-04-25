@@ -636,7 +636,10 @@ VulkanPipelineContext::CreatePipeline(const GraphicsPipeLineCreateInfo& createIn
     auto vkDescriptorSet = CreateDescriptorSetLayout(argument);
     descriptorSetLayouts.push_back(vkDescriptorSet);
   }
-  auto vkPipelineLayout = CreatePipelineLayout(descriptorSetLayouts);
+  VulkanPipelineLayoutArgument pipelineLayoutArguement;
+  pipelineLayoutArguement.sets = descriptorSetLayouts;
+  pipelineLayoutArguement.size = createInfo.pushConstantSize;
+  auto vkPipelineLayout = CreatePipelineLayout(pipelineLayoutArguement);
   vkCreateInfo.setLayout(vkPipelineLayout);
 
   auto graphicsPipeline = m_device.createGraphicsPipeline(nullptr, vkCreateInfo);
@@ -672,7 +675,9 @@ VulkanPipelineContext::CreatePipeline(const ComputePipelineCreateInfo& createInf
     auto vkDescriptorSet = CreateDescriptorSetLayout(argument);
     descriptorSetLayouts.push_back(vkDescriptorSet);
   }
-  auto vkPipelineLayout = CreatePipelineLayout(descriptorSetLayouts);
+  VulkanPipelineLayoutArgument pipelineLayoutArguement;
+  pipelineLayoutArguement.sets = descriptorSetLayouts;
+  auto vkPipelineLayout = CreatePipelineLayout(pipelineLayoutArguement);
   vkCreateInfo.setLayout(vkPipelineLayout);
 
   auto vkPipeline = m_device.createComputePipeline(nullptr, vkCreateInfo);
@@ -839,20 +844,28 @@ VulkanPipelineContext::CreateRenderPass(const RenderTargetDesc& renderTargetDesc
 }
 
 vk::PipelineLayout
-VulkanPipelineContext::CreatePipelineLayout(const std::vector<vk::DescriptorSetLayout>& descriptorSetLayouts) {
-  if (m_pipelineLayoutCache.find(descriptorSetLayouts) != m_pipelineLayoutCache.end()) {
+VulkanPipelineContext::CreatePipelineLayout(const VulkanPipelineLayoutArgument& argument) {
+  if (m_pipelineLayoutCache.find(argument) != m_pipelineLayoutCache.end()) {
     // pipeline layout has been created
-    auto vkLayout = m_pipelineLayoutCache.at(descriptorSetLayouts);
+    auto vkLayout = m_pipelineLayoutCache.at(argument);
     m_pipelineLayoutCount[vkLayout]++;
     return vkLayout;
   }
 
   // create the new pipeline layout
   vk::PipelineLayoutCreateInfo vkPipelineLayoutCreateInfo;
-  vkPipelineLayoutCreateInfo.setSetLayouts(descriptorSetLayouts);
+  vkPipelineLayoutCreateInfo.setSetLayouts(argument.sets);
+
+  if (argument.size != 0) {
+    vk::PushConstantRange range;
+    range.setSize(argument.size);
+    range.setOffset(0);
+    range.setStageFlags(vk::ShaderStageFlagBits::eAll);
+    vkPipelineLayoutCreateInfo.setPushConstantRanges(range);
+  }
 
   auto vkLayout = m_device.createPipelineLayout(vkPipelineLayoutCreateInfo);
-  m_pipelineLayoutCache.insert_or_assign(descriptorSetLayouts, vkLayout);
+  m_pipelineLayoutCache.insert_or_assign(argument, vkLayout);
   m_pipelineLayoutCount[vkLayout]++;
 
   return vkLayout;
@@ -868,7 +881,7 @@ VulkanPipelineContext::DestroyPipelineLayout(const vk::PipelineLayout& layout) {
       return vkLayout == layout;
     });
 
-    for (auto descriptorSetLayout : iter->first) {
+    for (auto descriptorSetLayout : iter->first.sets) {
       DestroyDescriptorSetLayout(descriptorSetLayout);
     }
 

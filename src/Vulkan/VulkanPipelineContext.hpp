@@ -76,6 +76,28 @@ struct std::hash<vk::DescriptorSetLayout> {
 
 namespace Marbas {
 
+struct VulkanPipelineLayoutArgument {
+  std::vector<vk::DescriptorSetLayout> sets;
+  uint32_t size;
+
+  bool
+  operator==(const VulkanPipelineLayoutArgument& argument) const {
+    return sets == argument.sets && size == argument.size;
+  }
+};
+
+}  // namespace Marbas
+
+template <>
+struct std::hash<Marbas::VulkanPipelineLayoutArgument> {
+  size_t
+  operator()(const Marbas::VulkanPipelineLayoutArgument& argument) const {
+    return absl::Hash<std::vector<vk::DescriptorSetLayout>>()(argument.sets) + absl::Hash<uint32_t>()(argument.size);
+  }
+};
+
+namespace Marbas {
+
 class VulkanPipelineContext final : public PipelineContext {
   friend class VulkanGraphicsCommandBuffer;
   friend class VulkanComputeCommandBuffer;
@@ -148,7 +170,7 @@ class VulkanPipelineContext final : public PipelineContext {
   CreateShaderModule(const std::vector<char>& spirvCode, ShaderType type);
 
   vk::PipelineLayout
-  CreatePipelineLayout(const std::vector<vk::DescriptorSetLayout>& descriptorSetLayout);
+  CreatePipelineLayout(const VulkanPipelineLayoutArgument& argument);
 
   void
   DestroyPipelineLayout(const vk::PipelineLayout& layout);
@@ -172,7 +194,7 @@ class VulkanPipelineContext final : public PipelineContext {
   absl::flat_hash_map<vk::DescriptorSetLayout, int> m_descriptorSetLayoutCount;
   absl::flat_hash_map<DescriptorSetArgument, vk::DescriptorSetLayout> m_descriptorSetLayoutCache;
   absl::flat_hash_map<vk::PipelineLayout, int> m_pipelineLayoutCount;
-  absl::flat_hash_map<std::vector<vk::DescriptorSetLayout>, vk::PipelineLayout> m_pipelineLayoutCache;
+  absl::flat_hash_map<VulkanPipelineLayoutArgument, vk::PipelineLayout> m_pipelineLayoutCache;
 };
 
 }  // namespace Marbas

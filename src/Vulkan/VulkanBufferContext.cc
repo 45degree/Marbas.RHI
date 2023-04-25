@@ -648,7 +648,11 @@ VulkanBufferContext::CreateImageView(const ImageViewCreateInfo& createInfo) {
   }
 
   vk::ImageSubresourceRange range;
-  range.setAspectMask(vulkanImage->vkAspect);
+  if (createInfo.image->usage & ImageUsageFlags::DEPTH_STENCIL) {
+    range.setAspectMask(vk::ImageAspectFlagBits::eDepth);
+  } else {
+    range.setAspectMask(vulkanImage->vkAspect);
+  }
   range.setBaseArrayLayer(createInfo.baseArrayLayer);
   range.setBaseMipLevel(createInfo.baseLevel);
   range.setLayerCount(createInfo.layerCount);
@@ -678,15 +682,17 @@ VulkanBufferContext::CreateGraphicsCommandBuffer() {
   vkCommandBufferAllocateInfo.setCommandBufferCount(1);
   vkCommandBufferAllocateInfo.setCommandPool(m_graphicsCommandPool);
   vkCommandBufferAllocateInfo.setLevel(vk::CommandBufferLevel::ePrimary);
+  auto primaryCommandBuffer = m_device.allocateCommandBuffers(vkCommandBufferAllocateInfo);
 
-  auto result = m_device.allocateCommandBuffers(vkCommandBufferAllocateInfo);
+  vkCommandBufferAllocateInfo.setLevel(vk::CommandBufferLevel::eSecondary);
+  auto secondaryCommandBuffer = m_device.allocateCommandBuffers(vkCommandBufferAllocateInfo);
 
   uint32_t queueFamilyIndex = 0;
   vk::Queue queue;
   queueFamilyIndex = m_graphicsQueueIndex;
   queue = m_graphicsQueue;
 
-  auto* vulkanCommandBuffer = new VulkanGraphicsCommandBuffer(m_pipelineCtx, result[0], queue);
+  auto* vulkanCommandBuffer = new VulkanGraphicsCommandBuffer(m_pipelineCtx, primaryCommandBuffer[0], queue);
 
   return vulkanCommandBuffer;
 }

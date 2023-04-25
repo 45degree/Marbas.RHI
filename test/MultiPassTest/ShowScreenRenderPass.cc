@@ -41,20 +41,9 @@ ShowScreenRenderPass::CreateDescirptorSet(ImageView* imageView) {
 
 uintptr_t
 ShowScreenRenderPass::CreatePipeline() {
-  m_vertexShaderModule = CreateShaderModule("showBoxScreen.vert.glsl.spv");
-  m_fragmentShaderModule = CreateShaderModule("showBoxScreen.frag.glsl.spv");
-
-  std::vector<ShaderStageCreateInfo> shaderStageCreateInfos = {
-      ShaderStageCreateInfo{
-          .stage = ShaderType::VERTEX_SHADER,
-          .code = m_vertexShaderModule,
-          .interName = "main",
-      },
-      ShaderStageCreateInfo{
-          .stage = ShaderType::FRAGMENT_SHADER,
-          .code = m_fragmentShaderModule,
-          .interName = "main",
-      },
+  std::vector shaderCreateInfos = {
+      ShaderStageCreateInfo("showBoxScreen.vert.glsl.spv", ShaderType::VERTEX_SHADER),
+      ShaderStageCreateInfo("showBoxScreen.frag.glsl.spv", ShaderType::FRAGMENT_SHADER),
   };
 
   GraphicsPipeLineCreateInfo createInfo;
@@ -65,7 +54,7 @@ ShowScreenRenderPass::CreatePipeline() {
           .inputClass = VertexInputClass::INSTANCE,
       },
   };
-  createInfo.shaderStageCreateInfo = shaderStageCreateInfos;
+  createInfo.shaderStageCreateInfo = shaderCreateInfos;
   createInfo.depthStencilInfo.depthTestEnable = false;
   createInfo.layout = {m_argument};
   createInfo.multisampleCreateInfo.rasterizationSamples = SampleCount::BIT1;

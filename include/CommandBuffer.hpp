@@ -24,16 +24,6 @@
 
 namespace Marbas {
 
-// enum class CommandBufferUsage {
-//   GRAPHICS,
-//   COMPUTE,
-//   TRANSFER,
-// };
-//
-// struct CommandPool {
-//   CommandBufferUsage usage = CommandBufferUsage::GRAPHICS;
-// };
-
 struct ClearValue {
   explicit ClearValue(const std::array<float, 4>& colorValue) { clearValue = colorValue; }
   explicit ClearValue(const std::array<float, 2>& depthStencilValue) { clearValue = depthStencilValue; }
@@ -75,6 +65,9 @@ class GraphicsCommandBuffer {
 
   virtual void
   BindDescriptorSet(uintptr_t pipeline, const std::vector<uintptr_t>& sets) = 0;
+
+  virtual void
+  PushConstant(uintptr_t pipeline, const void* data, uint32_t size, uint32_t offset) = 0;
 
  public:
   virtual void

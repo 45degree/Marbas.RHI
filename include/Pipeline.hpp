@@ -271,6 +271,7 @@ struct RenderTargetDesc {
 struct GraphicsPipeLineCreateInfo {
   InputLayoutDesc vertexInputLayout = {};
   std::vector<DescriptorSetArgument> layout;
+  uint32_t pushConstantSize = 0;
   std::vector<ShaderStageCreateInfo> shaderStageCreateInfo = {};
   InputAssemblyStateCreateInfo inputAssemblyState = {};
   RasterizationCreateInfo rasterizationInfo = {};

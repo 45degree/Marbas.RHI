@@ -21,10 +21,6 @@
 #include "Vulkan/VulkanRHIFactory.hpp"
 #endif
 
-#ifdef USE_D3D12
-#include "DirectX12/DirectX12RHIFactory.hpp"
-#endif
-
 namespace Marbas {
 
 std::unique_ptr<RHIFactory>

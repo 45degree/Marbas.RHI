@@ -77,60 +77,6 @@ ConvertToVulkanBufferAccess(uint32_t usage, const Buffer& buffer) {
   return flags;
 }
 
-// void
-// VulkanCommandBuffer::InsertBufferBarrier(const std::vector<BufferBarrier>& barriers) {
-//   std::vector<vk::BufferMemoryBarrier> bufferMemoryBarrier;
-//   for (const auto& bufferBarrier : barriers) {
-//     vk::BufferMemoryBarrier vulkanBufferBarrier;
-//     const auto* buffer = bufferBarrier.buffer;
-//     auto vkBuffer = static_cast<const VulkanBuffer*>(buffer)->vkBuffer;
-//     const auto& srcUsage = bufferBarrier.waitUsage;
-//     const auto& dstUsage = bufferBarrier.dstUsage;
-//     const auto& size = buffer->size;
-//     vulkanBufferBarrier.setBuffer(vkBuffer);
-//     vulkanBufferBarrier.setOffset(0);
-//     vulkanBufferBarrier.setSize(size);
-//     vulkanBufferBarrier.setSrcQueueFamilyIndex(m_queueFamily);
-//     vulkanBufferBarrier.setDstQueueFamilyIndex(m_queueFamily);
-//     vulkanBufferBarrier.setSrcAccessMask(ConvertToVulkanBufferAccess(srcUsage, *buffer));
-//     vulkanBufferBarrier.setDstAccessMask(ConvertToVulkanBufferAccess(dstUsage, *buffer));
-//
-//     bufferMemoryBarrier.push_back(vulkanBufferBarrier);
-//   }
-//
-//   m_commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eNone, vk::PipelineStageFlagBits::eNone,
-//                                   vk::DependencyFlagBits::eByRegion, nullptr, bufferMemoryBarrier, nullptr);
-// }
-//
-// void
-// VulkanCommandBuffer::InsertImageBarrier(const std::vector<ImageBarrier>& barriers) {
-//   std::vector<vk::ImageMemoryBarrier> imageMemoryBarrier;
-//
-//   for (const auto& imageBarrier : barriers) {
-//     vk::ImageMemoryBarrier vulkanImageBarrier;
-//     const auto* vulkanImage = static_cast<const VulkanImage*>(imageBarrier.image);
-//     vulkanImageBarrier.setImage(vulkanImage->vkImage);
-//     vulkanImageBarrier.setDstQueueFamilyIndex(m_queueFamily);
-//     vulkanImageBarrier.setSrcQueueFamilyIndex(m_queueFamily);
-//     vulkanImageBarrier.setSrcAccessMask(vk::AccessFlagBits::eTransferRead);
-//     vulkanImageBarrier.setDstAccessMask(vk::AccessFlagBits::eTransferWrite);
-//     vulkanImageBarrier.setOldLayout(vk::ImageLayout::eGeneral);
-//     vulkanImageBarrier.setNewLayout(vk::ImageLayout::eGeneral);
-//
-//     vk::ImageSubresourceRange range;
-//     range.setAspectMask(vulkanImage->vkAspect);
-//     range.setBaseArrayLayer(0);
-//     range.setBaseMipLevel(0);
-//     range.setLayerCount(vulkanImage->arrayLayer);
-//     range.setLevelCount(vulkanImage->mipMapLevel);
-//     vulkanImageBarrier.setSubresourceRange(range);
-//
-//     imageMemoryBarrier.push_back(vulkanImageBarrier);
-//   }
-//   m_commandBuffer.pipelineBarrier(vk::PipelineStageFlagBits::eNone, vk::PipelineStageFlagBits::eNone,
-//                                   vk::DependencyFlagBits::eByRegion, nullptr, nullptr, imageMemoryBarrier);
-// }
-
 void
 VulkanGraphicsCommandBuffer::BindDescriptorSet(uintptr_t pipeline, const std::vector<uintptr_t>& sets) {
   const auto vkPipeline = static_cast<vk::Pipeline>(reinterpret_cast<VkPipeline>(pipeline));
@@ -152,6 +98,23 @@ VulkanGraphicsCommandBuffer::BindDescriptorSet(uintptr_t pipeline, const std::ve
   }
 
   m_commandBuffer.bindDescriptorSets(vkPipelineBindPoint, vkPipelineLayout, 0, vkDescriptorSets, nullptr);
+}
+
+void
+VulkanGraphicsCommandBuffer::PushConstant(uintptr_t pipeline, const void* data, uint32_t size, uint32_t offset) {
+  const auto vkPipeline = static_cast<vk::Pipeline>(reinterpret_cast<VkPipeline>(pipeline));
+  vk::PipelineLayout vkPipelineLayout;
+  vk::PipelineBindPoint vkPipelineBindPoint;
+  if (m_pipelineCtx->m_graphicsPipeline.find(vkPipeline) != m_pipelineCtx->m_graphicsPipeline.end()) {
+    vkPipelineLayout = m_pipelineCtx->m_graphicsPipeline[vkPipeline].vkPipelineLayout;
+    vkPipelineBindPoint = vk::PipelineBindPoint::eGraphics;
+  } else {
+    constexpr static std::string_view errMsg = "can't find pipeline in graphics pipeline cache";
+    LOG(ERROR) << errMsg;
+    throw std::runtime_error(errMsg.data());
+  }
+
+  m_commandBuffer.pushConstants(vkPipelineLayout, vk::ShaderStageFlagBits::eAll, offset, size, data);
 }
 
 void

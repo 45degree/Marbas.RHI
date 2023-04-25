@@ -51,8 +51,8 @@ main(void) {
   auto* pipelineContext = factory->GetPipelineContext();
   auto* bufferContext = factory->GetBufferContext();
   auto* swapchain = factory->GetSwapchain();
-  auto vertexShader = Marbas::RenderPassBase::CreateShaderModule(factory.get(), "shader.vert.spv");
-  auto fragShader = Marbas::RenderPassBase::CreateShaderModule(factory.get(), "shader.frag.spv");
+  // auto vertexShader = Marbas::RenderPassBase::CreateShaderModule(factory.get(), "shader.vert.spv");
+  // auto fragShader = Marbas::RenderPassBase::CreateShaderModule(factory.get(), "shader.frag.spv");
 
   UniformBufferObject ubo;
   ubo.model = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
@@ -91,16 +91,8 @@ main(void) {
   renderTargetBlendAttachment.blendEnable = false;
 
   std::vector<Marbas::ShaderStageCreateInfo> shaderStageCreateInfos;
-  shaderStageCreateInfos.push_back(Marbas::ShaderStageCreateInfo{
-      .stage = Marbas::ShaderType::VERTEX_SHADER,
-      .code = vertexShader,
-      .interName = "main",
-  });
-  shaderStageCreateInfos.push_back(Marbas::ShaderStageCreateInfo{
-      .stage = Marbas::ShaderType::FRAGMENT_SHADER,
-      .code = fragShader,
-      .interName = "main",
-  });
+  shaderStageCreateInfos.emplace_back("shader.vert.spv", Marbas::ShaderType::VERTEX_SHADER);
+  shaderStageCreateInfos.emplace_back("shader.frag.spv", Marbas::ShaderType::FRAGMENT_SHADER);
 
   Marbas::ViewportInfo viewportInfo;
   viewportInfo.x = 0;

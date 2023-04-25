@@ -52,16 +52,8 @@ ShowPlaneRenderPass::~ShowPlaneRenderPass() {
 uintptr_t
 ShowPlaneRenderPass::CreatePipeline() {
   std::vector shaderCreateInfos = {
-      ShaderStageCreateInfo{
-          .stage = ShaderType::VERTEX_SHADER,
-          .code = m_vertexShaderModule,
-          .interName = "main",
-      },
-      ShaderStageCreateInfo{
-          .stage = ShaderType::FRAGMENT_SHADER,
-          .code = m_fragmentShaderModule,
-          .interName = "main",
-      },
+      ShaderStageCreateInfo("showBox.vert.glsl.spv", ShaderType::VERTEX_SHADER),
+      ShaderStageCreateInfo("showBox.frag.glsl.spv", ShaderType::FRAGMENT_SHADER),
   };
 
   GraphicsPipeLineCreateInfo createInfo;

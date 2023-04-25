@@ -85,15 +85,8 @@ ShowBoxRenderPass::ShowBoxRenderPass(RHIFactory* rhiFactory) : RenderPassBase(rh
 uintptr_t
 ShowBoxRenderPass::CreatePipeline() {
   // create shader
-  m_vertexShaderModule = CreateShaderModule("showBox.vert.glsl.spv");
-  m_fragmentShaderModule = CreateShaderModule("showBox.frag.glsl.spv");
-  Marbas::ShaderStageCreateInfo showBoxVert, showBoxFrag;
-  showBoxVert.code = m_vertexShaderModule;
-  showBoxVert.stage = Marbas::ShaderType::VERTEX_SHADER;
-  showBoxVert.interName = "main";
-  showBoxFrag.code = m_fragmentShaderModule;
-  showBoxFrag.stage = Marbas::ShaderType::FRAGMENT_SHADER;
-  showBoxFrag.interName = "main";
+  Marbas::ShaderStageCreateInfo showBoxVert("showBox.vert.glsl.spv", ShaderType::VERTEX_SHADER);
+  Marbas::ShaderStageCreateInfo showBoxFrag("showBox.frag.glsl.spv", ShaderType::FRAGMENT_SHADER);
 
   Marbas::InputElementView elementView;
   elementView.binding = 0;

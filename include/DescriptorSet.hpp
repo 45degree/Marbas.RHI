@@ -30,7 +30,8 @@ enum class DescriptorType {
 
 class DescriptorSetArgument final {
  public:
-  DescriptorSetArgument() = default;
+  explicit DescriptorSetArgument(const std::map<uint16_t, DescriptorType>& map = {}, uint32_t size = 0)
+      : m_bindingInfo(map) {}
   DescriptorSetArgument(const DescriptorSetArgument& obj) = default;
   DescriptorSetArgument(DescriptorSetArgument&& obj) noexcept : m_bindingInfo(std::move(obj.m_bindingInfo)) {}
 
@@ -52,6 +53,11 @@ class DescriptorSetArgument final {
   bool
   operator==(const DescriptorSetArgument& obj) const {
     return obj.m_bindingInfo == m_bindingInfo;
+  }
+
+  void
+  Clear() {
+    m_bindingInfo.clear();
   }
 
  public:

@@ -51,6 +51,9 @@ class VulkanGraphicsCommandBuffer final : public GraphicsCommandBuffer {
   void
   BindDescriptorSet(uintptr_t pipeline, const std::vector<uintptr_t>& sets) override;
 
+  void
+  PushConstant(uintptr_t pipeline, const void* data, uint32_t size, uint32_t offset) override;
+
  public:
   void
   SetViewports(std::span<ViewportInfo> viewportInfos) override;
@@ -73,6 +76,7 @@ class VulkanGraphicsCommandBuffer final : public GraphicsCommandBuffer {
 
  private:
   vk::CommandBuffer m_commandBuffer;
+  vk::CommandBuffer m_secondaryCommandBuffer;
   vk::Queue m_queue;
   VulkanPipelineContext* m_pipelineCtx;
 };

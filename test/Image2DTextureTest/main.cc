@@ -89,8 +89,6 @@ main(void) {
   auto* pipelineContext = factory->GetPipelineContext();
   auto* bufferContext = factory->GetBufferContext();
   auto* swapchain = factory->GetSwapchain();
-  auto vertexShader = Marbas::RenderPassBase::CreateShaderModule(factory.get(), "shader.vert.spv");
-  auto fragShader = Marbas::RenderPassBase::CreateShaderModule(factory.get(), "shader.frag.spv");
 
   auto* image = LoadImage(factory->GetBufferContext(), "texture.jpg");
   auto* imageView = bufferContext->CreateImageView(Marbas::ImageViewCreateInfo{
@@ -162,16 +160,8 @@ main(void) {
   renderTargetBlendAttachment.blendEnable = false;
 
   std::vector<Marbas::ShaderStageCreateInfo> shaderStageCreateInfos;
-  shaderStageCreateInfos.push_back(Marbas::ShaderStageCreateInfo{
-      .stage = Marbas::ShaderType::VERTEX_SHADER,
-      .code = vertexShader,
-      .interName = "main",
-  });
-  shaderStageCreateInfos.push_back(Marbas::ShaderStageCreateInfo{
-      .stage = Marbas::ShaderType::FRAGMENT_SHADER,
-      .code = fragShader,
-      .interName = "main",
-  });
+  shaderStageCreateInfos.emplace_back("shader.vert.spv", Marbas::ShaderType::VERTEX_SHADER);
+  shaderStageCreateInfos.emplace_back("shader.frag.spv", Marbas::ShaderType::FRAGMENT_SHADER);
 
   Marbas::ViewportInfo viewportInfo;
   viewportInfo.x = 0;
