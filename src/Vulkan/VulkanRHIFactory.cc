@@ -47,6 +47,7 @@ vk::PhysicalDevice VulkanRHIFactory::m_physicalDevice;
 #ifndef NDEBUG
 vk::DispatchLoaderDynamic VulkanRHIFactory::m_dispatch;
 vk::DebugUtilsMessengerEXT VulkanRHIFactory::m_debugMessenger;
+bool VulkanRHIFactory::m_enableValidationLayer = false;
 #endif
 
 std::optional<uint32_t> VulkanRHIFactory::m_graphicsQueueFamilyIndex;
@@ -104,19 +105,24 @@ VulkanRHIFactory::CreateInstance(GLFWwindow* glfwWindow) {
 
   // validation layers
 #ifndef NDEBUG
-  std::array layers = {"VK_LAYER_KHRONOS_validation"};
+  std::vector layers = {"VK_LAYER_KHRONOS_validation"};
 #else
-  std::array<const char*, 0> layers = {};
+  std::vector<const char*, 0> layers = {};
 #endif
 
   // check layers
   auto aviableLayers = vk::enumerateInstanceLayerProperties();
-  for (auto& layer : layers) {
-    auto iter = std::find_if(aviableLayers.cbegin(), aviableLayers.cend(), [&](const auto& aviableLayer) {
-      return std::strcmp(aviableLayer.layerName.data(), layer) == 0;
+
+  for (auto iter = layers.begin(); iter != layers.end();) {
+    bool isAllowed = std::any_of(aviableLayers.cbegin(), aviableLayers.cend(), [&](const auto& aviableLayer) {
+      return std::strcmp(aviableLayer.layerName.data(), *iter) == 0;
     });
-    if (iter == aviableLayers.end()) {
-      LOG(ERROR) << FORMAT("layer: {} is not allowed", layer);
+
+    if (!isAllowed) {
+      iter = layers.erase(iter);
+      LOG(ERROR) << FORMAT("layer: {} is not allowed", *iter);
+    } else {
+      iter++;
     }
   }
 
@@ -139,22 +145,28 @@ VulkanRHIFactory::CreateInstance(GLFWwindow* glfwWindow) {
   m_instance = vk::createInstance(instanceCreateInfo);
 
 #ifndef NDEBUG
-  vk::DynamicLoader dl;
-  auto GetInstanceProcAddr = dl.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
-  m_dispatch = vk::DispatchLoaderDynamic(m_instance, GetInstanceProcAddr);
+  m_enableValidationLayer = std::any_of(aviableLayers.cbegin(), aviableLayers.cend(), [&](const auto& aviableLayer) {
+    return std::strcmp(aviableLayer.layerName.data(), "VK_LAYER_KHRONOS_validation") == 0;
+  });
 
-  vk::DebugUtilsMessengerCreateInfoEXT createInfo;
-  auto CallbackFunc = reinterpret_cast<PFN_vkDebugUtilsMessengerCallbackEXT>(debugCallback);
-  createInfo.setMessageSeverity(vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose |
-                                vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning |
-                                vk::DebugUtilsMessageSeverityFlagBitsEXT::eError);
-  createInfo.setMessageType(vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral |
-                            vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation |
-                            vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance);
-  createInfo.setPfnUserCallback(CallbackFunc);
-  createInfo.pUserData = nullptr;
+  if (m_enableValidationLayer) {
+    vk::DynamicLoader dl;
+    auto GetInstanceProcAddr = dl.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
+    m_dispatch = vk::DispatchLoaderDynamic(m_instance, GetInstanceProcAddr);
 
-  m_debugMessenger = m_instance.createDebugUtilsMessengerEXT(createInfo, nullptr, m_dispatch);
+    vk::DebugUtilsMessengerCreateInfoEXT createInfo;
+    auto CallbackFunc = reinterpret_cast<PFN_vkDebugUtilsMessengerCallbackEXT>(debugCallback);
+    createInfo.setMessageSeverity(vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose |
+                                  vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning |
+                                  vk::DebugUtilsMessageSeverityFlagBitsEXT::eError);
+    createInfo.setMessageType(vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral |
+                              vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation |
+                              vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance);
+    createInfo.setPfnUserCallback(CallbackFunc);
+    createInfo.pUserData = nullptr;
+
+    m_debugMessenger = m_instance.createDebugUtilsMessengerEXT(createInfo, nullptr, m_dispatch);
+  }
 #endif
 }
 
@@ -438,7 +450,9 @@ VulkanRHIFactory::Quit() {
 
   m_device.destroy();
 #ifndef NDEBUG
-  m_instance.destroyDebugUtilsMessengerEXT(m_debugMessenger, nullptr, m_dispatch);
+  if (m_enableValidationLayer) {
+    m_instance.destroyDebugUtilsMessengerEXT(m_debugMessenger, nullptr, m_dispatch);
+  }
 #endif
   m_instance.destroySurfaceKHR(m_surface);
   m_instance.destroy();

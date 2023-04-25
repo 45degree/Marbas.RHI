@@ -108,6 +108,7 @@ class VulkanRHIFactory final : public RHIFactory {
   static vk::Device m_device;
   static vk::PhysicalDevice m_physicalDevice;
 #ifndef NDEBUG
+  static bool m_enableValidationLayer;
   static vk::DispatchLoaderDynamic m_dispatch;
   static vk::DebugUtilsMessengerEXT m_debugMessenger;
 #endif
