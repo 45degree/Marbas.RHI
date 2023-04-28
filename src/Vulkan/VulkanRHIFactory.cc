@@ -107,7 +107,7 @@ VulkanRHIFactory::CreateInstance(GLFWwindow* glfwWindow) {
 #ifndef NDEBUG
   std::vector layers = {"VK_LAYER_KHRONOS_validation"};
 #else
-  std::vector<const char*, 0> layers = {};
+  std::vector<const char*> layers = {};
 #endif
 
   // check layers

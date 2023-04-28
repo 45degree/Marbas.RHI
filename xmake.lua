@@ -9,7 +9,7 @@ add_requires('gtest 1.11.0')
 add_requires('stb 2021.09.10')
 add_requires('fmt 9.1.0')
 add_requires('spirv-cross c77b09b57c27837dc2d41aa371ed3d236ce9ce47')
-add_requires('abseil 20220623.0')
+add_requires('abseil 20230125.2')
 
 option('SupportVulkan', function()
   set_default(true)
@@ -28,8 +28,8 @@ if has_config('buildTest') then
 end
 
 if has_config('SupportVulkan') then
-  add_requires('vulkan-hpp v1.3.244')
-  add_requires('vulkan-headers 1.3.239+0')
+  add_requires('vulkan-hpp v1.3.243', { verify = false })
+  add_requires('vulkan-headers 1.3.243+0', { verify = false })
   add_requires('shaderc v2022.2')
 end
 
