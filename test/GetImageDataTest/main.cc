@@ -59,7 +59,12 @@ main(void) {
   auto [image, lod] = LoadImage(factory->GetBufferContext(), "texture.jpg");
   factory->GetBufferContext()->GenerateMipmap(image, lod);
 
-  Marbas::ImageSubresourceDesc subResource{.image = image, .baseArrayLayer = 0, .layerCount = 1, .mipmapLevel = 5};
+  Marbas::ImageSubresourceDesc subResource{
+      .image = image,
+      .baseArrayLayer = 0,
+      .layerCount = 1,
+      .mipmapLevel = 5,
+  };
   auto bufferSize = factory->GetBufferContext()->GetImageSubresourceSize(subResource);
   std::cout << "buffer size:" << bufferSize << std::endl;
 

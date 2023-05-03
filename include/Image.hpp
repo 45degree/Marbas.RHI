@@ -27,7 +27,8 @@ struct ImageUsageFlags {
   enum value : uint32_t {
     SHADER_READ = 1 << 0,
     COLOR_RENDER_TARGET = 1 << 1,
-    DEPTH_STENCIL = 1 << 4,
+    DEPTH_STENCIL = 1 << 2,
+    STORAGE = 1 << 3,
   };
 };
 

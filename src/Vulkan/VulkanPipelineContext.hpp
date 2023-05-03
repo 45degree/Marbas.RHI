@@ -155,6 +155,9 @@ class VulkanPipelineContext final : public PipelineContext {
   void
   BindBuffer(const BindBufferInfo& bindBufferInfo) override;
 
+  void
+  BindStorageImage(const BindStorageImageInfo& BindStorageImageInfo) override;
+
  public:
   FrameBuffer*
   CreateFrameBuffer(const FrameBufferCreateInfo& createInfo) override;

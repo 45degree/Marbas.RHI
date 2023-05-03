@@ -367,6 +367,9 @@ VulkanPipelineContext::CreateDescriptorSetLayout(const DescriptorSetArgument& la
       case DescriptorType::STORAGE_BUFFER:
         binding.setDescriptorType(vk::DescriptorType::eStorageBuffer);
         break;
+      case DescriptorType::STORAGE_IMAGE:
+        binding.setDescriptorType(vk::DescriptorType::eStorageImage);
+        break;
     }
     binding.setDescriptorCount(1);
     binding.setStageFlags(vk::ShaderStageFlagBits::eAll);
@@ -924,6 +927,7 @@ VulkanPipelineContext::BindBuffer(const BindBufferInfo& bindBufferInfo) {
       vkWriteDescriptorSet.setDescriptorType(vk::DescriptorType::eUniformBufferDynamic);
       break;
     case DescriptorType::IMAGE:
+    case DescriptorType::STORAGE_IMAGE:
       LOG(ERROR) << "can't bind image when binding buffer";
       return;
     case DescriptorType::STORAGE_BUFFER:
@@ -963,4 +967,32 @@ VulkanPipelineContext::BindImage(const BindImageInfo& bindImageInfo) {
 
   m_device.updateDescriptorSets(vkWriteDescriptorSet, nullptr);
 }
+
+void
+VulkanPipelineContext::BindStorageImage(const BindStorageImageInfo& bindImageInfo) {
+  auto descriptorSet = bindImageInfo.descriptorSet;
+  auto vkDescriptorSet = static_cast<vk::DescriptorSet>(reinterpret_cast<VkDescriptorSet>(descriptorSet));
+  if (m_descriptorSets.find(vkDescriptorSet) == m_descriptorSets.end()) {
+    constexpr static std::string_view errMsg = "can't find descriptorSet";
+    LOG(ERROR) << errMsg;
+    throw std::runtime_error(errMsg.data());
+  }
+
+  auto* vulkanImageView = static_cast<VulkanImageView*>(bindImageInfo.imageView);
+  const auto& vkImageView = vulkanImageView->vkImageView;
+  vk::DescriptorImageInfo vkDescriptorImageInfo;
+  vkDescriptorImageInfo.setImageLayout(vk::ImageLayout::eGeneral);
+  vkDescriptorImageInfo.setImageView(vkImageView);
+
+  vk::WriteDescriptorSet vkWriteDescriptorSet;
+  vkWriteDescriptorSet.setDstSet(vkDescriptorSet);
+  vkWriteDescriptorSet.setDstBinding(bindImageInfo.bindingPoint);
+  vkWriteDescriptorSet.setDescriptorCount(1);
+  vkWriteDescriptorSet.setDescriptorType(vk::DescriptorType::eStorageImage);
+  vkWriteDescriptorSet.setImageInfo(vkDescriptorImageInfo);
+  vkWriteDescriptorSet.setDstArrayElement(0);
+
+  m_device.updateDescriptorSets(vkWriteDescriptorSet, nullptr);
+}
+
 }  // namespace Marbas

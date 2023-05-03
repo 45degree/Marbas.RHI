@@ -39,6 +39,12 @@ struct BindImageInfo final {
   uintptr_t sampler;
 };
 
+struct BindStorageImageInfo final {
+  uintptr_t descriptorSet;
+  uint16_t bindingPoint;
+  ImageView* imageView;
+};
+
 class PipelineContext {
  public:
   PipelineContext() = default;
@@ -73,6 +79,9 @@ class PipelineContext {
 
   virtual void
   BindBuffer(const BindBufferInfo& bindBufferInfo) = 0;
+
+  virtual void
+  BindStorageImage(const BindStorageImageInfo& BindStorageImageInfo) = 0;
 
  public:
   virtual FrameBuffer*

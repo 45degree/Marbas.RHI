@@ -25,6 +25,7 @@ enum class DescriptorType {
   UNIFORM_BUFFER,
   DYNAMIC_UNIFORM_BUFFER,
   IMAGE,
+  STORAGE_IMAGE,
   STORAGE_BUFFER,
 };
 

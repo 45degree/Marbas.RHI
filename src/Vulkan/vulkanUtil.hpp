@@ -50,7 +50,9 @@ ConvertToVulkanFormat(ElementType type) {
 
 FORCE_INLINE vk::ImageLayout
 GetDefaultImageLayoutFromUsage(uint32_t usage) {
-  if (usage & ImageUsageFlags::SHADER_READ) {
+  if (usage & ImageUsageFlags::STORAGE) {
+    return vk::ImageLayout::eGeneral;
+  } else if (usage & ImageUsageFlags::SHADER_READ) {
     return vk::ImageLayout::eShaderReadOnlyOptimal;
   } else if (usage & ImageUsageFlags::COLOR_RENDER_TARGET) {
     return vk::ImageLayout::eColorAttachmentOptimal;
@@ -88,6 +90,9 @@ ConvertToVulkanImageUsage(uint32_t usage) {
   if (usage & ImageUsageFlags::SHADER_READ) {
     flags |= vk::ImageUsageFlagBits::eSampled;
   }
+  if (usage & ImageUsageFlags::STORAGE) {
+    flags |= vk::ImageUsageFlagBits::eStorage;
+  }
   flags |= vk::ImageUsageFlagBits::eTransferSrc;
   flags |= vk::ImageUsageFlagBits::eTransferDst;
   return flags;
@@ -104,6 +109,8 @@ ConvertToVulkanDescriptorType(DescriptorType type) {
       return vk::DescriptorType::eCombinedImageSampler;
     case DescriptorType::STORAGE_BUFFER:
       return vk::DescriptorType::eStorageBuffer;
+    case DescriptorType::STORAGE_IMAGE:
+      return vk::DescriptorType::eStorageImage;
   }
   DLOG_ASSERT(false);
 }
