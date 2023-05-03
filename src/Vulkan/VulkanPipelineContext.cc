@@ -859,8 +859,8 @@ VulkanPipelineContext::CreatePipelineLayout(const VulkanPipelineLayoutArgument& 
   vk::PipelineLayoutCreateInfo vkPipelineLayoutCreateInfo;
   vkPipelineLayoutCreateInfo.setSetLayouts(argument.sets);
 
+  vk::PushConstantRange range;
   if (argument.size != 0) {
-    vk::PushConstantRange range;
     range.setSize(argument.size);
     range.setOffset(0);
     range.setStageFlags(vk::ShaderStageFlagBits::eAll);
