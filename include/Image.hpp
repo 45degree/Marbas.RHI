@@ -34,6 +34,7 @@ struct ImageUsageFlags {
 
 enum class ImageViewType {
   TEXTURE2D,
+  TEXTURE3D,
   CUBEMAP,
   TEXTURE2D_ARRAY,
   CUBEMAP_ARRAY,
@@ -61,15 +62,20 @@ struct Image2DDesc {};
 struct Image2DArrayDesc {
   uint32_t arraySize = 1;
 };
+struct Image3DDesc {
+  uint32_t depth;
+};
 
 struct ImageCreateInfo {
+  using ImageDesc = std::variant<CubeMapImageDesc, CubeMapArrayImageDesc, Image2DDesc, Image2DArrayDesc, Image3DDesc>;
+
   uint32_t width = 256;
   uint32_t height = 256;
   ImageFormat format = ImageFormat::RGBA;
   SampleCount sampleCount = SampleCount::BIT1;
   uint32_t mipMapLevel = 1;
   uint32_t usage = ImageUsageFlags::SHADER_READ | ImageUsageFlags::COLOR_RENDER_TARGET;
-  std::variant<CubeMapImageDesc, CubeMapArrayImageDesc, Image2DDesc, Image2DArrayDesc> imageDesc = Image2DDesc{};
+  ImageDesc imageDesc = Image2DDesc{};
 };
 
 struct Image {

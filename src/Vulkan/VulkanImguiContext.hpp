@@ -96,7 +96,8 @@ class VulkanImguiContext final : public ImguiContext {
   vk::CommandPool m_commandPool;
   vk::DescriptorPool m_descriptorPool;
 
-  std::unordered_map<ImTextureID, vk::Sampler> m_imguiTexture;
+  vk::Sampler m_imguiSampler;
+  std::unordered_map<ImageView*, ImTextureID> m_imguiTexture;
 };
 
 }  // namespace Marbas

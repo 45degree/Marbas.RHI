@@ -75,6 +75,10 @@ class GraphicsCommandBuffer {
 
   virtual void
   SetScissors(std::span<ScissorInfo> scissorInfos) = 0;
+
+  virtual void
+  SetCullMode(CullMode cullMode) = 0;
+
   virtual void
   BindVertexBuffer(Buffer* buffer) = 0;
 
@@ -104,6 +108,13 @@ class GraphicsCommandBuffer {
   virtual void
   DrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset,
               uint32_t firstInstance) = 0;
+
+  virtual void
+  GenerateMipmap(Image* image, uint32_t mipLevel) = 0;
+
+  virtual void
+  ClearColorImage(Image* image, const ClearValue& value, int baseLayer, int layerCount, int baseLevel,
+                  int levelCount) = 0;
 };
 
 class ComputeCommandBuffer {
@@ -128,6 +139,10 @@ class ComputeCommandBuffer {
 
   virtual void
   BindDescriptorSet(uintptr_t pipeline, const std::vector<uintptr_t>& sets) = 0;
+
+  virtual void
+  ClearColorImage(Image* image, const ClearValue& value, int baseLayer, int layerCount, int baseLevel,
+                  int levelCount) = 0;
 
  public:
   virtual void

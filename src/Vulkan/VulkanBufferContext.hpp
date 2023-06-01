@@ -133,6 +133,8 @@ class VulkanBufferContext final : public BufferContext {
   vk::CommandPool m_temporaryCommandPool;
   vk::CommandPool m_graphicsCommandPool;
   vk::CommandPool m_computeCommandPool;
+
+  vk::Buffer m_stagingBuffer;
 };
 
 }  // namespace Marbas

@@ -500,7 +500,11 @@ VulkanPipelineContext::CreatePipeline(const GraphicsPipeLineCreateInfo& createIn
   vkCreateInfo.setPViewportState(&vkViewportStateCreateInfo);
 
   // dynamic state
-  std::vector<vk::DynamicState> dynamicStates = {vk::DynamicState::eViewport, vk::DynamicState::eScissor};
+  std::vector<vk::DynamicState> dynamicStates = {
+      vk::DynamicState::eViewport,
+      vk::DynamicState::eScissor,
+      vk::DynamicState::eCullMode,
+  };
   vk::PipelineDynamicStateCreateInfo vkPipelineDynamicStateCreateInfo;
   vkPipelineDynamicStateCreateInfo.setDynamicStates(dynamicStates);
   vkCreateInfo.setPDynamicState(&vkPipelineDynamicStateCreateInfo);
@@ -680,6 +684,7 @@ VulkanPipelineContext::CreatePipeline(const ComputePipelineCreateInfo& createInf
   }
   VulkanPipelineLayoutArgument pipelineLayoutArguement;
   pipelineLayoutArguement.sets = descriptorSetLayouts;
+  pipelineLayoutArguement.size = createInfo.pushConstantSize;
   auto vkPipelineLayout = CreatePipelineLayout(pipelineLayoutArguement);
   vkCreateInfo.setLayout(vkPipelineLayout);
 
@@ -952,8 +957,10 @@ VulkanPipelineContext::BindImage(const BindImageInfo& bindImageInfo) {
   const auto& vkImageView = vulkanImageView->vkImageView;
   auto vkSampler = static_cast<vk::Sampler>(reinterpret_cast<VkSampler>(bindImageInfo.sampler));
 
+  auto defulatLayout = GetDefaultImageLayoutFromUsage(vulkanImageView->fromImage->usage);
+
   vk::DescriptorImageInfo vkDescriptorImageInfo;
-  vkDescriptorImageInfo.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+  vkDescriptorImageInfo.setImageLayout(defulatLayout);
   vkDescriptorImageInfo.setImageView(vkImageView);
   vkDescriptorImageInfo.setSampler(vkSampler);
 

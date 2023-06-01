@@ -150,6 +150,20 @@ VulkanImguiContext::VulkanImguiContext(const VulkanImguiCreateInfo& createInfo)
   m_clearColor.color.float32[1] = 0;
   m_clearColor.color.float32[2] = 0;
   m_clearColor.color.float32[3] = 1;
+
+  // create sampler
+  vk::SamplerCreateInfo samplerCreateInfo;
+  samplerCreateInfo.setMagFilter(vk::Filter::eLinear);
+  samplerCreateInfo.setMinFilter(vk::Filter::eLinear);
+  samplerCreateInfo.setMipmapMode(vk::SamplerMipmapMode::eLinear);
+  samplerCreateInfo.setAddressModeU(vk::SamplerAddressMode::eRepeat);
+  samplerCreateInfo.setAddressModeV(vk::SamplerAddressMode::eRepeat);
+  samplerCreateInfo.setAddressModeW(vk::SamplerAddressMode::eRepeat);
+  samplerCreateInfo.setMinLod(-1000);
+  samplerCreateInfo.setMaxLod(-1000);
+  samplerCreateInfo.setMaxAnisotropy(1.0f);
+
+  m_imguiSampler = m_device.createSampler(samplerCreateInfo);
 }
 
 VulkanImguiContext::~VulkanImguiContext() {
@@ -325,33 +339,18 @@ VulkanImguiContext::RenderData(uint32_t imageIndex, const ImguiRenderDataInfo& r
 
 ImTextureID
 VulkanImguiContext::CreateImGuiImage(ImageView* imageView) {
+  if (m_imguiTexture.find(imageView) != m_imguiTexture.end()) {
+    return m_imguiTexture.at(imageView);
+  }
   auto vulkanImage = static_cast<VulkanImageView*>(imageView);
-
-  // create sampler
-  vk::SamplerCreateInfo createInfo;
-  createInfo.setMagFilter(vk::Filter::eLinear);
-  createInfo.setMinFilter(vk::Filter::eLinear);
-  createInfo.setMipmapMode(vk::SamplerMipmapMode::eLinear);
-  createInfo.setAddressModeU(vk::SamplerAddressMode::eRepeat);
-  createInfo.setAddressModeV(vk::SamplerAddressMode::eRepeat);
-  createInfo.setAddressModeW(vk::SamplerAddressMode::eRepeat);
-  createInfo.setMinLod(-1000);
-  createInfo.setMaxLod(-1000);
-  createInfo.setMaxAnisotropy(1.0f);
-
-  auto vkSampler = m_device.createSampler(createInfo);
   auto vkLayout = static_cast<VkImageLayout>(vk::ImageLayout::eShaderReadOnlyOptimal);
-
-  auto imTextureId = ImGui_ImplVulkan_AddTexture(vkSampler, vulkanImage->vkImageView, vkLayout);
-  m_imguiTexture[imTextureId] = vkSampler;
-
+  auto imTextureId = ImGui_ImplVulkan_AddTexture(m_imguiSampler, vulkanImage->vkImageView, vkLayout);
+  m_imguiTexture[imageView] = imTextureId;
   return imTextureId;
 }
 
 void
 VulkanImguiContext::DestroyImGuiImage(ImTextureID imTextureId) {
-  auto vkSampler = m_imguiTexture[imTextureId];
-  m_device.destroySampler(vkSampler);
   ImGui_ImplVulkan_RemoveTexture(static_cast<VkDescriptorSet>(imTextureId));
 }
 

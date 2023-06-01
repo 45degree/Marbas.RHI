@@ -310,7 +310,7 @@ VulkanRHIFactory::Init(GLFWwindow* window, uint32_t width, uint32_t height) {
   }
   CreateSwapchain(width, height);
 
-  auto pipelineContext = std::make_unique<VulkanPipelineContext>(m_device);
+  auto pipelineContext = std::make_unique<VulkanPipelineContext>(m_device, m_physicalDevice);
   m_bufferContext = std::make_unique<VulkanBufferContext>(VulkanBufferContextCreateInfo{
       .device = m_device,
       .physicalDevice = m_physicalDevice,

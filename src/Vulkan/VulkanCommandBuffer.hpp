@@ -68,11 +68,21 @@ class VulkanGraphicsCommandBuffer final : public GraphicsCommandBuffer {
   BindIndexBuffer(Buffer* buffer) override;
 
   void
+  SetCullMode(CullMode cullMode) override;
+
+  void
   Draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) override;
 
   void
   DrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset,
               uint32_t firstInstance) override;
+
+  void
+  GenerateMipmap(Image* image, uint32_t mipLevel) override;
+
+  void
+  ClearColorImage(Image* image, const ClearValue& value, int baseLayer, int layerCount, int baseLevel,
+                  int levelCount) override;
 
  private:
   vk::CommandBuffer m_commandBuffer;
@@ -110,6 +120,10 @@ class VulkanComputeCommandBuffer final : public ComputeCommandBuffer {
 
   void
   Dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) override;
+
+  void
+  ClearColorImage(Image* image, const ClearValue& value, int baseLayer, int layerCount, int baseLevel,
+                  int levelCount) override;
 
  private:
   uint32_t m_queueFamily;

@@ -103,8 +103,8 @@ class VulkanPipelineContext final : public PipelineContext {
   friend class VulkanComputeCommandBuffer;
 
  public:
-  explicit VulkanPipelineContext(vk::Device device)
-      : PipelineContext(), m_device(device), m_descriptorAllocate(device) {}
+  explicit VulkanPipelineContext(vk::Device device, vk::PhysicalDevice physicalDevice)
+      : PipelineContext(), m_device(device), m_descriptorAllocate(device), m_physicalDevice(physicalDevice) {}
   ~VulkanPipelineContext() override {
     // destroy pipeline
     for (auto [pipeline, pipelineInfo] : m_computePipeline) {
@@ -186,6 +186,8 @@ class VulkanPipelineContext final : public PipelineContext {
 
  private:
   vk::Device m_device;
+  vk::PhysicalDevice m_physicalDevice;
+
   RHI::VulkanDescriptorAllocate m_descriptorAllocate;
 
   absl::flat_hash_set<vk::Sampler> m_samplers;

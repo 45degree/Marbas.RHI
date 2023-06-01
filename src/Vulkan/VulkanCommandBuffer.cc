@@ -19,6 +19,7 @@
 #include <vulkan/vulkan_enums.hpp>
 
 #include "Buffer.hpp"
+#include "Vulkan/VulkanFormat.hpp"
 #include "VulkanBuffer.hpp"
 #include "VulkanImage.hpp"
 #include "VulkanPipeline.hpp"
@@ -202,6 +203,11 @@ VulkanGraphicsCommandBuffer::SetViewports(std::span<ViewportInfo> viewportInfos)
 }
 
 void
+VulkanGraphicsCommandBuffer::SetCullMode(CullMode cullMode) {
+  m_commandBuffer.setCullMode(ConvertToVulkanCullMode(cullMode));
+}
+
+void
 VulkanGraphicsCommandBuffer::SetScissors(std::span<ScissorInfo> scissorInfos) {
   std::vector<vk::Rect2D> vkScissors;
   std::transform(scissorInfos.begin(), scissorInfos.end(), std::back_inserter(vkScissors), [](auto& scissorInfo) {
@@ -251,6 +257,120 @@ VulkanGraphicsCommandBuffer::Draw(uint32_t vertexCount, uint32_t instanceCount, 
 void
 VulkanGraphicsCommandBuffer::DrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance) {
   m_commandBuffer.drawIndexed(indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
+}
+
+void
+VulkanGraphicsCommandBuffer::GenerateMipmap(Image* image, uint32_t mipLevels) {
+  auto* vulkanImage = static_cast<VulkanImage*>(image);
+  auto vkImage = vulkanImage->vkImage;
+  auto vkFormat = GetVkFormat(vulkanImage->format);
+  auto vkPhysicalDevice = m_pipelineCtx->m_physicalDevice;
+  auto defaultLayout = GetDefaultImageLayoutFromUsage(image->usage);
+
+  // Check if image format supports linear blitting
+  auto formatProperties = vkPhysicalDevice.getFormatProperties(vkFormat);
+  if (!(formatProperties.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear)) {
+      throw std::runtime_error("texture image format does not support linear blitting!");
+  }
+
+  // transform the whole image from defulat layout to transform dst layout
+  vk::PipelineStageFlags srcFlags, dstFlags;
+  srcFlags = vk::PipelineStageFlagBits::eAllGraphics | vk::PipelineStageFlagBits::eTransfer;
+  dstFlags = vk::PipelineStageFlagBits::eAllGraphics | vk::PipelineStageFlagBits::eTransfer;
+
+  vk::ImageMemoryBarrier barrier;
+  barrier.setImage(vulkanImage->vkImage);
+  barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+  barrier.oldLayout = defaultLayout;
+  barrier.newLayout = vk::ImageLayout::eTransferDstOptimal;
+  barrier.subresourceRange.aspectMask = vulkanImage->vkAspect;
+  barrier.subresourceRange.baseArrayLayer = 0;
+  barrier.subresourceRange.layerCount = image->arrayLayer;
+  barrier.subresourceRange.levelCount = image->mipMapLevel;
+  barrier.srcAccessMask = vk::AccessFlagBits::eNone;
+  barrier.dstAccessMask = vk::AccessFlagBits::eTransferWrite;
+  m_commandBuffer.pipelineBarrier(srcFlags, dstFlags, vk::DependencyFlagBits::eByRegion, nullptr, nullptr, barrier);
+
+  barrier.subresourceRange.levelCount = 1;
+  int mipWidth = static_cast<int>(image->width);
+  int mipHeight = static_cast<int>(image->height);
+  int mipDepth = static_cast<int>(image->depth);
+  for (uint32_t i = 1; i < mipLevels; i++) {
+    // convert the last level of image to the transfer src layout
+    barrier.subresourceRange.baseMipLevel = i - 1;
+    barrier.oldLayout = vk::ImageLayout::eTransferDstOptimal;
+    barrier.newLayout = vk::ImageLayout::eTransferSrcOptimal;
+    barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
+    barrier.dstAccessMask = vk::AccessFlagBits::eTransferRead;
+
+    m_commandBuffer.pipelineBarrier(srcFlags, dstFlags, vk::DependencyFlagBits::eByRegion, nullptr, nullptr,barrier);
+
+    // blit the last level of image to the current level
+    vk::ImageBlit blit;
+    blit.srcOffsets[0] = vk::Offset3D(0, 0, 0);
+    blit.srcOffsets[1] = vk::Offset3D(mipWidth, mipHeight, mipDepth);
+    blit.srcSubresource.aspectMask = vulkanImage->vkAspect;
+    blit.srcSubresource.mipLevel = i - 1;
+    blit.srcSubresource.baseArrayLayer = 0;
+    blit.srcSubresource.layerCount = image->arrayLayer;
+
+    blit.dstOffsets[0] = vk::Offset3D(0, 0, 0);
+    blit.dstOffsets[1] = vk::Offset3D( mipWidth > 1 ? mipWidth / 2 : 1, mipHeight > 1 ? mipHeight / 2 : 1, mipDepth > 1 ? mipDepth / 2 : 1 );
+    blit.dstSubresource.aspectMask = vulkanImage->vkAspect;
+    blit.dstSubresource.mipLevel = i;
+    blit.dstSubresource.baseArrayLayer = 0;
+    blit.dstSubresource.layerCount = image->arrayLayer;
+
+    vk::ImageLayout srcLayout, dstLayout;
+    srcLayout = vk::ImageLayout::eTransferSrcOptimal;
+    dstLayout = vk::ImageLayout::eTransferDstOptimal;
+    m_commandBuffer.blitImage(vkImage, srcLayout, vkImage, dstLayout, blit, vk::Filter::eLinear);
+
+    // convert the last level of image to the default Layout and enable shader to read
+    barrier.oldLayout = vk::ImageLayout::eTransferSrcOptimal;
+    barrier.newLayout = defaultLayout;
+    barrier.srcAccessMask = vk::AccessFlagBits::eTransferRead;
+    barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+
+    m_commandBuffer.pipelineBarrier(srcFlags, dstFlags, vk::DependencyFlagBits::eByRegion, nullptr, nullptr, barrier);
+
+    if (mipWidth > 1) mipWidth /= 2;
+    if (mipHeight > 1) mipHeight /= 2;
+    if (mipDepth > 1) mipDepth /= 2;
+  }
+
+  barrier.subresourceRange.baseMipLevel = mipLevels - 1;
+  barrier.oldLayout = vk::ImageLayout::eTransferDstOptimal;
+  barrier.newLayout = defaultLayout;
+  barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
+  barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+
+  srcFlags = vk::PipelineStageFlagBits::eAllCommands;
+  dstFlags = vk::PipelineStageFlagBits::eAllCommands;
+  m_commandBuffer.pipelineBarrier(srcFlags, dstFlags, vk::DependencyFlagBits::eByRegion, nullptr, nullptr, barrier);
+}
+
+void
+VulkanGraphicsCommandBuffer::ClearColorImage(Image* image, const ClearValue& value, int baseLayer, int layerCount, int baseLevel, int levelCount) {
+
+  auto* vulkanImage = static_cast<VulkanImage*>(image);
+  auto vkImage=  vulkanImage->vkImage;
+  auto layout = GetDefaultImageLayoutFromUsage(vulkanImage->usage);
+
+  vk::ImageSubresourceRange range;
+  range.setAspectMask(vk::ImageAspectFlagBits::eColor);
+  range.setBaseArrayLayer(baseLayer);
+  range.setLayerCount(layerCount);
+  range.setBaseMipLevel(baseLevel);
+  range.setLevelCount(levelCount);
+
+  auto* clearColor = std::get_if<0>(&value.clearValue);
+  LOG_IF(WARNING, clearColor == nullptr) << "the clear value of command(Clear Color Image) is not a color";
+  vk::ClearColorValue vkClearValue(*clearColor);
+
+  m_commandBuffer.clearColorImage(vkImage, layout, vkClearValue, range);
+
 }
 
 /**
@@ -333,6 +453,28 @@ VulkanComputeCommandBuffer::BindDescriptorSet(uintptr_t pipeline, const std::vec
 void
 VulkanComputeCommandBuffer::Dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) {
   m_commandBuffer.dispatch(groupCountX, groupCountY, groupCountZ);
+}
+
+
+void
+VulkanComputeCommandBuffer::ClearColorImage(Image* image, const ClearValue& value, int baseLayer, int layerCount, int baseLevel,
+                  int levelCount) {
+  auto* vulkanImage = static_cast<VulkanImage*>(image);
+  auto vkImage=  vulkanImage->vkImage;
+  auto layout = GetDefaultImageLayoutFromUsage(vulkanImage->usage);
+
+  vk::ImageSubresourceRange range;
+  range.setAspectMask(vk::ImageAspectFlagBits::eColor);
+  range.setBaseArrayLayer(baseLayer);
+  range.setLayerCount(layerCount);
+  range.setBaseMipLevel(baseLevel);
+  range.setLevelCount(levelCount);
+
+  auto* clearColor = std::get_if<0>(&value.clearValue);
+  LOG_IF(WARNING, clearColor == nullptr) << "the clear value of command(Clear Color Image) is not a color";
+  vk::ClearColorValue vkClearValue(*clearColor);
+
+  m_commandBuffer.clearColorImage(vkImage, layout, vkClearValue, range);
 }
 
 }  // namespace Marbas

@@ -213,6 +213,8 @@ struct ShaderStageCreateInfo {
     std::ifstream file(spirvPath, std::ios::binary);
     code = std::vector<char>((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
   }
+
+  ShaderStageCreateInfo() = default;
 };
 
 /**
@@ -317,6 +319,7 @@ struct FrameBuffer {
 struct ComputePipelineCreateInfo {
   ShaderStageCreateInfo computeShaderStage;
   std::vector<DescriptorSetArgument> layout;
+  uint32_t pushConstantSize = 0;
 };
 
 }  // namespace Marbas

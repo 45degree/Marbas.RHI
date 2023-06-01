@@ -190,7 +190,12 @@ void
 VulkanBufferContext::UpdateBuffer(Buffer* buffer, const void* data, uint32_t size, uintptr_t offset) {
   auto* vulkanBuffer = static_cast<VulkanBuffer*>(buffer);
   if (vulkanBuffer->stageBufferMemory && vulkanBuffer->stageBuffer) {
-    void* mapData = m_device.mapMemory(*vulkanBuffer->stageBufferMemory, offset, size);
+    void* mapData = nullptr;
+    auto mapResult = m_device.mapMemory(*vulkanBuffer->stageBufferMemory, offset, size, {}, &mapData);
+    if (mapResult != vk::Result::eSuccess) {
+      LOG(ERROR) << "can't memory map data";
+      return;
+    }
     memcpy(mapData, data, size);
     m_device.unmapMemory(*vulkanBuffer->stageBufferMemory);
     CopyBuffer(*(vulkanBuffer->stageBuffer), vulkanBuffer->vkBuffer, vulkanBuffer->size);
@@ -273,9 +278,8 @@ VulkanBufferContext::CreateImage(const ImageCreateInfo& imageCreateInfo) {
   height = imageCreateInfo.height;
   channel = GetPixesSizeFromFormat(imageCreateInfo.format);
 
-  auto imageSize = width * height * channel;
-
   auto* vulkanImage = new VulkanImage();
+  vulkanImage->depth = 1;
   vulkanImage->width = width;
   vulkanImage->height = height;
   vulkanImage->usage = imageCreateInfo.usage;
@@ -323,6 +327,12 @@ VulkanBufferContext::CreateImage(const ImageCreateInfo& imageCreateInfo) {
       vkCreateInfo.setArrayLayers(6 * imageDesc.arraySize);
       vkCreateInfo.setFlags(vk::ImageCreateFlagBits::eCubeCompatible);
       vulkanImage->arrayLayer = 6 * imageDesc.arraySize;
+    } else if constexpr(std::is_same_v<T, Image3DDesc>) {
+      vkCreateInfo.setImageType(vk::ImageType::e3D);
+      vkCreateInfo.setExtent(vk::Extent3D(width, height, imageDesc.depth));
+      vkCreateInfo.setArrayLayers(1);
+      vulkanImage->arrayLayer = 1;
+      vulkanImage->depth = imageDesc.depth;
     }
   },imageCreateInfo.imageDesc);
   // clang-format on
@@ -363,17 +373,19 @@ VulkanBufferContext::CreateImage(const ImageCreateInfo& imageCreateInfo) {
   vulkanImage->vkImageMemory = m_device.allocateMemory(allocInfo, nullptr);
   m_device.bindImageMemory(vulkanImage->vkImage, vulkanImage->vkImageMemory, 0);
 
-  /**
-   * create staging buffer
-   */
-  vk::MemoryPropertyFlags memPropertyFlag;
-  memPropertyFlag |= vk::MemoryPropertyFlagBits::eHostVisible;
-  memPropertyFlag |= vk::MemoryPropertyFlagBits::eHostCoherent;
-  auto [StagingBuffer, StagingMemory] = CreateBuffer(
-      imageSize, vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst, memPropertyFlag);
-
-  vulkanImage->vkStagingBuffer = StagingBuffer;
-  vulkanImage->vkStagingBufferMemory = StagingMemory;
+  // /**
+  //  * create staging buffer
+  //  */
+  // vk::MemoryPropertyFlags memPropertyFlag;
+  // memPropertyFlag |= vk::MemoryPropertyFlagBits::eHostVisible;
+  // memPropertyFlag |= vk::MemoryPropertyFlagBits::eHostCoherent;
+  //
+  // vk::BufferUsageFlags bufferUsageFlag = vk::BufferUsageFlagBits::eTransferSrc |
+  // vk::BufferUsageFlagBits::eTransferDst; auto [StagingBuffer, StagingMemory] = CreateBuffer(requirements.size,
+  // bufferUsageFlag, memPropertyFlag);
+  //
+  // vulkanImage->vkStagingBuffer = StagingBuffer;
+  // vulkanImage->vkStagingBufferMemory = StagingMemory;
 
   auto defaultImageLayout = GetDefaultImageLayoutFromUsage(vulkanImage->usage);
   ConvertImageState(vulkanImage, vk::ImageLayout::eUndefined, defaultImageLayout);
@@ -385,10 +397,24 @@ VulkanBufferContext::CreateImage(const ImageCreateInfo& imageCreateInfo) {
 void
 VulkanBufferContext::UpdateImage(const UpdateImageInfo& updateInfo) {
   auto* vulkanImage = static_cast<VulkanImage*>(updateInfo.image);
-  void* mapData = m_device.mapMemory(vulkanImage->vkStagingBufferMemory, 0, updateInfo.dataSize);
-  memcpy(mapData, updateInfo.data, updateInfo.dataSize);
-  m_device.unmapMemory(vulkanImage->vkStagingBufferMemory);
 
+  /**
+   * create a staging buffer and map the data the staing buffer
+   */
+  vk::MemoryPropertyFlags memPropertyFlag;
+  memPropertyFlag |= vk::MemoryPropertyFlagBits::eHostVisible;
+  memPropertyFlag |= vk::MemoryPropertyFlagBits::eHostCoherent;
+
+  auto bufferUsageFlag = vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst;
+  auto [stagingBuffer, stagingMemory] = CreateBuffer(updateInfo.dataSize, bufferUsageFlag, memPropertyFlag);
+
+  void* mapData = m_device.mapMemory(stagingMemory, 0, updateInfo.dataSize);
+  memcpy(mapData, updateInfo.data, updateInfo.dataSize);
+  m_device.unmapMemory(stagingMemory);
+
+  /**
+   * upload the data to image memory
+   */
   auto defaultImageLayout = GetDefaultImageLayoutFromUsage(vulkanImage->usage);
 
   ConvertImageState(updateInfo.image, defaultImageLayout, vk::ImageLayout::eTransferDstOptimal);
@@ -406,8 +432,11 @@ VulkanBufferContext::UpdateImage(const UpdateImageInfo& updateInfo) {
   range.imageOffset = vk::Offset3D(updateInfo.xOffset, updateInfo.yOffset, updateInfo.zOffset);
   range.imageExtent = vk::Extent3D(updateInfo.width, updateInfo.height, updateInfo.depth);
 
-  CopyBufferToImage(vulkanImage->vkStagingBuffer, vulkanImage->vkImage, range);
+  CopyBufferToImage(stagingBuffer, vulkanImage->vkImage, range);
   ConvertImageState(updateInfo.image, vk::ImageLayout::eTransferDstOptimal, defaultImageLayout);
+
+  m_device.destroy(stagingBuffer);
+  m_device.freeMemory(stagingMemory);
 }
 
 uint32_t
@@ -424,12 +453,26 @@ void
 VulkanBufferContext::GetImageData(const ImageSubresourceDesc& imageRange, void* data) {
   auto* image = imageRange.image;
   auto* vulkanImage = static_cast<VulkanImage*>(imageRange.image);
+  auto& vkImage = vulkanImage->vkImage;
   auto defaultLayout = GetDefaultImageLayoutFromUsage(image->usage);
   // convert the image state so that it can transferm the data to the buffer
   ConvertImageState(image, defaultLayout, vk::ImageLayout::eTransferSrcOptimal);
 
   auto dataSize = GetImageSubresourceSize(imageRange);
 
+  /**
+   * create staging buffer
+   */
+  vk::MemoryPropertyFlags memPropertyFlag;
+  memPropertyFlag |= vk::MemoryPropertyFlagBits::eHostVisible;
+  memPropertyFlag |= vk::MemoryPropertyFlagBits::eHostCoherent;
+
+  auto bufferUsageFlag = vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst;
+  auto [stagingBuffer, stagingMemory] = CreateBuffer(dataSize, bufferUsageFlag, memPropertyFlag);
+
+  /**
+   * copy the image memory to staging buffer
+   */
   vk::CommandBufferAllocateInfo allocInfo{};
   allocInfo.level = vk::CommandBufferLevel::ePrimary;
   allocInfo.commandPool = m_temporaryCommandPool;
@@ -457,8 +500,7 @@ VulkanBufferContext::GetImageData(const ImageSubresourceDesc& imageRange, void* 
   vk::CommandBufferBeginInfo beginInfo;
   beginInfo.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
   commandBuffer.begin(beginInfo);
-  commandBuffer.copyImageToBuffer(vulkanImage->vkImage, vk::ImageLayout::eTransferSrcOptimal,
-                                  vulkanImage->vkStagingBuffer, copy);
+  commandBuffer.copyImageToBuffer(vkImage, vk::ImageLayout::eTransferSrcOptimal, stagingBuffer, copy);
   commandBuffer.end();
 
   vk::SubmitInfo submitInfo;
@@ -470,9 +512,12 @@ VulkanBufferContext::GetImageData(const ImageSubresourceDesc& imageRange, void* 
 
   // convert image state
   ConvertImageState(image, vk::ImageLayout::eTransferSrcOptimal, defaultLayout);
-  void* mapData = m_device.mapMemory(vulkanImage->vkStagingBufferMemory, 0, dataSize);
+  void* mapData = m_device.mapMemory(stagingMemory, 0, dataSize);
   std::memcpy(data, mapData, dataSize);
-  m_device.unmapMemory(vulkanImage->vkStagingBufferMemory);
+  m_device.unmapMemory(stagingMemory);
+
+  m_device.destroyBuffer(stagingBuffer);
+  m_device.freeMemory(stagingMemory);
 }
 
 void
@@ -614,9 +659,9 @@ VulkanBufferContext::DestroyImage(Image* image) {
 
   auto* vulkanImage = static_cast<VulkanImage*>(image);
   m_device.destroyImage(vulkanImage->vkImage);
-  m_device.destroyBuffer(vulkanImage->vkStagingBuffer);
+  // m_device.destroyBuffer(vulkanImage->vkStagingBuffer);
   m_device.freeMemory(vulkanImage->vkImageMemory);
-  m_device.freeMemory(vulkanImage->vkStagingBufferMemory);
+  // m_device.freeMemory(vulkanImage->vkStagingBufferMemory);
 
   delete image;
 }
@@ -635,6 +680,9 @@ VulkanBufferContext::CreateImageView(const ImageViewCreateInfo& createInfo) {
   switch (createInfo.type) {
     case ImageViewType::TEXTURE2D:
       vkImageViewCreateInfo.setViewType(vk::ImageViewType::e2D);
+      break;
+    case ImageViewType::TEXTURE3D:
+      vkImageViewCreateInfo.setViewType(vk::ImageViewType::e3D);
       break;
     case ImageViewType::CUBEMAP:
       vkImageViewCreateInfo.setViewType(vk::ImageViewType::eCube);
@@ -662,6 +710,7 @@ VulkanBufferContext::CreateImageView(const ImageViewCreateInfo& createInfo) {
   auto vkImageView = m_device.createImageView(vkImageViewCreateInfo);
   imageView->vkImageView = vkImageView;
   imageView->vkFormat = vkFormat;
+  imageView->fromImage = vulkanImage;
 
   return imageView;
 }
