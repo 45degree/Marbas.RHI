@@ -501,9 +501,8 @@ VulkanPipelineContext::CreatePipeline(const GraphicsPipeLineCreateInfo& createIn
 
   // dynamic state
   std::vector<vk::DynamicState> dynamicStates = {
-      vk::DynamicState::eViewport,
-      vk::DynamicState::eScissor,
-      vk::DynamicState::eCullMode,
+      vk::DynamicState::eViewport, vk::DynamicState::eScissor,
+      // vk::DynamicState::eCullMode,
   };
   vk::PipelineDynamicStateCreateInfo vkPipelineDynamicStateCreateInfo;
   vkPipelineDynamicStateCreateInfo.setDynamicStates(dynamicStates);

@@ -277,6 +277,7 @@ VulkanBufferContext::CreateImage(const ImageCreateInfo& imageCreateInfo) {
   width = imageCreateInfo.width;
   height = imageCreateInfo.height;
   channel = GetPixesSizeFromFormat(imageCreateInfo.format);
+  vkCreateInfo.flags = vk::ImageCreateFlagBits::eMutableFormat;
 
   auto* vulkanImage = new VulkanImage();
   vulkanImage->depth = 1;
@@ -671,7 +672,13 @@ VulkanBufferContext::CreateImageView(const ImageViewCreateInfo& createInfo) {
   auto* imageView = new VulkanImageView();
   auto* vulkanImage = static_cast<VulkanImage*>(createInfo.image);
   const auto& vkImage = vulkanImage->vkImage;
-  auto vkFormat = GetVkFormat(vulkanImage->format);
+
+  vk::Format vkFormat;
+  if (createInfo.format.has_value()) {
+    vkFormat = GetVkFormat(*createInfo.format);
+  } else {
+    vkFormat = GetVkFormat(vulkanImage->format);
+  };
 
   vk::ImageViewCreateInfo vkImageViewCreateInfo;
   vkImageViewCreateInfo.setImage(vkImage);

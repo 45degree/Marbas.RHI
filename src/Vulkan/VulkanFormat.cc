@@ -7,7 +7,7 @@
 
 namespace Marbas {
 
-static std::unordered_map<ImageFormat, FormatDesc> g_formatDesc{
+const static std::unordered_map<ImageFormat, FormatDesc> g_formatDesc{
     {ImageFormat::RED, {vk::Format::eR8Unorm, 1, 1, {false, false, false}, {1, 1}, {8, 0, 0, 0}}},
     {ImageFormat::RG, {vk::Format::eR8G8Unorm, 2, 2, {false, false, false}, {1, 1}, {8, 8, 0, 0}}},
     {ImageFormat::RGBA, {vk::Format::eR8G8B8A8Unorm, 4, 4, {false, false, false}, {1, 1}, {8, 8, 8, 8}}},
@@ -19,23 +19,24 @@ static std::unordered_map<ImageFormat, FormatDesc> g_formatDesc{
     {ImageFormat::RGBA32F, {vk::Format::eR32G32B32A32Sfloat, 16, 4, {false, false, false}, {1, 1}, {32, 32, 32, 32}}},
     {ImageFormat::DEPTH, {vk::Format::eD32SfloatS8Uint, 8, 2, {true, true, false}, {1, 1}, {32, 8, 24, 0}}},
     {ImageFormat::RGBA_SRGB, {vk::Format::eR8G8B8A8Srgb, 4, 4, {false, false, false}, {1, 1}, {8, 8, 8, 8}}},
+    {ImageFormat::R32UI, {vk::Format::eR32Uint, 4, 1, {false, false, false}, {1, 1}, {32, 0, 0, 0}}},
 };
 
 uint32_t
 GetMipLevelPackedDataSize(ImageFormat format, uint32_t w, uint32_t h, uint32_t d) {
-  uint32_t perW = g_formatDesc[format].compressionRatio.width;
+  uint32_t perW = g_formatDesc.at(format).compressionRatio.width;
   uint32_t bw = align_to(perW, w) / perW;
 
-  uint32_t perH = g_formatDesc[format].compressionRatio.height;
+  uint32_t perH = g_formatDesc.at(format).compressionRatio.height;
   uint32_t bh = align_to(perH, h) / perH;
 
-  uint32_t size = bh * bw * d * g_formatDesc[format].bytesPerBlock;
+  uint32_t size = bh * bw * d * g_formatDesc.at(format).bytesPerBlock;
   return size;
 }
 
 vk::Format
 GetVkFormat(ImageFormat format) {
-  return g_formatDesc[format].vkFormat;
+  return g_formatDesc.at(format).vkFormat;
 }
 
 }  // namespace Marbas

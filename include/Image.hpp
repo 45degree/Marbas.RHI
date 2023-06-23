@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 #include <variant>
 
 #include "Sampler.hpp"
@@ -46,6 +47,7 @@ enum class ImageFormat {
   RGBA,
   BGRA,
   R32F,
+  R32UI,
   RG16F,
   RG32F,
   RGBA16F,
@@ -114,6 +116,7 @@ struct ImageSubresourceDesc {
 struct ImageViewCreateInfo {
   Image* image;
   ImageViewType type;
+  std::optional<ImageFormat> format = std::nullopt;
   uint32_t baseLevel;
   uint32_t levelCount;
   uint32_t baseArrayLayer;
