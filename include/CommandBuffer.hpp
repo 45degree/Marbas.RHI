@@ -19,6 +19,7 @@
 #include <span>
 
 #include "DescriptorSet.hpp"
+#include "Image.hpp"
 #include "Pipeline.hpp"
 #include "Synchronic.hpp"
 
@@ -41,6 +42,15 @@ struct ClearValue {
   }
 
   std::variant<std::array<float, 4>, std::array<float, 2>> clearValue;
+};
+
+struct CopyImageRange {
+  int level = 0;
+  int baseLayer = 0;
+  int layerCount = 1;
+  int xOffset = 0;
+  int yOffset = 0;
+  int zOffset = 0;
 };
 
 class GraphicsCommandBuffer {
@@ -113,8 +123,10 @@ class GraphicsCommandBuffer {
   GenerateMipmap(Image* image, uint32_t mipLevel) = 0;
 
   virtual void
-  ClearColorImage(Image* image, const ClearValue& value, int baseLayer, int layerCount, int baseLevel,
-                  int levelCount) = 0;
+  ClearColor(Image* image, const ClearValue& value, int baseLayer, int layerCount, int baseLevel, int levelCount) = 0;
+
+  virtual void
+  CopyImage(Image* image, Image* dstImage, CopyImageRange& srcRange, CopyImageRange& dstRange, int x, int y, int z) = 0;
 };
 
 class ComputeCommandBuffer {
@@ -141,8 +153,7 @@ class ComputeCommandBuffer {
   BindDescriptorSet(uintptr_t pipeline, const std::vector<uintptr_t>& sets) = 0;
 
   virtual void
-  ClearColorImage(Image* image, const ClearValue& value, int baseLayer, int layerCount, int baseLevel,
-                  int levelCount) = 0;
+  ClearColor(Image* image, const ClearValue& value, int baseLayer, int layerCount, int baseLevel, int levelCount) = 0;
 
  public:
   virtual void

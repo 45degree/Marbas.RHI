@@ -81,8 +81,12 @@ class VulkanGraphicsCommandBuffer final : public GraphicsCommandBuffer {
   GenerateMipmap(Image* image, uint32_t mipLevel) override;
 
   void
-  ClearColorImage(Image* image, const ClearValue& value, int baseLayer, int layerCount, int baseLevel,
-                  int levelCount) override;
+  ClearColor(Image* image, const ClearValue& value, int baseLayer, int layerCount, int baseLevel,
+             int levelCount) override;
+
+  void
+  CopyImage(Image* image, Image* dstImage, CopyImageRange& srcRange, CopyImageRange& dstRange, int x, int y,
+            int z) override;
 
  private:
   vk::CommandBuffer m_commandBuffer;
@@ -122,8 +126,8 @@ class VulkanComputeCommandBuffer final : public ComputeCommandBuffer {
   Dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) override;
 
   void
-  ClearColorImage(Image* image, const ClearValue& value, int baseLayer, int layerCount, int baseLevel,
-                  int levelCount) override;
+  ClearColor(Image* image, const ClearValue& value, int baseLayer, int layerCount, int baseLevel,
+             int levelCount) override;
 
  private:
   uint32_t m_queueFamily;

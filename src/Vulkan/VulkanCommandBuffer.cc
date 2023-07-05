@@ -352,7 +352,7 @@ VulkanGraphicsCommandBuffer::GenerateMipmap(Image* image, uint32_t mipLevels) {
 }
 
 void
-VulkanGraphicsCommandBuffer::ClearColorImage(Image* image, const ClearValue& value, int baseLayer, int layerCount, int baseLevel, int levelCount) {
+VulkanGraphicsCommandBuffer::ClearColor(Image* image, const ClearValue& value, int baseLayer, int layerCount, int baseLevel, int levelCount) {
 
   auto* vulkanImage = static_cast<VulkanImage*>(image);
   auto vkImage=  vulkanImage->vkImage;
@@ -372,6 +372,38 @@ VulkanGraphicsCommandBuffer::ClearColorImage(Image* image, const ClearValue& val
   m_commandBuffer.clearColorImage(vkImage, layout, vkClearValue, range);
 
 }
+
+void
+VulkanGraphicsCommandBuffer::CopyImage(Image* srcImage, Image* dstImage, CopyImageRange& srcRange, CopyImageRange& dstRange, int x, int y,
+          int z)  {
+  auto* vulkanSrcImage = static_cast<VulkanImage*>(srcImage);
+  auto* vulkanDstImage = static_cast<VulkanImage*>(dstImage);
+  auto vkSrcImage = vulkanSrcImage->vkImage;
+  auto vkDstImage = vulkanDstImage->vkImage;
+  auto vkSrcLayout = GetDefaultImageLayoutFromUsage(vulkanSrcImage->usage);
+  auto vkDstLayout = GetDefaultImageLayoutFromUsage(vulkanDstImage->usage);
+
+  vk::ImageCopy copyRange;
+  copyRange.extent= vk::Extent3D(x, y, z);
+  copyRange.setSrcOffset(vk::Offset3D(srcRange.xOffset, srcRange.yOffset, srcRange.zOffset));
+  copyRange.setDstOffset(vk::Offset3D(dstRange.xOffset, dstRange.yOffset, dstRange.zOffset));
+
+  vk::ImageSubresourceLayers vkSrcRange, vkDstRange;
+  vkSrcRange.setBaseArrayLayer(srcRange.baseLayer);
+  vkSrcRange.setLayerCount(srcRange.layerCount);
+  vkSrcRange.setMipLevel(srcRange.level);
+  vkSrcRange.setAspectMask(vk::ImageAspectFlagBits::eColor);
+  copyRange.setSrcSubresource(vkSrcRange);
+
+  vkDstRange.setBaseArrayLayer(dstRange.baseLayer);
+  vkDstRange.setLayerCount(dstRange.layerCount);
+  vkDstRange.setMipLevel(dstRange.level);
+  vkDstRange.setAspectMask(vk::ImageAspectFlagBits::eColor);
+  copyRange.setDstSubresource(vkDstRange);
+
+  m_commandBuffer.copyImage(vkSrcImage, vkSrcLayout, vkDstImage, vkDstLayout, copyRange);
+}
+
 
 /**
  * compute command buffer
@@ -457,7 +489,7 @@ VulkanComputeCommandBuffer::Dispatch(uint32_t groupCountX, uint32_t groupCountY,
 
 
 void
-VulkanComputeCommandBuffer::ClearColorImage(Image* image, const ClearValue& value, int baseLayer, int layerCount, int baseLevel,
+VulkanComputeCommandBuffer::ClearColor(Image* image, const ClearValue& value, int baseLayer, int layerCount, int baseLevel,
                   int levelCount) {
   auto* vulkanImage = static_cast<VulkanImage*>(image);
   auto vkImage=  vulkanImage->vkImage;
